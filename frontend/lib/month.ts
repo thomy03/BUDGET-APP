@@ -5,28 +5,40 @@ import { useRouter, useSearchParams } from 'next/navigation';
 const KEY = 'selectedMonth';
 
 export function useGlobalMonth(): [string, (m: string) => void] {
-  // Initialiser le mois depuis localStorage ou date actuelle
-  const [month, setMonthState] = useState<string>(() => {
-    if (typeof window !== 'undefined') {
-      const saved = window.localStorage.getItem(KEY);
-      if (saved) return saved;
-    }
+  // Helper function to get current month in YYYY-MM format
+  const getCurrentMonth = () => {
     const d = new Date();
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-  });
+  };
 
-  // Sauvegarder dans localStorage quand le mois change
+  // Initialize with current month - consistent between server and client
+  const [month, setMonthState] = useState<string>(getCurrentMonth());
+  const [isMounted, setIsMounted] = useState(false);
+
+  // Handle client-side mounting and localStorage initialization
   useEffect(() => {
+    setIsMounted(true);
+    // Only read from localStorage after mounting
     if (typeof window !== 'undefined') {
+      const saved = window.localStorage.getItem(KEY);
+      if (saved && saved !== month) {
+        setMonthState(saved);
+      }
+    }
+  }, []);
+
+  // Save to localStorage when month changes (only after mounting)
+  useEffect(() => {
+    if (isMounted && typeof window !== 'undefined') {
       window.localStorage.setItem(KEY, month);
     }
-  }, [month]);
+  }, [month, isMounted]);
 
   // Fonction pour changer le mois avec logging
   const setMonth = useCallback((newMonth: string) => {
     console.log('🗓️  Global month change:', month, '->', newMonth);
     setMonthState(newMonth);
-  }, []);
+  }, [month]);
 
   return [month, setMonth];
 }
