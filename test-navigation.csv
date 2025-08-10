@@ -1,0 +1,6 @@
+dateOp,label,amount,accountLabel,accountNum,category,categoryParent
+2024-01-15,Courses Leclerc,-45.67,Compte Courant,123456789,Alimentation,Dépenses
+2024-01-20,Essence Total,-38.90,Compte Courant,123456789,Transport,Dépenses
+2024-01-25,Restaurant,-28.50,Compte Courant,123456789,Restaurant,Dépenses
+2024-02-01,Loyer,-800.00,Compte Courant,123456789,Logement,Dépenses
+2024-02-05,Électricité,-89.20,Compte Courant,123456789,Énergie,Dépenses

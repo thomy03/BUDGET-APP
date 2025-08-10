@@ -1,0 +1,4 @@
+dateOp,label,amount,accountLabel,accountNum,category,categoryParent
+2024-01-15,Test Transaction 1,-50.00,Compte Test,123456789,Alimentation,Dépenses
+2024-01-20,Test Transaction 2,-25.50,Compte Test,123456789,Transport,Dépenses
+2024-02-01,Test Transaction 3,-100.00,Compte Test,123456789,Logement,Dépenses

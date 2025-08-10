@@ -1,0 +1,12 @@
+sep=;
+date;description;montant;compte;tag
+25/04/2024;Salaire ACME SA;2500,00;Compte Courant;Revenus
+02/04/2024;Loyer 2024-04;-950,00;Compte Courant;Logement
+01/04/2024;Virement Livret A;-194,35;Carte Débit;Épargne
+24/04/2024;EDF;-31,86;Compte Courant;Logement
+02/04/2024;Fnac;-12,11;Carte Débit;Loisirs
+20/04/2024;Assurance Habitation;-11,71;Carte Débit;Logement
+23/04/2024;Assurance Vie;-144,53;Carte Débit;Épargne
+09/04/2024;Opticien;-6,97;Livret A;Santé
+05/04/2024;Uber;-60,97;Carte Crédit;Transport
+13/04/2024;ALDI;-29,45;Carte Crédit;Courses

@@ -1,0 +1,86 @@
+{
+  "capabilities": {
+    "fastapi": {
+      "available": true,
+      "type": "package"
+    },
+    "uvicorn": {
+      "available": true,
+      "type": "package"
+    },
+    "pandas": {
+      "available": true,
+      "type": "package"
+    },
+    "numpy": {
+      "available": true,
+      "type": "package"
+    },
+    "sqlalchemy": {
+      "available": true,
+      "type": "package"
+    },
+    "pysqlcipher3": {
+      "available": false,
+      "type": "import_error",
+      "error": "No module named 'pysqlcipher3'"
+    },
+    "magic": {
+      "available": true,
+      "type": "package"
+    },
+    "cryptography": {
+      "available": true,
+      "type": "package"
+    },
+    "jose": {
+      "available": true,
+      "type": "package"
+    },
+    "passlib": {
+      "available": true,
+      "type": "package"
+    },
+    "email_validator": {
+      "available": true,
+      "type": "package"
+    },
+    "pydantic": {
+      "available": true,
+      "type": "package"
+    },
+    "auth_module": {
+      "available": true,
+      "type": "local"
+    },
+    "database_encrypted": {
+      "available": true,
+      "type": "local"
+    },
+    "audit_logger": {
+      "available": true,
+      "type": "local"
+    }
+  },
+  "selected_mode": {
+    "name": "complete",
+    "description": "Application complète avec toutes les fonctionnalités",
+    "app_file": "app.py",
+    "features": [
+      "authentication",
+      "encryption",
+      "full_api",
+      "csv_import",
+      "audit"
+    ],
+    "priority": 1
+  },
+  "startup_script": "start_complete.py",
+  "missing_packages": [
+    "pysqlcipher3"
+  ],
+  "generated_files": [
+    "start_complete.py",
+    "requirements_fallback.txt"
+  ]
+}

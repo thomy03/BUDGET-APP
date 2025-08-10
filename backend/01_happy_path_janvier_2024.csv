@@ -1,0 +1,11 @@
+Date,Description,Montant,Compte,Categorie
+2024-01-01,Groceries Store,-150.75,CHECKING,Alimentation
+2024-01-02,Salary Transfer,2500.00,CHECKING,Revenus
+2024-01-03,Gas Station,-65.50,CHECKING,Transport
+2024-01-04,Restaurant,-45.20,CHECKING,Sorties
+2024-01-05,Electric Bill,-120.00,CHECKING,Charges
+2024-01-06,ATM Withdrawal,-100.00,CHECKING,Liquide
+2024-01-07,Online Shopping,-85.99,CHECKING,Shopping
+2024-01-08,Coffee Shop,-8.50,CHECKING,Café
+2024-01-09,Pharmacy,-25.30,CHECKING,Santé
+2024-01-10,Rent Payment,-1200.00,CHECKING,Logement

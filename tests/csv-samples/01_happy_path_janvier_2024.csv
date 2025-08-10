@@ -1,0 +1,16 @@
+date;description;montant;compte;tag
+02/01/2024;Loyer Janvier;-950,00;Compte Courant;Logement
+03/01/2024;Eau de Paris 0124;-28,50;Compte Courant;Logement
+04/01/2024;Internet Orange Fibre;-39,99;Compte Courant;Logement
+05/01/2024;EDF Facture 0124;-72,18;Compte Courant;Logement
+06/01/2024;ALDI;-54,32;Carte Débit;Courses
+06/01/2024;Carburant Total;-68,45;Carte Débit;Transport
+10/01/2024;Mutuelle Santé;-45,90;Compte Courant;Santé
+12/01/2024;Boulangerie Dupont;-8,20;Carte Débit;Courses
+15/01/2024;Remboursement Sécu;23,50;Compte Courant;Santé
+18/01/2024;Pharmacie Centrale;-12,30;Carte Débit;Santé
+20/01/2024;Marché local;-24,60;Carte Débit;Courses
+25/01/2024;Salaire ACME SA;2500,00;Compte Courant;Revenus
+28/01/2024;Abonnement Navigo;-75,20;Compte Courant;Transport
+29/01/2024;Monoprix;-76,80;Carte Débit;Courses
+30/01/2024;Médecin généraliste;-25,00;Compte Courant;Santé

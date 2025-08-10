@@ -1,0 +1,333 @@
+{
+  "total_size_bytes": 278348,
+  "files_to_cleanup": 32,
+  "commands": [
+    "rm app_minimal_csv.py",
+    "rm app_simple.py",
+    "rm app_windows.py",
+    "rm app_windows_optimized.py",
+    "rm requirements_fallback.txt",
+    "rm requirements_minimal.txt",
+    "rm requirements_minimal_ubuntu.txt",
+    "rm requirements_ubuntu.txt",
+    "rm requirements_windows.txt",
+    "rm requirements_windows_minimal.txt",
+    "rm start_complete.py",
+    "rm start_degraded.py",
+    "rm start_secure.py",
+    "rm start_windows.py",
+    "rm diagnose_windows.py",
+    "rm diagnostic_windows.py",
+    "rm Fix-WindowsDependencies.ps1",
+    "rm fix_windows_dependencies.bat",
+    "rm GUIDE_DEMARRAGE_WINDOWS.md",
+    "rm GUIDE_DEPANNAGE_WINDOWS.md",
+    "rm README_WINDOWS.md",
+    "rm README_WINDOWS_FIXES.md",
+    "rm SOLUTION_WINDOWS.md",
+    "rm test_environment_windows.py",
+    "rm test_windows_compatibility.py",
+    "rm test_windows_import.csv",
+    "rm test_auth_complete.py",
+    "rm test_auth_simple.py",
+    "rm test_critical_fixes.py",
+    "rm test_critical_fixes_minimal.py",
+    "rm test_csv_critical.py",
+    "rm test_e2e_complete.py"
+  ],
+  "analysis": {
+    "apps": [
+      {
+        "name": "app.py",
+        "size": 52430,
+        "is_main": true
+      },
+      {
+        "name": "app_minimal_csv.py",
+        "size": 15616,
+        "is_main": false
+      },
+      {
+        "name": "app_simple.py",
+        "size": 30346,
+        "is_main": false
+      },
+      {
+        "name": "app_windows.py",
+        "size": 14088,
+        "is_main": false
+      },
+      {
+        "name": "app_windows_optimized.py",
+        "size": 44665,
+        "is_main": false
+      }
+    ],
+    "requirements": [
+      {
+        "name": "requirements.txt",
+        "size": 1873,
+        "is_main": true
+      },
+      {
+        "name": "requirements_fallback.txt",
+        "size": 139,
+        "is_main": false
+      },
+      {
+        "name": "requirements_minimal.txt",
+        "size": 223,
+        "is_main": false
+      },
+      {
+        "name": "requirements_minimal_ubuntu.txt",
+        "size": 309,
+        "is_main": false
+      },
+      {
+        "name": "requirements_ubuntu.txt",
+        "size": 495,
+        "is_main": false
+      },
+      {
+        "name": "requirements_windows.txt",
+        "size": 406,
+        "is_main": false
+      },
+      {
+        "name": "requirements_windows_minimal.txt",
+        "size": 512,
+        "is_main": false
+      }
+    ],
+    "scripts": [
+      {
+        "name": "start_complete.py",
+        "size": 1429
+      },
+      {
+        "name": "start_degraded.py",
+        "size": 15510
+      },
+      {
+        "name": "start_secure.py",
+        "size": 6306
+      },
+      {
+        "name": "start_windows.py",
+        "size": 3859
+      }
+    ],
+    "windows_files": [
+      {
+        "name": "diagnose_windows.py",
+        "size": 15463
+      },
+      {
+        "name": "diagnostic_windows.py",
+        "size": 5456
+      },
+      {
+        "name": "Fix-WindowsDependencies.ps1",
+        "size": 3962
+      },
+      {
+        "name": "fix_windows_dependencies.bat",
+        "size": 2105
+      },
+      {
+        "name": "GUIDE_DEMARRAGE_WINDOWS.md",
+        "size": 6595
+      },
+      {
+        "name": "GUIDE_DEPANNAGE_WINDOWS.md",
+        "size": 4473
+      },
+      {
+        "name": "README_WINDOWS.md",
+        "size": 5366
+      },
+      {
+        "name": "README_WINDOWS_FIXES.md",
+        "size": 4356
+      },
+      {
+        "name": "SOLUTION_WINDOWS.md",
+        "size": 4741
+      },
+      {
+        "name": "test_environment_windows.py",
+        "size": 19528
+      },
+      {
+        "name": "test_windows_compatibility.py",
+        "size": 5176
+      },
+      {
+        "name": "test_windows_import.csv",
+        "size": 289
+      }
+    ],
+    "tests": [
+      {
+        "name": "test_auth.py",
+        "size": 1188
+      },
+      {
+        "name": "test_auth_complete.py",
+        "size": 8430
+      },
+      {
+        "name": "test_auth_simple.py",
+        "size": 4274
+      },
+      {
+        "name": "test_auth_validation.py",
+        "size": 4554
+      },
+      {
+        "name": "test_compatibility.py",
+        "size": 4013
+      },
+      {
+        "name": "test_critical_fixes.py",
+        "size": 6486
+      },
+      {
+        "name": "test_critical_fixes_minimal.py",
+        "size": 7389
+      },
+      {
+        "name": "test_csv_critical.py",
+        "size": 25648
+      },
+      {
+        "name": "test_duplicates.py",
+        "size": 2494
+      },
+      {
+        "name": "test_e2e_complete.py",
+        "size": 14708
+      },
+      {
+        "name": "test_final_auth.py",
+        "size": 4559
+      },
+      {
+        "name": "test_import.py",
+        "size": 2157
+      },
+      {
+        "name": "test_imports_step_by_step.py",
+        "size": 11094
+      },
+      {
+        "name": "test_import_get.py",
+        "size": 2354
+      },
+      {
+        "name": "test_security.py",
+        "size": 11326
+      },
+      {
+        "name": "test_token_endpoint.py",
+        "size": 5793
+      }
+    ],
+    "docs": [
+      {
+        "name": "auth_validation_report.md",
+        "size": 1899
+      },
+      {
+        "name": "RESOLUTION_AUTH_RAPPORT.md",
+        "size": 3371
+      },
+      {
+        "name": "SECURITY_FIXES_SUMMARY.md",
+        "size": 3930
+      }
+    ],
+    "configs": [
+      {
+        "name": "csv_critical_test_results.json",
+        "size": 7393
+      },
+      {
+        "name": "degraded_startup_config.json",
+        "size": 1670
+      },
+      {
+        "name": "diagnostic_report.json",
+        "size": 1915
+      },
+      {
+        "name": "token_response.json",
+        "size": 165
+      }
+    ],
+    "backups": [
+      {
+        "name": "budget.db.backup_20250810_145827_7933",
+        "size": 131072
+      },
+      {
+        "name": "budget.db.backup_20250810_150036_8151",
+        "size": 131072
+      },
+      {
+        "name": "budget.db.backup_20250810_150156_8336",
+        "size": 131072
+      },
+      {
+        "name": "budget.db.backup_20250810_152333_9044",
+        "size": 131072
+      },
+      {
+        "name": "budget.db.backup_20250810_153328_9866",
+        "size": 131072
+      },
+      {
+        "name": "budget.db.backup_20250810_153452_10470",
+        "size": 131072
+      },
+      {
+        "name": "budget.db.backup_20250810_153520_10794",
+        "size": 131072
+      },
+      {
+        "name": "budget.db.backup_20250810_153527_10949",
+        "size": 131072
+      },
+      {
+        "name": "budget.db.backup_20250810_153530_10706",
+        "size": 131072
+      },
+      {
+        "name": "budget.db.backup_20250810_153531_11034",
+        "size": 131072
+      },
+      {
+        "name": "budget.db.backup_20250810_153907_11935",
+        "size": 131072
+      },
+      {
+        "name": "budget.db.backup_20250810_154447_13383",
+        "size": 131072
+      },
+      {
+        "name": "budget.db.backup_20250810_154454_13445",
+        "size": 131072
+      },
+      {
+        "name": "budget.db.backup_20250810_154556_13858",
+        "size": 131072
+      },
+      {
+        "name": "organize_db_backups.py",
+        "size": 7430
+      }
+    ],
+    "others": []
+  }
+}

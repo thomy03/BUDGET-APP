@@ -1,0 +1,76 @@
+/* Styles modernes pour le calendrier natif */
+
+/* Styling pour input[type="month"] moderne */
+.month-picker-modern {
+  /* Force un style moderne sur tous les navigateurs */
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+}
+
+/* Styles pour WebKit browsers (Chrome, Safari, Edge) */
+.month-picker-modern::-webkit-calendar-picker-indicator {
+  background: linear-gradient(135deg, #3b82f6, #6366f1);
+  border-radius: 6px;
+  padding: 4px;
+  margin-left: 8px;
+  cursor: pointer;
+  filter: invert(1);
+  opacity: 0.8;
+  transition: all 0.2s ease;
+}
+
+.month-picker-modern:hover::-webkit-calendar-picker-indicator {
+  opacity: 1;
+  transform: scale(1.1);
+}
+
+/* Styles pour Firefox */
+.month-picker-modern::-moz-calendar-picker-indicator {
+  background: linear-gradient(135deg, #3b82f6, #6366f1);
+  border-radius: 6px;
+  padding: 4px;
+  cursor: pointer;
+  opacity: 0.8;
+  transition: all 0.2s ease;
+}
+
+.month-picker-modern:hover::-moz-calendar-picker-indicator {
+  opacity: 1;
+  transform: scale(1.1);
+}
+
+/* Override des styles système pour le popup du calendrier */
+@supports selector(::-webkit-calendar-picker-indicator) {
+  /* Styles pour le popup calendrier sur WebKit */
+  .month-picker-modern::-webkit-datetime-edit {
+    padding: 4px 8px;
+    border-radius: 8px;
+  }
+  
+  .month-picker-modern::-webkit-datetime-edit-fields-wrapper {
+    background: transparent;
+  }
+  
+  .month-picker-modern::-webkit-datetime-edit-month-field,
+  .month-picker-modern::-webkit-datetime-edit-year-field {
+    color: #1e293b;
+    font-weight: 600;
+  }
+  
+  .month-picker-modern::-webkit-datetime-edit-month-field:hover,
+  .month-picker-modern::-webkit-datetime-edit-year-field:hover {
+    background: rgba(59, 130, 246, 0.1);
+    border-radius: 4px;
+  }
+}
+
+/* Amélioration générale du contraste et de l'accessibilité */
+.month-picker-modern:focus {
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+}
+
+/* Animation subtle à l'ouverture */
+.month-picker-modern:active {
+  transform: translateY(1px);
+}

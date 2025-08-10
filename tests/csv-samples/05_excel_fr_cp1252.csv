@@ -1,0 +1,11 @@
+sep=;
+date;description;montant;compte;tag
+02/01/2024;Loyer – Janvier;-950,00;Compte Courant;Logement
+05/01/2024;Électricité EDF;-72,18;Compte Courant;Logement
+06/01/2024;Crèche municipale;-180,00;Compte Courant;Éducation
+07/01/2024;Café Paul;-3,20;Carte Débit;Courses
+12/01/2024;Cinéma – Gaumont;-24,00;Carte Crédit;Loisirs
+15/01/2024;Remboursement Sécurité sociale;23,50;Compte Courant;Santé
+25/01/2024;Salaire ACME SA;2500,00;Compte Courant;Revenus
+27/01/2024;Pharmacie de l'Hôtel de Ville;-9,80;Carte Débit;Santé
+28/01/2024;Chèque cantine;-35,00;Compte Courant;Éducation

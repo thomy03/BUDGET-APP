@@ -1,0 +1,31 @@
+﻿date;description;montant;compte;tag
+25/04/2024;Salaire ACME SA;2500,00;Compte Courant;Revenus
+02/04/2024;Loyer 2024-04;-950,00;Compte Courant;Logement
+01/04/2024;Virement Livret A;-194,35;Carte Débit;Épargne
+24/04/2024;EDF;-31,86;Compte Courant;Logement
+02/04/2024;Fnac;-12,11;Carte Débit;Loisirs
+20/04/2024;Assurance Habitation;-11,71;Carte Débit;Logement
+23/04/2024;Assurance Vie;-144,53;Carte Débit;Épargne
+09/04/2024;Opticien;-6,97;Livret A;Santé
+05/04/2024;Uber;-60,97;Carte Crédit;Transport
+13/04/2024;ALDI;-29,45;Carte Crédit;Courses
+25/05/2024;Salaire ACME SA;2500,00;Compte Courant;Revenus
+02/05/2024;Loyer 2024-05;-950,00;Compte Courant;Logement
+26/05/2024;Decathlon;-16,93;Livret A;Loisirs
+13/05/2024;Netflix;-25,70;Carte Crédit;Loisirs
+28/05/2024;Assurance Vie;-97,73;Carte Débit;Épargne
+02/05/2024;Virement Livret A;-174,29;Carte Crédit;Épargne
+28/05/2024;Carrefour;-30,48;Carte Crédit;Courses
+06/05/2024;Remboursement Médecin généraliste;49,45;Carte Crédit;Santé
+21/05/2024;Assurance Vie;-23,77;Carte Débit;Épargne
+06/05/2024;Cinéma;-123,48;Carte Crédit;Loisirs
+25/06/2024;Salaire ACME SA;2500,00;Compte Courant;Revenus
+02/06/2024;Loyer 2024-06;-950,00;Compte Courant;Logement
+18/06/2024;Assurance Vie;-61,87;Carte Crédit;Épargne
+27/06/2024;Carrefour;-13,40;Livret A;Courses
+07/06/2024;Carburant Total;-150,91;Carte Crédit;Transport
+13/06/2024;Internet Orange;-169,58;Carte Débit;Logement
+08/06/2024;Abonnement Navigo;-195,71;Carte Crédit;Transport
+14/06/2024;Assurance Vie;-154,51;Carte Crédit;Épargne
+17/06/2024;EDF;-131,11;Compte Courant;Logement
+21/06/2024;Carrefour;-45,87;Livret A;Courses

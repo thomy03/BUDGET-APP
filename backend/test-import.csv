@@ -1,0 +1,4 @@
+Date,Description,Montant,Compte
+2025-01-01,Test transaction 1,12.34,CHECKING
+2025-01-02,Test transaction 2,-5.00,CHECKING
+2025-02-01,Test transaction 3,7.89,CHECKING

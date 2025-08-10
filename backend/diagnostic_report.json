@@ -1,0 +1,72 @@
+{
+  "system_info": {
+    "os": "Linux",
+    "os_version": "#1 SMP Tue Nov 5 00:21:55 UTC 2024",
+    "architecture": "64bit",
+    "python_version": "3.8.10",
+    "python_executable": "/usr/bin/python3",
+    "working_directory": "/mnt/c/Users/tkado/Documents/budget-app-starter-v2.3/backend"
+  },
+  "python_check": {
+    "app_imports": {
+      "app_windows": "OK",
+      "app": "OK"
+    }
+  },
+  "dependencies": {
+    "available": {
+      "fastapi": "Interface API web",
+      "uvicorn": "Serveur ASGI",
+      "pandas": "Manipulation données",
+      "numpy": "Calculs numériques",
+      "sqlalchemy": "ORM base de données",
+      "python_multipart": "Upload fichiers",
+      "jose": "Tokens JWT",
+      "passlib": "Hachage mots de passe",
+      "dotenv": "Variables environnement",
+      "cryptography": "Cryptographie",
+      "email_validator": "Validation emails",
+      "pydantic": "Validation données"
+    },
+    "missing": {},
+    "problematic": {
+      "magic": "Disponible mais peut causer des problèmes"
+    }
+  },
+  "database": {
+    "sqlite": "OK"
+  },
+  "csv_import": {
+    "parsing": "OK",
+    "validation": "OK"
+  },
+  "network": {
+    "ports": {
+      "8000": "Libre",
+      "3000": "Libre",
+      "45678": "Libre"
+    }
+  },
+  "recommendations": [
+    {
+      "type": "use_windows_app",
+      "message": "Utiliser app_windows.py au lieu de app.py pour éviter les problèmes Windows",
+      "command": "python start_windows.py"
+    },
+    {
+      "type": "startup_commands",
+      "commands": [
+        {
+          "step": "Démarrage application (Recommandé)",
+          "command": "python start_windows.py",
+          "description": "Démarre l'app avec version Windows optimisée"
+        },
+        {
+          "step": "Test de l'API",
+          "command": "curl http://127.0.0.1:8000/docs",
+          "description": "Ouvre la documentation interactive de l'API"
+        }
+      ]
+    }
+  ]
+}

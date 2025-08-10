@@ -1,0 +1,353 @@
+import axios, { AxiosError, AxiosResponse, InternalAxiosRequestConfig } from "axios";
+
+// Configuration de l'API
+export const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "http://127.0.0.1:8000";
+
+// Types de données de l'application
+export type ConfigOut = {
+  id: number;
+  member1: string;
+  member2: string;
+  rev1: number;
+  rev2: number;
+  split_mode: "revenus" | "manuel";
+  split1: number;
+  split2: number;
+  loan_equal: boolean;
+  loan_amount: number;
+  other_fixed_simple: boolean;
+  other_fixed_monthly: number;
+  taxe_fonciere_ann: number;
+  copro_montant: number;
+  copro_freq: "mensuelle" | "trimestrielle";
+  other_split_mode: "clé" | "50/50";
+  vac_percent: number;
+  vac_base: "2" | "1" | "2nd";
+};
+
+export type Tx = {
+  id: number;
+  date_op: string; // Date format backend
+  label: string; // Libellé
+  category: string; // Catégorie
+  category_parent: string; // Catégorie parent
+  amount: number; // Montant  
+  account_label: string; // Compte
+  tags: string[]; // Tags as array
+  month: string;
+  is_expense: boolean;
+  exclude?: boolean; // Optionnel
+  row_id: string; // Hash unique
+  import_id?: string; // ID de l'import pour traçabilité
+};
+
+export type Summary = {
+  month: string;
+  var_total: number;
+  loan_amount: number;
+  taxe_m: number;
+  copro_m: number;
+  other_fixed_total: number;
+  vac_monthly_total: number;
+  r1: number;
+  r2: number;
+  member1: string;
+  member2: string;
+  total_p1: number;
+  total_p2: number;
+  detail: Record<string, Record<string, number>>;
+};
+
+export type FixedLine = {
+  id: number;
+  label: string;
+  amount: number;
+  freq: "mensuelle" | "trimestrielle" | "annuelle";
+  split_mode: "clé" | "50/50" | "m1" | "m2" | "manuel";
+  split1: number;
+  split2: number;
+  active: boolean;
+};
+
+// Types pour le nouveau système d'import optimisé
+export type ImportMonth = {
+  month: string; // Format YYYY-MM
+  newCount: number; // Nouvelles transactions créées
+  totalCount: number; // Total dans le fichier pour ce mois
+  txIds: number[]; // IDs des nouvelles transactions (optionnel)
+  firstDate: string; // Première date du mois
+  lastDate: string; // Dernière date du mois
+};
+
+export type ImportResponse = {
+  importId: string; // UUID unique de l'import
+  months: ImportMonth[]; // Mois détectés avec métadonnées
+  suggestedMonth: string | null; // Mois recommandé pour la redirection
+  duplicatesCount: number; // Nombre de doublons ignorés
+  warnings: string[]; // Avertissements (optionnel)
+  errors: string[]; // Erreurs de parsing (optionnel)
+  processing: "done" | "processing"; // État du traitement
+  fileName: string; // Nom du fichier original
+  processingMs: number; // Temps de traitement en millisecondes
+};
+
+// Types pour les erreurs API
+export interface ApiError {
+  message: string;
+  status?: number;
+  code?: string;
+  details?: any;
+}
+
+// Déclaration pour étendre le type de config axios
+declare module "axios" {
+  interface InternalAxiosRequestConfig {
+    metadata?: {
+      startTime: Date;
+    };
+  }
+}
+
+// Créer l'instance axios
+export const api = axios.create({
+  baseURL: API_BASE,
+  timeout: 15000, // 15 secondes timeout
+  headers: {
+    "Content-Type": "application/json",
+  },
+});
+
+// Intercepteur de requête
+api.interceptors.request.use(
+  (config: InternalAxiosRequestConfig) => {
+    // Ajouter timestamp pour éviter le cache
+    config.metadata = { startTime: new Date() };
+    
+    // Assurer que le token d'authentification est présent sur chaque requête
+    if (typeof window !== "undefined" && !config.headers.Authorization) {
+      const token = localStorage.getItem("auth_token");
+      const tokenType = localStorage.getItem("token_type");
+      
+      if (token && tokenType) {
+        config.headers.Authorization = `${tokenType} ${token}`;
+        
+        // Logs spécifiques pour les requêtes d'import
+        if (process.env.NODE_ENV === "development" && config.url?.includes("/import")) {
+          console.log(`🔑 Auth header added to ${config.url}:`, config.headers.Authorization?.substring(0, 20) + "...");
+        }
+      }
+    }
+    
+    // Logs de développement
+    if (process.env.NODE_ENV === "development") {
+      console.log(`🚀 API Request: ${config.method?.toUpperCase()} ${config.url}`, {
+        hasAuth: !!config.headers.Authorization,
+        contentType: config.headers["Content-Type"]
+      });
+    }
+    
+    return config;
+  },
+  (error: AxiosError) => {
+    console.error("❌ Request error:", error);
+    return Promise.reject(error);
+  }
+);
+
+// Intercepteur de réponse
+api.interceptors.response.use(
+  (response: AxiosResponse) => {
+    // Logs de développement
+    if (process.env.NODE_ENV === "development") {
+      const duration = new Date().getTime() - (response.config.metadata?.startTime?.getTime() || 0);
+      console.log(`✅ API Response: ${response.status} ${response.config.url} (${duration}ms)`);
+    }
+    
+    return response;
+  },
+  async (error: AxiosError) => {
+    const originalRequest = error.config;
+
+    // Logs d'erreur détaillés
+    if (process.env.NODE_ENV === "development") {
+      const isImportRequest = originalRequest?.url?.includes("/import");
+      
+      if (isImportRequest) {
+        // Logs spécialement détaillés pour les requêtes d'import
+        console.error(`❌ Import API Error: ${error.response?.status} ${originalRequest?.url}`, {
+          status: error.response?.status,
+          statusText: error.response?.statusText,
+          headers: error.response?.headers,
+          data: error.response?.data,
+          config: {
+            url: originalRequest?.url,
+            method: originalRequest?.method,
+            headers: {
+              'Content-Type': originalRequest?.headers?.['Content-Type'],
+              'Authorization': originalRequest?.headers?.['Authorization'] ? 'Bearer [TOKEN]' : 'None'
+            }
+          },
+          networkError: error.code === 'ERR_NETWORK',
+          timeout: error.code === 'ECONNABORTED',
+          message: error.message
+        });
+      } else {
+        console.error(`❌ API Error: ${error.response?.status} ${originalRequest?.url}`, error.response?.data);
+      }
+    }
+
+    // Gestion des erreurs d'authentification
+    if (error.response?.status === 401) {
+      // Éviter les boucles infinies
+      if (originalRequest?.url?.includes("/token")) {
+        return Promise.reject(createApiError(error, "Identifiants incorrects"));
+      }
+
+      // Nettoyer les données d'authentification
+      localStorage.removeItem("auth_token");
+      localStorage.removeItem("token_type");
+      localStorage.removeItem("username");
+      delete api.defaults.headers.common["Authorization"];
+      
+      // Rediriger vers login seulement si on n'y est pas déjà
+      if (typeof window !== "undefined" && !window.location.pathname.includes("/login")) {
+        window.location.href = "/login";
+      }
+      
+      return Promise.reject(createApiError(error, "Session expirée. Veuillez vous reconnecter."));
+    }
+
+    // Autres erreurs HTTP
+    return Promise.reject(createApiError(error));
+  }
+);
+
+// Fonction utilitaire pour créer des erreurs API structurées
+function createApiError(axiosError: AxiosError, customMessage?: string): ApiError {
+  const status = axiosError.response?.status;
+  const data = axiosError.response?.data as any;
+  
+  let message = customMessage || "Une erreur est survenue";
+  
+  if (!customMessage) {
+    if (status === 400) {
+      message = "Données invalides";
+      
+      // Pour les erreurs 400 spécifiquement, essayer d'extraire plus d'informations
+      if (axiosError.config?.url?.includes("/import")) {
+        message = "Fichier CSV invalide";
+        
+        // Log détaillé pour les erreurs d'import 400
+        if (process.env.NODE_ENV === "development") {
+          console.error("🔍 Detailed 400 error analysis:", {
+            url: axiosError.config.url,
+            responseData: data,
+            responseType: typeof data,
+            responseKeys: data && typeof data === 'object' ? Object.keys(data) : [],
+            statusText: axiosError.response?.statusText
+          });
+        }
+      }
+    } else if (status === 403) {
+      message = "Accès refusé";
+    } else if (status === 404) {
+      message = "Ressource introuvable";
+    } else if (status === 422) {
+      message = "Données de validation incorrectes";
+    } else if (status && status >= 500) {
+      message = "Erreur serveur - Veuillez réessayer plus tard";
+    } else if (axiosError.code === "ECONNABORTED") {
+      message = "Délai de connexion dépassé";
+    } else if (axiosError.code === "ERR_NETWORK") {
+      message = "Erreur réseau - Vérifiez votre connexion";
+    }
+    
+    // Utiliser le message du serveur si disponible
+    if (data?.detail) {
+      message = data.detail;
+    } else if (data?.message) {
+      message = data.message;
+    } else if (data?.error) {
+      message = data.error;
+    }
+  }
+  
+  return {
+    message,
+    status,
+    code: axiosError.code,
+    details: data,
+  };
+}
+
+// Fonctions utilitaires pour les appels API
+export const apiUtils = {
+  // Vérifier si l'API est accessible
+  async checkHealth(): Promise<boolean> {
+    try {
+      await api.get("/health", { timeout: 5000 });
+      return true;
+    } catch {
+      return false;
+    }
+  },
+
+  // Configurer l'authentification
+  setAuthToken(token: string, tokenType: string = "Bearer") {
+    const authHeader = `${tokenType} ${token}`;
+    api.defaults.headers.common["Authorization"] = authHeader;
+    
+    // Logs de débogage en développement
+    if (process.env.NODE_ENV === "development") {
+      console.log("🔑 Auth token set globally:", authHeader.substring(0, 20) + "...");
+    }
+  },
+
+  // Supprimer l'authentification
+  clearAuthToken() {
+    delete api.defaults.headers.common["Authorization"];
+    
+    // Logs de débogage en développement
+    if (process.env.NODE_ENV === "development") {
+      console.log("🔑 Auth token cleared");
+    }
+  },
+
+  // Vérifier si le token d'authentification est configuré
+  hasAuthToken(): boolean {
+    return !!api.defaults.headers.common["Authorization"];
+  },
+
+  // Obtenir le token actuel (pour débogage)
+  getCurrentAuthHeader(): string | undefined {
+    return api.defaults.headers.common["Authorization"] as string | undefined;
+  },
+
+  // Retry d'une requête avec backoff exponentiel
+  async retryRequest<T>(requestFn: () => Promise<T>, maxRetries: number = 3): Promise<T> {
+    let lastError: any;
+    
+    for (let i = 0; i < maxRetries; i++) {
+      try {
+        return await requestFn();
+      } catch (error) {
+        lastError = error;
+        
+        // Ne pas retry sur les erreurs d'auth ou de validation
+        if (error instanceof AxiosError && error.response) {
+          const status = error.response.status;
+          if (status === 401 || status === 403 || status === 422) {
+            throw error;
+          }
+        }
+        
+        // Attendre avant de retry (backoff exponentiel)
+        if (i < maxRetries - 1) {
+          await new Promise(resolve => setTimeout(resolve, Math.pow(2, i) * 1000));
+        }
+      }
+    }
+    
+    throw lastError;
+  },
+};

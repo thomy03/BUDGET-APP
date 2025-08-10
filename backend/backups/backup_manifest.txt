@@ -1,0 +1,10 @@
+# Budget Famille v2.3 - Backup Manifest
+# Generated: Sun Aug 10 16:33:22 CEST 2025
+# 
+# Directory Structure:
+# /backups/daily/        - Daily automated backups (7-day retention)
+# /backups/weekly/       - Weekly backups (4-week retention)
+# /backups/manual/       - Manual backups (moved from root directory)
+# /backups/pre-migration/- Pre-migration safety backups
+
+# Existing Backups Moved:

@@ -1,0 +1,57 @@
+============================================
+BUDGET FAMILLE v2.3 - INSTRUCTIONS DEMARRAGE
+============================================
+
+OPTION 1: SCRIPT AUTOMATIQUE (.bat)
+====================================
+1. Double-cliquer sur "START_SIMPLE.bat"
+2. Suivre les instructions à l'écran
+3. Aller sur http://localhost:45678
+4. Se connecter avec admin / secret
+
+OPTION 2: DEMARRAGE MANUEL
+==========================
+
+ETAPE 1: BACKEND
+----------------
+1. Ouvrir PowerShell ou Command Prompt
+2. cd C:\Users\tkado\Documents\budget-app-starter-v2.3\backend
+3. python -m venv .venv
+4. .venv\Scripts\activate
+5. pip install -r requirements.txt
+6. python -m uvicorn app:app --reload --host 127.0.0.1 --port 8000
+
+ETAPE 2: FRONTEND (Nouveau terminal)
+-----------------------------------
+1. Ouvrir un NOUVEAU PowerShell/Command Prompt
+2. cd C:\Users\tkado\Documents\budget-app-starter-v2.3\frontend
+3. npm install
+4. set NEXT_PUBLIC_API_BASE=http://127.0.0.1:8000
+5. npm run dev
+
+ETAPE 3: TEST
+-------------
+1. Aller sur http://localhost:45678
+2. Se connecter: admin / secret
+3. Aller sur Upload
+4. Importer le fichier "test-navigation.csv"
+5. VERIFIER: Tu dois être automatiquement redirigé vers janvier 2024
+
+PROBLEMES FREQUENTS:
+===================
+- "python n'est pas reconnu" → Installer Python 3.8+
+- "npm n'est pas reconnu" → Installer Node.js 18+
+- "Script non signé" → Set-ExecutionPolicy RemoteSigned
+- Port 8000 occupé → Changer le port ou redémarrer
+
+IDENTIFIANTS:
+=============
+Utilisateur: admin
+Mot de passe: secret
+
+FICHIER DE TEST:
+===============
+test-navigation.csv (dans le dossier racine)
+- 5 transactions
+- 2 mois (janvier et février 2024)
+- Parfait pour tester la navigation automatique

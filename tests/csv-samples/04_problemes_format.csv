@@ -1,0 +1,16 @@
+date;description;montant;compte;tag
+01/01/2024;Loyer Janvier;-950,00;Compte Courant;Logement
+05/01/2024;ALDI;-54.32;Carte Débit;Courses
+10/01/2024;Pharmacie du Centre;-12,3O;Carte Débit;Santé
+15/01/2024;Remboursement Sécu;23,50;;Santé
+20/01/2024;Restaurant Chez Léa;-42,00;Carte Crédit
+25/01/2024;Salaire ACME SA;2 500,00;Compte Courant;Revenus
+31/01/2024;Internet Orange Fibre;-39,99;Compte Courant;Logement
+31/02/2024;Test Date Invalide;-10,00;Compte Courant;Divers
+2024-03-05;Eau de Paris;-28,50;Compte Courant;Logement
+07/03/2024;"Pharmacie; du Centre";-9,80;Carte Débit;Santé
+10/03/2024;Abonnement Navigo;-75,20;Compte Courant;Transport
+15/03/2024;;;;
+18/03/2024;Mutuelle Santé;-45,90;Compte Courant;Santé
+20/03/2024;Epargne Livret A;-100,00;Compte Courant;Épargne;EXTRA
+22/03/2024; "Monoprix" ; -76,80 ; Carte Débit ; Courses

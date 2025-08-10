@@ -1,0 +1,25 @@
+date;description;montant;compte;tag
+02/01/2024;Loyer Janvier;-950,00;Compte Courant;Logement
+04/01/2024;Internet Orange Fibre;-39,99;Compte Courant;Logement
+06/01/2024;Carrefour;-82,45;Carte Débit;Courses
+08/01/2024;Carburant Total;-64,30;Carte Débit;Transport
+12/01/2024;Mutuelle Santé;-45,90;Compte Courant;Santé
+15/01/2024;Remboursement Sécu;18,70;Compte Courant;Santé
+20/01/2024;Pharmacie Centrale;-9,80;Carte Débit;Santé
+25/01/2024;Salaire ACME SA;2500,00;Compte Courant;Revenus
+02/02/2024;Loyer Février;-950,00;Compte Courant;Logement
+05/02/2024;EDF Facture 0224;-68,10;Compte Courant;Logement
+07/02/2024;ALDI;-57,25;Carte Débit;Courses
+10/02/2024;Carburant Total;-70,00;Carte Débit;Transport
+12/02/2024;Mutuelle Santé;-45,90;Compte Courant;Santé
+15/02/2024;Transfert vers Livret A;-200,00;Compte Courant;Épargne
+15/02/2024;Transfert depuis CC;200,00;Livret A;Épargne
+25/02/2024;Salaire ACME SA;2500,00;Compte Courant;Revenus
+02/03/2024;Loyer Mars;-950,00;Compte Courant;Logement
+04/03/2024;Internet Orange Fibre;-39,99;Compte Courant;Logement
+06/03/2024;Monoprix;-86,10;Carte Débit;Courses
+09/03/2024;Carburant Total;-66,40;Carte Débit;Transport
+12/03/2024;Mutuelle Santé;-45,90;Compte Courant;Santé
+15/03/2024;Remboursement Sécu;22,10;Compte Courant;Santé
+18/03/2024;Impôts - acompte;-200,00;Compte Courant;Impôts
+25/03/2024;Salaire ACME SA;2500,00;Compte Courant;Revenus

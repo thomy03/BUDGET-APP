@@ -1,0 +1,49 @@
+INSTRUCTIONS MANUELLES - BUDGET FAMILLE v2.3
+==============================================
+
+Si les scripts automatiques ne fonctionnent pas, voici les étapes manuelles :
+
+ÉTAPE 1: OUVRIR DEUX INVITES DE COMMANDE
+-----------------------------------------
+1. Appuyez sur Windows + R
+2. Tapez "cmd" et appuyez sur Entrée
+3. Répétez pour avoir 2 fenêtres CMD ouvertes
+
+ÉTAPE 2: DÉMARRER LE BACKEND (Fenêtre CMD #1)
+---------------------------------------------
+cd "C:\Users\tkado\OneDrive\Documents\fichiers perso\fichier thomas et iana\budget-app-starter-v2.3\backend"
+python -m venv .venv
+.venv\Scripts\activate.bat
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
+python -m uvicorn app:app --host 127.0.0.1 --port 8000 --reload
+
+ÉTAPE 3: DÉMARRER LE FRONTEND (Fenêtre CMD #2)  
+----------------------------------------------
+cd "C:\Users\tkado\OneDrive\Documents\fichiers perso\fichier thomas et iana\budget-app-starter-v2.3\frontend"
+npm install
+set NEXT_PUBLIC_API_BASE=http://127.0.0.1:8000
+npm run dev
+
+ÉTAPE 4: OUVRIR L'APPLICATION
+-----------------------------
+Ouvrir dans le navigateur : http://localhost:45678
+Se connecter avec : admin / secret
+
+PROBLÈMES FRÉQUENTS:
+-------------------
+- Si "python" ne marche pas, essayez "py" à la place
+- Si "npm" ne marche pas, installez Node.js depuis nodejs.org
+- Si port 45678 occupé, le frontend choisira automatiquement un autre port
+- Laissez les 2 fenêtres CMD ouvertes pendant tous les tests
+
+IDENTIFIANTS:
+-------------
+Utilisateur: admin
+Mot de passe: secret
+
+URLS:
+-----
+Frontend: http://localhost:45678
+Backend API: http://127.0.0.1:8000  
+Documentation: http://127.0.0.1:8000/docs
