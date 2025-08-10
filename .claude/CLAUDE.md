@@ -90,3 +90,29 @@ npm run build
 - **Revenue-based or manual split calculations** between two members
 - **Global shared month state** across application
 - **Analytics** with category breakdowns and trends
+
+## ⚠️ PROBLÈME CONNU - WSL + NEXT.JS
+
+### **Environnement affecté**: Ubuntu WSL2 + Next.js 14.2.31
+**Symptômes**:
+- Next.js démarre ("Starting...") puis se ferme silencieusement
+- Build échoue avec `SIGBUS` (erreur mémoire WSL)
+- Hot reload non fonctionnel
+
+**Impact**: 
+- ✅ **Backend 100% opérationnel** (FastAPI)
+- ❌ **Frontend développement bloqué** (Next.js)
+- ✅ **API utilisable** via Swagger UI (http://127.0.0.1:8001/docs)
+
+**Solutions testées**:
+- ❌ Cache clearing (.next, node_modules)
+- ❌ Différents ports (3000, 4500, 45678)
+- ❌ Variables d'environnement NODE_OPTIONS
+- ❌ Build production (npm run build)
+
+**Solutions recommandées pour prochaine session**:
+1. **Docker** au lieu de WSL direct
+2. **Linux natif** (Ubuntu VM)
+3. **Downgrade Next.js** vers version LTS 13.x
+4. **Windows natif** avec PowerShell
+5. **Alternative**: Vite.js au lieu de Next.js
