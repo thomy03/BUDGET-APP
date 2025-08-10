@@ -1,0 +1,23 @@
+# Development Dockerfile pour Next.js
+FROM node:18-alpine
+
+# Set working directory
+WORKDIR /app
+
+# Install dependencies
+RUN apk add --no-cache libc6-compat
+
+# Copy package files
+COPY package*.json ./
+
+# Install dependencies including devDependencies
+RUN npm install
+
+# Copy application code
+COPY . .
+
+# Expose port
+EXPOSE 45678
+
+# Start development server
+CMD ["npm", "run", "dev"]

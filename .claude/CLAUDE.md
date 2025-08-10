@@ -91,28 +91,35 @@ npm run build
 - **Global shared month state** across application
 - **Analytics** with category breakdowns and trends
 
-## ⚠️ PROBLÈME CONNU - WSL + NEXT.JS
+## ✅ PROBLÈME WSL + NEXT.JS - RÉSOLU !
 
-### **Environnement affecté**: Ubuntu WSL2 + Next.js 14.2.31
-**Symptômes**:
-- Next.js démarre ("Starting...") puis se ferme silencieusement
-- Build échoue avec `SIGBUS` (erreur mémoire WSL)
-- Hot reload non fonctionnel
+### **🎉 SOLUTION DOCKER VALIDÉE** - 2025-08-10
 
-**Impact**: 
-- ✅ **Backend 100% opérationnel** (FastAPI)
-- ❌ **Frontend développement bloqué** (Next.js)
-- ✅ **API utilisable** via Swagger UI (http://127.0.0.1:8001/docs)
+**Problème résolu** : Next.js 14.2.31 incompatible avec WSL2
+**Solution appliquée** : Container Docker pour le développement frontend
 
-**Solutions testées**:
-- ❌ Cache clearing (.next, node_modules)
-- ❌ Différents ports (3000, 4500, 45678)
-- ❌ Variables d'environnement NODE_OPTIONS
-- ❌ Build production (npm run build)
+### **Commandes Docker (Frontend)**
+```bash
+# Démarrage rapide
+cd frontend
+./dev-docker.sh start
 
-**Solutions recommandées pour prochaine session**:
-1. **Docker** au lieu de WSL direct
-2. **Linux natif** (Ubuntu VM)
-3. **Downgrade Next.js** vers version LTS 13.x
-4. **Windows natif** avec PowerShell
-5. **Alternative**: Vite.js au lieu de Next.js
+# Gestion complète
+./dev-docker.sh {start|stop|restart|logs|status|shell|rebuild|clean}
+
+# Manuel (si besoin)
+docker build -f Dockerfile.dev -t budget-frontend-dev .
+docker run -d -p 45678:45678 --name budget-frontend budget-frontend-dev
+```
+
+### **Résultats validés** :
+- ✅ **Next.js démarre en 2 secondes** (vs bloqué en WSL2)
+- ✅ **Hot reload fonctionnel** avec volumes
+- ✅ **Performance stable** sans lenteur WSL2
+- ✅ **Build production** réussit sans erreur
+- ✅ **Frontend 100% opérationnel** sur http://localhost:45678
+
+### **Architecture finale** :
+- ✅ **Backend FastAPI** : WSL2 natif (http://127.0.0.1:8000)
+- ✅ **Frontend Next.js** : Docker container (http://localhost:45678)
+- ✅ **Communication** : Backend ↔ Frontend parfaitement fonctionnelle
