@@ -73,7 +73,7 @@ function useImportPhases() {
   });
   
   const [currentPhase, setCurrentPhase] = useState<ImportPhase>('upload');
-  const rafRef = useRef<number>();
+  const rafRef = useRef<number | undefined>(undefined);
   
   const setPhase = useCallback((phase: ImportPhase, data: Partial<PhaseState>) => {
     setPhases(prev => ({ 

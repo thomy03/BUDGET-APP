@@ -75,4 +75,12 @@ declare global {
   }
 }
 
+// CSS and other asset declarations for Next.js
+declare module '*.css';
+declare module '*.scss';
+
+// Specific styles for this app - local imports
+declare module './globals.css';
+declare module './calendar-modern.css';
+
 export {};

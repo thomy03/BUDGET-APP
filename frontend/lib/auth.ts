@@ -193,7 +193,11 @@ class AuthService {
         return true;
       }
       
-      const payload = JSON.parse(atob(token.split('.')[1]));
+      const tokenParts = token.split('.');
+      if (tokenParts.length !== 3 || !tokenParts[1]) {
+        return true;
+      }
+      const payload = JSON.parse(atob(tokenParts[1]));
       const currentTime = Date.now() / 1000;
       
       // Ajouter une marge de 5 minutes pour éviter les expirations de dernière minute
@@ -251,7 +255,9 @@ export function useAuth() {
       setAuthState(authService.getAuthState());
     });
 
-    return unsubscribe;
+    return () => {
+      unsubscribe();
+    };
   }, [authService]);
 
   return {
