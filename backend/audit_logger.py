@@ -26,6 +26,7 @@ class AuditEventType(Enum):
     DATA_ACCESS = "DATA_ACCESS"
     SECURITY_VIOLATION = "SECURITY_VIOLATION"
     DATABASE_MIGRATION = "DATABASE_MIGRATION"
+    ANALYTICS_ACCESS = "ANALYTICS_ACCESS"
 
 class AuditLogger:
     def __init__(self):

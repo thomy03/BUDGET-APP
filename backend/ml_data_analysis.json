@@ -1,0 +1,803 @@
+{
+  "dataset_info": {
+    "total_transactions": 263,
+    "date_range": {
+      "min_date": "2024-01-01",
+      "max_date": "2026-01-01"
+    },
+    "accounts": {
+      "BoursoBank (joint)": 176,
+      "Compte Courant": 40,
+      "CHECKING": 14,
+      "Carte Débit": 13,
+      "Compte Test E2E": 5,
+      "Compte Principal": 5,
+      "Test Account": 4,
+      "Compte Test": 3,
+      "SAVINGS": 2,
+      "Livret A": 1
+    }
+  },
+  "label_analysis": {
+    "stats": {
+      "total_labels": 263,
+      "unique_labels": 221,
+      "avg_length": 28.61596958174905,
+      "max_length": "40",
+      "empty_labels": "0"
+    },
+    "patterns": {
+      "cb_codes": 141,
+      "date_patterns": 142,
+      "top_words": [
+        [
+          "CARTE",
+          104
+        ],
+        [
+          "8533",
+          88
+        ],
+        [
+          "8935",
+          53
+        ],
+        [
+          "AVOIR",
+          36
+        ],
+        [
+          "VIR",
+          20
+        ],
+        [
+          "TEMU",
+          16
+        ],
+        [
+          "TEST",
+          16
+        ],
+        [
+          "SEPA",
+          15
+        ],
+        [
+          "AMAZON",
+          15
+        ],
+        [
+          "PRLV",
+          14
+        ],
+        [
+          "TOTAL",
+          14
+        ],
+        [
+          "EUR",
+          14
+        ],
+        [
+          "LECLERC",
+          12
+        ],
+        [
+          "AMZN",
+          12
+        ],
+        [
+          "MKTP",
+          12
+        ],
+        [
+          "PHARMACIE",
+          7
+        ],
+        [
+          "VIREMENT",
+          7
+        ],
+        [
+          "DEPUIS",
+          7
+        ],
+        [
+          "TRANSACTION",
+          7
+        ],
+        [
+          "SARL",
+          6
+        ]
+      ]
+    }
+  },
+  "category_analysis": {
+    "category_distribution": {
+      "Alimentation": 42,
+      "": 38,
+      "Livres, CD/DVD, bijoux, jouets…": 36,
+      "Restaurants, bars, discothèques…": 22,
+      "Vie Quotidienne - Autres": 20,
+      "Non catégorisé": 9,
+      "Virements reçus de comptes à comptes": 7,
+      "Carburant": 7,
+      "Urssaf et charges patronales": 6,
+      "Transport": 6,
+      "Virements reçus": 5,
+      "Pharmacie et laboratoire": 4,
+      "Revenus": 4,
+      "Virements émis de comptes à comptes": 4,
+      "Péages": 3,
+      "Test": 3,
+      "Santé": 3,
+      "Logement": 3,
+      "Assurances (Auto/Moto)": 3,
+      "Restaurant": 2,
+      "Télécom": 2,
+      "Vêtements et accessoires": 2,
+      "Income": 2,
+      "Parking": 2,
+      "Hébergement (hôtels, camping…)": 2,
+      "Agences de voyages": 2,
+      "Médecins et frais médicaux": 1,
+      "Test Category 2": 1,
+      "Animaux domestiques": 1,
+      "Café": 1,
+      "Shopping": 1,
+      "Liquide": 1,
+      "Charges": 1,
+      "Sorties": 1,
+      "Remboursement": 1,
+      "Courses": 1,
+      "Salaire": 1,
+      "Énergie": 1,
+      "Test Category": 1,
+      "Impôts & Taxes": 1,
+      "Mobilier, électroménager, décoration…": 1,
+      "Energie (électricité, gaz, fuel, chauffage…)": 1,
+      "Retraits cash": 1,
+      "Complémentaires santé": 1,
+      "Epargne financière (retraite, prévoyance, PEA, assurance-vie…)": 1,
+      "Emprunts (hors immobilier) - Autres": 1,
+      "Loyers, Charges": 1,
+      "Frais bancaires et de gestion (dont agios)": 1,
+      "Multimedia à domicile (TV, internet, téléphonie…)": 1,
+      "Téléphonie (fixe et mobile)": 1
+    },
+    "parent_category_distribution": {
+      "Vie quotidienne": 90,
+      "": 54,
+      "Dépenses": 24,
+      "Loisirs et sorties": 22,
+      "Auto & Moto": 14,
+      "Non catégorisé": 9,
+      "Impôts & Taxes": 7,
+      "Mouvements internes créditeurs": 7,
+      "Santé": 6,
+      "Virements reçus": 5,
+      "Mouvements internes débiteurs": 4,
+      "Revenus": 4,
+      "Voyages & Transports": 4,
+      "Abonnements & téléphonie": 2,
+      "Logement": 2,
+      "Alimentation": 2,
+      "Retraits cash": 1,
+      "Services financiers & professionnels": 1,
+      "Emprunts (hors immobilier)": 1,
+      "Dépenses d'épargne": 1,
+      "Test Parent": 1,
+      "Test Parent 2": 1,
+      "Transport": 1
+    },
+    "missing_categories_count": 47,
+    "missing_percentage": 17.870722433460077
+  },
+  "tag_analysis": {
+    "tagged_count": 2,
+    "tagged_percentage": 0.7604562737642585,
+    "tag_distribution": [
+      [
+        "resto",
+        1
+      ],
+      [
+        "salaire",
+        1
+      ]
+    ],
+    "samples": [
+      {
+        "label": "CARTE 30/07/25 paradis d asie 4 CB*8533",
+        "tags": "resto",
+        "category": "Restaurants, bars, discothèques…"
+      },
+      {
+        "label": "Salaire ACME SA",
+        "tags": "salaire",
+        "category": ""
+      }
+    ]
+  },
+  "merchant_patterns": {
+    "carte_patterns": [
+      [
+        "TOTAL 4",
+        5
+      ],
+      [
+        "FLOWBIRD LR 2",
+        4
+      ],
+      [
+        "DELIVEROO",
+        4
+      ],
+      [
+        "ISLAND POKE",
+        3
+      ],
+      [
+        "ALIEXPRESS",
+        3
+      ],
+      [
+        "MONOPRIX 4",
+        2
+      ],
+      [
+        "MONTAGNE SARL",
+        2
+      ],
+      [
+        "NATURALIA 4",
+        2
+      ],
+      [
+        "EASYPARK SARL",
+        2
+      ],
+      [
+        "FLO GOURMANDISE 4",
+        2
+      ]
+    ],
+    "virement_patterns": [
+      [
+        "VIR INST MLE IANA JYLENKOVA",
+        4
+      ],
+      [
+        "VIR Virement interne depuis BoursoBank",
+        3
+      ],
+      [
+        "VIR virt vacances la Rochelle",
+        1
+      ],
+      [
+        "VIR Delivroo Diana",
+        1
+      ],
+      [
+        "VIR Prime naissance mutuelle",
+        1
+      ],
+      [
+        "VIR Vacances ete 2025",
+        1
+      ],
+      [
+        "VIR Delivroo",
+        1
+      ],
+      [
+        "VIR VIRT charges copro 3e trim",
+        1
+      ],
+      [
+        "VIR VIRT diana copro, vacances, taxes",
+        1
+      ],
+      [
+        "VIR Supplement charges thomas taxes, bb",
+        1
+      ]
+    ],
+    "prelevement_patterns": [
+      [
+        "PRLV SEPA URSSAF RHONE-ALPES Avance imme",
+        6
+      ],
+      [
+        "PRLV SEPA EDF clients particuliers",
+        1
+      ],
+      [
+        "PRLV SEPA SA JEAN CHARPENTIER SOPAGI",
+        1
+      ],
+      [
+        "PRLV SEPA BOUYGUES TELECOM",
+        1
+      ],
+      [
+        "PRLV SEPA SAS MULTI IMPACT",
+        1
+      ],
+      [
+        "PRLV SEPA LINK FINANCIAL SAS",
+        1
+      ],
+      [
+        "PRLV SEPA ABEILLE IARD SANTE-ABEILLE IAR",
+        1
+      ],
+      [
+        "PRLV SEPA MATMUT ROUEN",
+        1
+      ],
+      [
+        "PRLV SEPA BNP Paribas Personal Finance",
+        1
+      ]
+    ],
+    "merchant_names": []
+  },
+  "ml_sample": {
+    "sample_data": [
+      {
+        "label": "CARTE 07/07/25 v et dc 4 CB*8533",
+        "category": "Non catégorisé",
+        "category_parent": "Non catégorisé",
+        "amount": -12.8,
+        "is_expense": 1,
+        "tags": "",
+        "account_label": "BoursoBank (joint)"
+      },
+      {
+        "label": "AVOIR 07/07/25 Temu 2,85 EUR CB*8935",
+        "category": "Vie Quotidienne - Autres",
+        "category_parent": "Vie quotidienne",
+        "amount": 2.85,
+        "is_expense": 0,
+        "tags": "",
+        "account_label": "BoursoBank (joint)"
+      },
+      {
+        "label": "Carburant Total",
+        "category": "",
+        "category_parent": "",
+        "amount": -66.4,
+        "is_expense": 1,
+        "tags": "",
+        "account_label": "Carte Débit"
+      },
+      {
+        "label": "Test income",
+        "category": "Revenus",
+        "category_parent": "",
+        "amount": 2000.0,
+        "is_expense": 0,
+        "tags": "",
+        "account_label": "CHECKING"
+      },
+      {
+        "label": "AVOIR 15/07/25 Amazon.fr CB*8533",
+        "category": "Livres, CD/DVD, bijoux, jouets…",
+        "category_parent": "Vie quotidienne",
+        "amount": 49.99,
+        "is_expense": 0,
+        "tags": "",
+        "account_label": "BoursoBank (joint)"
+      },
+      {
+        "label": "Monoprix",
+        "category": "",
+        "category_parent": "",
+        "amount": -86.1,
+        "is_expense": 1,
+        "tags": "",
+        "account_label": "Carte Débit"
+      },
+      {
+        "label": "Test Transaction 1",
+        "category": "Alimentation",
+        "category_parent": "Dépenses",
+        "amount": -50.0,
+        "is_expense": 1,
+        "tags": "",
+        "account_label": "Compte Test"
+      },
+      {
+        "label": "ATM Withdrawal",
+        "category": "Liquide",
+        "category_parent": "",
+        "amount": -100.0,
+        "is_expense": 1,
+        "tags": "",
+        "account_label": "CHECKING"
+      },
+      {
+        "label": "VIR virt vacances la Rochelle",
+        "category": "Agences de voyages",
+        "category_parent": "Voyages & Transports",
+        "amount": 657.0,
+        "is_expense": 0,
+        "tags": "",
+        "account_label": "BoursoBank (joint)"
+      },
+      {
+        "label": "AVOIR 09/07/25 AMZN Mktp FR 18,7 CB*8533",
+        "category": "Livres, CD/DVD, bijoux, jouets…",
+        "category_parent": "Vie quotidienne",
+        "amount": 18.71,
+        "is_expense": 0,
+        "tags": "",
+        "account_label": "BoursoBank (joint)"
+      },
+      {
+        "label": "CARTE 24/07/25 ERNEST GLACIER CB*8533",
+        "category": "Restaurants, bars, discothèques…",
+        "category_parent": "Loisirs et sorties",
+        "amount": -9.8,
+        "is_expense": 1,
+        "tags": "",
+        "account_label": "BoursoBank (joint)"
+      },
+      {
+        "label": "AVOIR 02/07/25 ALIEXPRESS.COM 19 CB*8935",
+        "category": "Livres, CD/DVD, bijoux, jouets…",
+        "category_parent": "Vie quotidienne",
+        "amount": 199.17,
+        "is_expense": 0,
+        "tags": "",
+        "account_label": "BoursoBank (joint)"
+      },
+      {
+        "label": "AVOIR 18/07/25 AMZN Mktp FR 32,3 CB*8533",
+        "category": "Livres, CD/DVD, bijoux, jouets…",
+        "category_parent": "Vie quotidienne",
+        "amount": 32.39,
+        "is_expense": 0,
+        "tags": "",
+        "account_label": "BoursoBank (joint)"
+      },
+      {
+        "label": "Future transaction",
+        "category": "Test",
+        "category_parent": "",
+        "amount": -100.0,
+        "is_expense": 1,
+        "tags": "",
+        "account_label": "CHECKING"
+      },
+      {
+        "label": "Essence Total E2E Test",
+        "category": "Transport",
+        "category_parent": "Dépenses",
+        "amount": -78.9,
+        "is_expense": 1,
+        "tags": "",
+        "account_label": "Compte Test E2E"
+      },
+      {
+        "label": "Electric Bill",
+        "category": "Charges",
+        "category_parent": "",
+        "amount": -120.0,
+        "is_expense": 1,
+        "tags": "",
+        "account_label": "CHECKING"
+      },
+      {
+        "label": "CARTE 11/07/25 PERSPECTIVE BIO- CB*8533",
+        "category": "Alimentation",
+        "category_parent": "Vie quotidienne",
+        "amount": -58.4,
+        "is_expense": 1,
+        "tags": "",
+        "account_label": "BoursoBank (joint)"
+      },
+      {
+        "label": "CARTE 29/07/25 NATURALIA 4 CB*8533",
+        "category": "Alimentation",
+        "category_parent": "Vie quotidienne",
+        "amount": -34.11,
+        "is_expense": 1,
+        "tags": "",
+        "account_label": "BoursoBank (joint)"
+      },
+      {
+        "label": "Pharmacie Centrale",
+        "category": "",
+        "category_parent": "",
+        "amount": -9.8,
+        "is_expense": 1,
+        "tags": "",
+        "account_label": "Carte Débit"
+      },
+      {
+        "label": "CARTE 15/07/25 Amazon.fr*RY4R38O CB*8533",
+        "category": "Livres, CD/DVD, bijoux, jouets…",
+        "category_parent": "Vie quotidienne",
+        "amount": -53.99,
+        "is_expense": 1,
+        "tags": "",
+        "account_label": "BoursoBank (joint)"
+      },
+      {
+        "label": "CARTE 04/07/25 PICARD 0022 2 CB*8533",
+        "category": "Alimentation",
+        "category_parent": "Vie quotidienne",
+        "amount": -14.75,
+        "is_expense": 1,
+        "tags": "",
+        "account_label": "BoursoBank (joint)"
+      },
+      {
+        "label": "CARTE 04/07/25 AUCHAN SUPERMAR 4 CB*8533",
+        "category": "Alimentation",
+        "category_parent": "Vie quotidienne",
+        "amount": -20.0,
+        "is_expense": 1,
+        "tags": "",
+        "account_label": "BoursoBank (joint)"
+      },
+      {
+        "label": "CARTE 26/07/25 PHIE DU PALAIS 2 CB*8935",
+        "category": "Pharmacie et laboratoire",
+        "category_parent": "Santé",
+        "amount": -14.9,
+        "is_expense": 1,
+        "tags": "",
+        "account_label": "BoursoBank (joint)"
+      },
+      {
+        "label": "Remboursement Sécu",
+        "category": "",
+        "category_parent": "",
+        "amount": 18.7,
+        "is_expense": 0,
+        "tags": "",
+        "account_label": "Compte Courant"
+      },
+      {
+        "label": "CARTE 08/07/25 Amazon.fr*RC37F4P CB*8533",
+        "category": "Livres, CD/DVD, bijoux, jouets…",
+        "category_parent": "Vie quotidienne",
+        "amount": -7.5,
+        "is_expense": 1,
+        "tags": "",
+        "account_label": "BoursoBank (joint)"
+      },
+      {
+        "label": "CARTE 03/07/25 Temu CB*8935",
+        "category": "Vie Quotidienne - Autres",
+        "category_parent": "Vie quotidienne",
+        "amount": -35.79,
+        "is_expense": 1,
+        "tags": "",
+        "account_label": "BoursoBank (joint)"
+      },
+      {
+        "label": "CARTE 11/07/25 PICARD 0022 2 CB*8533",
+        "category": "Alimentation",
+        "category_parent": "Vie quotidienne",
+        "amount": -8.59,
+        "is_expense": 1,
+        "tags": "",
+        "account_label": "BoursoBank (joint)"
+      },
+      {
+        "label": "RETRAIT DAB 12/07/25 SAINT MAUR CB*8935",
+        "category": "Retraits cash",
+        "category_parent": "Retraits cash",
+        "amount": -40.0,
+        "is_expense": 1,
+        "tags": "",
+        "account_label": "BoursoBank (joint)"
+      },
+      {
+        "label": "Courses Leclerc",
+        "category": "Alimentation",
+        "category_parent": "Dépenses",
+        "amount": -45.67,
+        "is_expense": 1,
+        "tags": "",
+        "account_label": "Compte Courant"
+      },
+      {
+        "label": "CARTE 26/07/25 EILA 4 CB*8533",
+        "category": "Vie Quotidienne - Autres",
+        "category_parent": "Vie quotidienne",
+        "amount": -80.3,
+        "is_expense": 1,
+        "tags": "",
+        "account_label": "BoursoBank (joint)"
+      },
+      {
+        "label": "CARTE 23/07/25 COFIROUTE 4 CB*8533",
+        "category": "Péages",
+        "category_parent": "Auto & Moto",
+        "amount": -25.9,
+        "is_expense": 1,
+        "tags": "",
+        "account_label": "BoursoBank (joint)"
+      },
+      {
+        "label": "CARTE 30/06/25 AMZN Mktp FR*DH1C CB*8533",
+        "category": "Livres, CD/DVD, bijoux, jouets…",
+        "category_parent": "Vie quotidienne",
+        "amount": -9.0,
+        "is_expense": 1,
+        "tags": "",
+        "account_label": "BoursoBank (joint)"
+      },
+      {
+        "label": "ALDI",
+        "category": "",
+        "category_parent": "",
+        "amount": -54.32,
+        "is_expense": 1,
+        "tags": "",
+        "account_label": "Carte Débit"
+      },
+      {
+        "label": "CARTE 30/06/25 PHARMACIE FOCH 2 CB*8935",
+        "category": "Pharmacie et laboratoire",
+        "category_parent": "Santé",
+        "amount": -3.53,
+        "is_expense": 1,
+        "tags": "",
+        "account_label": "BoursoBank (joint)"
+      },
+      {
+        "label": "CARTE 23/07/25 BEST WESTERN CB*8533",
+        "category": "Hébergement (hôtels, camping…)",
+        "category_parent": "Voyages & Transports",
+        "amount": -3.52,
+        "is_expense": 1,
+        "tags": "",
+        "account_label": "BoursoBank (joint)"
+      },
+      {
+        "label": "VIR Virement interne depuis BoursoBank",
+        "category": "Virements émis de comptes à comptes",
+        "category_parent": "Mouvements internes débiteurs",
+        "amount": -48.0,
+        "is_expense": 1,
+        "tags": "",
+        "account_label": "BoursoBank (joint)"
+      },
+      {
+        "label": "CARTE 11/07/25 OPENAI *CHATGPT S CB*8533",
+        "category": "Non catégorisé",
+        "category_parent": "Non catégorisé",
+        "amount": -20.58,
+        "is_expense": 1,
+        "tags": "",
+        "account_label": "BoursoBank (joint)"
+      },
+      {
+        "label": "Abonnement Navigo",
+        "category": "",
+        "category_parent": "",
+        "amount": -75.2,
+        "is_expense": 1,
+        "tags": "",
+        "account_label": "Compte Courant"
+      },
+      {
+        "label": "Remboursement Sécurité Sociale",
+        "category": "Remboursement",
+        "category_parent": "Revenus",
+        "amount": 45.8,
+        "is_expense": 0,
+        "tags": "",
+        "account_label": "Compte Principal"
+      },
+      {
+        "label": "CARTE 28/07/25 L EPI DE BLE 03 CB*8533",
+        "category": "Restaurants, bars, discothèques…",
+        "category_parent": "Loisirs et sorties",
+        "amount": -15.9,
+        "is_expense": 1,
+        "tags": "",
+        "account_label": "BoursoBank (joint)"
+      },
+      {
+        "label": "CARTE 07/07/25 Amazon.fr*RC2D95A CB*8533",
+        "category": "Livres, CD/DVD, bijoux, jouets…",
+        "category_parent": "Vie quotidienne",
+        "amount": -284.99,
+        "is_expense": 1,
+        "tags": "",
+        "account_label": "BoursoBank (joint)"
+      },
+      {
+        "label": "AVOIR 18/07/25 Amazon.fr CB*8533",
+        "category": "Livres, CD/DVD, bijoux, jouets…",
+        "category_parent": "Vie quotidienne",
+        "amount": 11.08,
+        "is_expense": 0,
+        "tags": "",
+        "account_label": "BoursoBank (joint)"
+      },
+      {
+        "label": "CARTE 10/07/25 Amazon.fr*R76JR7F CB*8533",
+        "category": "Livres, CD/DVD, bijoux, jouets…",
+        "category_parent": "Vie quotidienne",
+        "amount": -16.75,
+        "is_expense": 1,
+        "tags": "",
+        "account_label": "BoursoBank (joint)"
+      },
+      {
+        "label": "CARTE 13/07/25 Deliveroo CB*8533",
+        "category": "Restaurants, bars, discothèques…",
+        "category_parent": "Loisirs et sorties",
+        "amount": -54.99,
+        "is_expense": 1,
+        "tags": "",
+        "account_label": "BoursoBank (joint)"
+      },
+      {
+        "label": "CARTE 24/07/25 FLOWBIRD LR 2 CB*8533",
+        "category": "Non catégorisé",
+        "category_parent": "Non catégorisé",
+        "amount": -2.0,
+        "is_expense": 1,
+        "tags": "",
+        "account_label": "BoursoBank (joint)"
+      },
+      {
+        "label": "AVOIR 02/07/25 ALIEXPRESS.COM 14 CB*8935",
+        "category": "Livres, CD/DVD, bijoux, jouets…",
+        "category_parent": "Vie quotidienne",
+        "amount": 141.76,
+        "is_expense": 0,
+        "tags": "",
+        "account_label": "BoursoBank (joint)"
+      },
+      {
+        "label": "Test Transaction",
+        "category": "",
+        "category_parent": "",
+        "amount": -50.0,
+        "is_expense": 1,
+        "tags": "",
+        "account_label": "Test Account"
+      },
+      {
+        "label": "CARTE 25/07/25 MONOPRIX 4 CB*8533",
+        "category": "Alimentation",
+        "category_parent": "Vie quotidienne",
+        "amount": -3.39,
+        "is_expense": 1,
+        "tags": "",
+        "account_label": "BoursoBank (joint)"
+      },
+      {
+        "label": "VIR INST MLE IANA JYLENKOVA",
+        "category": "Virements reçus",
+        "category_parent": "Virements reçus",
+        "amount": 1000.0,
+        "is_expense": 0,
+        "tags": "",
+        "account_label": "BoursoBank (joint)"
+      },
+      {
+        "label": "CARTE 04/07/25 PERSPECTIVE BIO- CB*8533",
+        "category": "Alimentation",
+        "category_parent": "Vie quotidienne",
+        "amount": -84.9,
+        "is_expense": 1,
+        "tags": "",
+        "account_label": "BoursoBank (joint)"
+      }
+    ],
+    "sample_size": 50
+  }
+}

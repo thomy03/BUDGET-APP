@@ -1,0 +1,204 @@
+{
+  "validation_summary": {
+    "timestamp": "2025-08-11T01:47:10.247604",
+    "total_duration_seconds": 0.614227,
+    "target_system": "http://localhost:8000",
+    "total_tests": 3,
+    "pass_rate_percent": 33.3,
+    "quality_status": "CRITICAL",
+    "quality_score": 25
+  },
+  "test_results": {
+    "passed": 1,
+    "failed": 2,
+    "blocked": 0
+  },
+  "categories": {
+    "INFRASTRUCTURE": {
+      "passed": 1,
+      "failed": 0,
+      "blocked": 0,
+      "tests": [
+        {
+          "name": "System Health Check",
+          "status": "PASSED",
+          "duration": 0.02162,
+          "details": [
+            "Version: 0.3.0",
+            "Database encryption: False",
+            "Magic detection: True",
+            "Health endpoint accessible with valid structure"
+          ],
+          "errors": [],
+          "metrics": {
+            "response_time_ms": {
+              "value": 17.928,
+              "unit": null,
+              "timestamp": "2025-08-11T01:47:09.654150"
+            },
+            "status_code": {
+              "value": 200,
+              "unit": null,
+              "timestamp": "2025-08-11T01:47:09.654168"
+            }
+          }
+        }
+      ]
+    },
+    "SECURITY": {
+      "passed": 0,
+      "failed": 2,
+      "blocked": 0,
+      "tests": [
+        {
+          "name": "JWT Authentication",
+          "status": "FAILED",
+          "duration": 0.311167,
+          "details": [],
+          "errors": [
+            "Authentication failed - check test credentials"
+          ],
+          "metrics": {
+            "auth_response_time_ms": {
+              "value": 310.78457832336426,
+              "unit": null,
+              "timestamp": "2025-08-11T01:47:09.965812"
+            }
+          }
+        },
+        {
+          "name": "Security Validation",
+          "status": "FAILED",
+          "duration": 0.279096,
+          "details": [
+            "✓ Malicious file upload rejected",
+            "Large file upload resulted in 403",
+            "✓ SQL injection attempt handled gracefully"
+          ],
+          "errors": [
+            "Security validation failed - 3 issues found"
+          ],
+          "metrics": {
+            "security_issues_found": {
+              "value": 3,
+              "unit": null,
+              "timestamp": "2025-08-11T01:47:10.245750"
+            }
+          }
+        }
+      ]
+    }
+  },
+  "security_assessment": {
+    "total_issues": 3,
+    "critical_issues": 0,
+    "high_issues": 3,
+    "medium_issues": 0,
+    "issues": [
+      {
+        "severity": "HIGH",
+        "description": "Protected endpoint /config accessible without authentication (status: 200)",
+        "timestamp": "2025-08-11T01:47:10.015255"
+      },
+      {
+        "severity": "HIGH",
+        "description": "Protected endpoint /import accessible without authentication (status: 405)",
+        "timestamp": "2025-08-11T01:47:10.065814"
+      },
+      {
+        "severity": "HIGH",
+        "description": "Protected endpoint /transactions accessible without authentication (status: 422)",
+        "timestamp": "2025-08-11T01:47:10.115874"
+      }
+    ]
+  },
+  "release_recommendation": {
+    "decision": "BLOCK_RELEASE",
+    "reason": "Critical failures: 2, High security issues: 3",
+    "timestamp": "2025-08-11T01:47:10.247647"
+  },
+  "detailed_results": [
+    {
+      "test_name": "System Health Check",
+      "category": "INFRASTRUCTURE",
+      "status": "PASSED",
+      "duration_seconds": 0.02162,
+      "details": [
+        "Version: 0.3.0",
+        "Database encryption: False",
+        "Magic detection: True",
+        "Health endpoint accessible with valid structure"
+      ],
+      "errors": [],
+      "metrics": {
+        "response_time_ms": {
+          "value": 17.928,
+          "unit": null,
+          "timestamp": "2025-08-11T01:47:09.654150"
+        },
+        "status_code": {
+          "value": 200,
+          "unit": null,
+          "timestamp": "2025-08-11T01:47:09.654168"
+        }
+      },
+      "security_issues": []
+    },
+    {
+      "test_name": "JWT Authentication",
+      "category": "SECURITY",
+      "status": "FAILED",
+      "duration_seconds": 0.311167,
+      "details": [],
+      "errors": [
+        "Authentication failed - check test credentials"
+      ],
+      "metrics": {
+        "auth_response_time_ms": {
+          "value": 310.78457832336426,
+          "unit": null,
+          "timestamp": "2025-08-11T01:47:09.965812"
+        }
+      },
+      "security_issues": []
+    },
+    {
+      "test_name": "Security Validation",
+      "category": "SECURITY",
+      "status": "FAILED",
+      "duration_seconds": 0.279096,
+      "details": [
+        "✓ Malicious file upload rejected",
+        "Large file upload resulted in 403",
+        "✓ SQL injection attempt handled gracefully"
+      ],
+      "errors": [
+        "Security validation failed - 3 issues found"
+      ],
+      "metrics": {
+        "security_issues_found": {
+          "value": 3,
+          "unit": null,
+          "timestamp": "2025-08-11T01:47:10.245750"
+        }
+      },
+      "security_issues": [
+        {
+          "severity": "HIGH",
+          "description": "Protected endpoint /config accessible without authentication (status: 200)",
+          "timestamp": "2025-08-11T01:47:10.015255"
+        },
+        {
+          "severity": "HIGH",
+          "description": "Protected endpoint /import accessible without authentication (status: 405)",
+          "timestamp": "2025-08-11T01:47:10.065814"
+        },
+        {
+          "severity": "HIGH",
+          "description": "Protected endpoint /transactions accessible without authentication (status: 422)",
+          "timestamp": "2025-08-11T01:47:10.115874"
+        }
+      ]
+    }
+  ]
+}

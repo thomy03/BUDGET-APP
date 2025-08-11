@@ -145,17 +145,8 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
             logger.warning("Token JWT invalide: sub claim manquant")
             raise credentials_exception
         token_data = TokenData(username=username)
-    except jwt.ExpiredSignatureError:
-        logger.warning("Token JWT invalide: Token expiré")
-        raise credentials_exception
-    except jwt.InvalidSignatureError:
-        logger.error(f"Token JWT invalide: Signature verification failed - SECRET_KEY length: {len(SECRET_KEY)}")
-        raise credentials_exception
-    except jwt.InvalidTokenError as e:
-        logger.warning(f"Token JWT invalide: Token format invalide - {e}")
-        raise credentials_exception
     except JWTError as e:
-        logger.error(f"Token JWT invalide: Erreur JWT inattendue - {e}")
+        logger.error(f"Token JWT invalide: {type(e).__name__} - {e}")
         raise credentials_exception
     
     user = get_user(fake_users_db, username=token_data.username)

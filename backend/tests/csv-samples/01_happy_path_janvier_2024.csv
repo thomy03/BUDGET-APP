@@ -1,6 +1,0 @@
-dateOp,dateVal,label,category,categoryParent,supplierFound,amount,comment,accountNum,accountLabel,accountbalance
-2024-01-01,2024-01-01,Achat supermarché,Alimentation,Courses,SUPERMARCHE,-45.67,Courses hebdomadaires,123456789,Compte Courant,1234.56
-2024-01-02,2024-01-02,Salaire mensuel,Revenus,Salaires,EMPLOYER,2800.00,Salaire janvier,123456789,Compte Courant,4079.89
-2024-01-03,2024-01-03,Facture électricité,Charges,Utilities,EDF,-89.12,Facture mensuelle,123456789,Compte Courant,3990.77
-2024-01-04,2024-01-04,Restaurant,Loisirs,Sorties,RESTAURANT,-32.50,Déjeuner,123456789,Compte Courant,3958.27
-2024-01-05,2024-01-05,Essence,Transport,Carburant,STATION,-65.30,Plein d'essence,123456789,Compte Courant,3892.97

@@ -33,13 +33,15 @@ except ImportError:
 
 import numpy as np
 import pandas as pd
-from fastapi import FastAPI, UploadFile, File, HTTPException, Depends, status
+from fastapi import FastAPI, UploadFile, File, HTTPException, Depends, status, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from pydantic import BaseModel, validator, Field
+from typing import List, Optional, Dict, Union
 from email_validator import validate_email, EmailNotValidError
-from sqlalchemy import create_engine, Column, Integer, String, Float, Boolean, Date, Text
-from sqlalchemy.orm import sessionmaker, declarative_base, Session
+from sqlalchemy import create_engine, Column, Integer, String, Float, Boolean, Date, Text, DateTime, ForeignKey
+from sqlalchemy.orm import sessionmaker, declarative_base, Session, relationship
+from sqlalchemy.sql import func
 from dotenv import load_dotenv
 
 # Import du module d'authentification
@@ -54,6 +56,12 @@ from database_encrypted import (
 )
 from audit_logger import get_audit_logger, AuditEventType
 from datetime import timedelta
+
+# Import du moteur d'export
+from export_engine import (
+    ExportManager, ExportRequest, ExportFilters, ExportFormat, 
+    ExportScope, ExportJob
+)
 
 # Chargement des variables d'environnement
 load_dotenv()
@@ -135,6 +143,7 @@ def get_db():
 
 class Config(Base):
     __tablename__ = "config"
+    # Modèle propre avec nouveaux champs
     id = Column(Integer, primary_key=True, index=True)
     member1 = Column(String, default="diana")
     member2 = Column(String, default="thomas")
@@ -143,19 +152,26 @@ class Config(Base):
     split_mode = Column(String, default="revenus")  # revenus | manuel
     split1 = Column(Float, default=0.5)  # if manuel
     split2 = Column(Float, default=0.5)
-    loan_equal = Column(Boolean, default=True)
-    loan_amount = Column(Float, default=825.91)
-
-    # Modes historiques (on les garde pour compatibilité)
-    other_fixed_simple = Column(Boolean, default=True)
-    other_fixed_monthly = Column(Float, default=360.0)
-    taxe_fonciere_ann = Column(Float, default=0.0)
-    copro_montant = Column(Float, default=0.0)
-    copro_freq = Column(String, default="mensuelle")  # mensuelle|trimestrielle
     other_split_mode = Column(String, default="clé")  # clé|50/50
-
-    vac_percent = Column(Float, default=5.0)
-    vac_base = Column(String, default="2")  # "2" | "1" | "2nd"
+    
+    # Configuration des dépenses variables
+    var_percent = Column(Float, default=30.0)  # Pourcentage de revenus pour dépenses variables
+    max_var = Column(Float, default=0.0)       # Plafond maximum dépenses variables  
+    min_fixed = Column(Float, default=0.0)     # Minimum charges fixes
+    created_at = Column(DateTime, nullable=True)  # Création
+    updated_at = Column(DateTime, onupdate=func.now(), nullable=True)  # Mise à jour
+    
+    # Anciens champs - conservés temporairement pour éviter les erreurs
+    # À supprimer après vérification que tout fonctionne
+    loan_equal = Column(Boolean, default=True, nullable=True)
+    loan_amount = Column(Float, default=0.0, nullable=True)
+    other_fixed_simple = Column(Boolean, default=True, nullable=True)
+    other_fixed_monthly = Column(Float, default=0.0, nullable=True)
+    taxe_fonciere_ann = Column(Float, default=0.0, nullable=True)
+    copro_montant = Column(Float, default=0.0, nullable=True)
+    copro_freq = Column(String, default="mensuelle", nullable=True)
+    vac_percent = Column(Float, default=0.0, nullable=True)
+    vac_base = Column(String, default="2", nullable=True)
 
 class Transaction(Base):
     __tablename__ = "transactions"
@@ -182,6 +198,7 @@ class FixedLine(Base):
     split_mode = Column(String, default="clé")  # clé|50/50|m1|m2|manuel
     split1 = Column(Float, default=0.5)         # utilisé si manuel
     split2 = Column(Float, default=0.5)
+    category = Column(String, default="autres")  # logement|transport|services|loisirs|santé|autres
     active = Column(Boolean, default=True)
 
 class ImportMetadata(Base):
@@ -195,20 +212,124 @@ class ImportMetadata(Base):
     warnings = Column(Text, nullable=True)  # JSON des warnings
     processing_ms = Column(Integer, default=0)
 
+class ExportHistory(Base):
+    __tablename__ = "export_history"
+    id = Column(String, primary_key=True)  # UUID de l'export
+    user_id = Column(String, nullable=False, index=True)
+    format = Column(String, nullable=False)  # csv, excel, pdf, json, zip
+    scope = Column(String, nullable=False)   # transactions, analytics, config, all
+    created_at = Column(Date, nullable=False)
+    filename = Column(String, nullable=True)
+    file_size = Column(Integer, nullable=True)  # Taille en bytes
+    download_count = Column(Integer, default=0)
+    filters_applied = Column(Text, nullable=True)  # JSON des filtres
+    processing_ms = Column(Integer, default=0)
+    status = Column(String, default="completed")  # pending, completed, failed
+    error_message = Column(Text, nullable=True)
+
+class CustomProvision(Base):
+    """
+    Modèle de provision personnalisable
+    Permet de créer n'importe quel type de provision (investissement, voyage, projet, etc.)
+    """
+    __tablename__ = "custom_provisions"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(100), nullable=False)  # Ex: "Investissement", "Voyage Japon", "Rénovation"
+    description = Column(String(500))  # Description optionnelle
+    
+    # Configuration du calcul
+    percentage = Column(Float, nullable=False)  # Pourcentage du revenu (0-100)
+    base_calculation = Column(String(20), default="total")  # "total", "member1", "member2", "fixed"
+    fixed_amount = Column(Float, default=0)  # Si base_calculation = "fixed"
+    
+    # Répartition entre membres
+    split_mode = Column(String(20), default="key")  # "key", "50/50", "custom", "100/0", "0/100"
+    split_member1 = Column(Float, default=50)  # Pourcentage membre 1 si split_mode="custom"
+    split_member2 = Column(Float, default=50)  # Pourcentage membre 2 si split_mode="custom"
+    
+    # Configuration d'affichage
+    icon = Column(String(50), default="💰")  # Emoji ou nom d'icône
+    color = Column(String(7), default="#6366f1")  # Couleur hexadécimale
+    display_order = Column(Integer, default=999)  # Ordre d'affichage
+    
+    # État et métadonnées
+    is_active = Column(Boolean, default=True)
+    is_temporary = Column(Boolean, default=False)  # Pour provisions temporaires
+    start_date = Column(DateTime)  # Date de début (optionnel)
+    end_date = Column(DateTime)  # Date de fin (optionnel)
+    
+    # Objectif et suivi
+    target_amount = Column(Float)  # Montant objectif à atteindre
+    current_amount = Column(Float, default=0)  # Montant déjà épargné
+    
+    # Métadonnées
+    created_at = Column(DateTime, server_default=func.now())
+    updated_at = Column(DateTime, onupdate=func.now())
+    created_by = Column(String(100))  # Username du créateur
+    
+    # Catégorie pour regroupement
+    category = Column(String(50), default="custom")  # "savings", "investment", "project", "custom"
+
 Base.metadata.create_all(bind=engine)
 
 # --- Light schema migration for legacy DBs: add missing columns ---
 def migrate_schema():
     with engine.connect() as conn:
+        # Migration transactions
         info = conn.exec_driver_sql("PRAGMA table_info('transactions')").fetchall()
         cols = [r[1] for r in info]
         if "tags" not in cols:
             conn.exec_driver_sql("ALTER TABLE transactions ADD COLUMN tags TEXT DEFAULT ''")
         if "import_id" not in cols:
             conn.exec_driver_sql("ALTER TABLE transactions ADD COLUMN import_id TEXT")
-            
+        
         # Créer les indexes si nécessaires
         conn.exec_driver_sql("CREATE INDEX IF NOT EXISTS idx_transactions_import_id ON transactions(import_id)")
+        
+        # Migration custom_provisions - vérifier si la table existe
+        try:
+            conn.exec_driver_sql("SELECT 1 FROM custom_provisions LIMIT 1")
+            logger.info("Table custom_provisions existe déjà")
+        except Exception:
+            logger.info("Création de la table custom_provisions")
+            # Créer la table custom_provisions si elle n'existe pas
+            conn.exec_driver_sql("""
+                CREATE TABLE IF NOT EXISTS custom_provisions (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    name VARCHAR(100) NOT NULL,
+                    description VARCHAR(500),
+                    percentage FLOAT NOT NULL,
+                    base_calculation VARCHAR(20) DEFAULT 'total',
+                    fixed_amount FLOAT DEFAULT 0,
+                    split_mode VARCHAR(20) DEFAULT 'key',
+                    split_member1 FLOAT DEFAULT 50,
+                    split_member2 FLOAT DEFAULT 50,
+                    icon VARCHAR(50) DEFAULT '💰',
+                    color VARCHAR(7) DEFAULT '#6366f1',
+                    display_order INTEGER DEFAULT 999,
+                    is_active BOOLEAN DEFAULT TRUE,
+                    is_temporary BOOLEAN DEFAULT FALSE,
+                    start_date DATETIME,
+                    end_date DATETIME,
+                    target_amount FLOAT,
+                    current_amount FLOAT DEFAULT 0,
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    updated_at DATETIME,
+                    created_by VARCHAR(100),
+                    category VARCHAR(50) DEFAULT 'custom'
+                )
+            """)
+            
+            # Créer les indexes
+            conn.exec_driver_sql("CREATE INDEX IF NOT EXISTS idx_custom_provisions_active ON custom_provisions(is_active)")
+            conn.exec_driver_sql("CREATE INDEX IF NOT EXISTS idx_custom_provisions_created_by ON custom_provisions(created_by)")
+            conn.exec_driver_sql("CREATE INDEX IF NOT EXISTS idx_custom_provisions_category ON custom_provisions(category)")
+            conn.exec_driver_sql("CREATE INDEX IF NOT EXISTS idx_custom_provisions_display_order ON custom_provisions(display_order, name)")
+            
+            logger.info("✅ Table custom_provisions créée avec succès")
+        
+        conn.commit()
 
 migrate_schema()
 
@@ -221,6 +342,59 @@ def ensure_default_config(db: Session):
         db.refresh(cfg)
     return cfg
 
+# ---------- Analytics Schemas ----------
+class MonthlyTrend(BaseModel):
+    month: str
+    total_expenses: float
+    total_income: float
+    net: float
+    transaction_count: int
+
+class CategoryBreakdown(BaseModel):
+    category: str
+    amount: float
+    percentage: float
+    transaction_count: int
+    avg_transaction: float
+
+class KPISummary(BaseModel):
+    period_start: str
+    period_end: str
+    total_expenses: float
+    total_income: float
+    net_balance: float
+    avg_monthly_expenses: float
+    avg_monthly_income: float
+    top_expense_category: Optional[str] = None
+    top_expense_amount: float = 0.0
+    transaction_count: int = 0
+    expense_trend: str = "stable"  # up, down, stable
+
+class SpendingPattern(BaseModel):
+    day_of_week: int
+    day_name: str
+    avg_amount: float
+    transaction_count: int
+
+class AnomalyDetection(BaseModel):
+    transaction_id: int
+    date: str
+    amount: float
+    category: str
+    label: str
+    anomaly_type: str  # "high_amount", "unusual_category", "frequency_spike"
+    score: float  # 0-1, higher = more anomalous
+
+class BudgetComparison(BaseModel):
+    category: str
+    actual: float
+    budget_estimate: float  # Based on historical data
+    variance: float
+    variance_percentage: float
+    status: str  # "over", "under", "on_track"
+
+# Modèles d'export déplacés vers export_engine.py
+
 # ---------- Schemas ----------
 class ConfigIn(BaseModel):
     member1: str = Field(..., min_length=1, max_length=50, description="Nom du membre 1")
@@ -230,18 +404,12 @@ class ConfigIn(BaseModel):
     split_mode: str = Field(..., pattern="^(revenus|manuel)$", description="Mode de répartition")
     split1: float = Field(..., ge=0, le=1, description="Part membre 1")
     split2: float = Field(..., ge=0, le=1, description="Part membre 2")
-    loan_equal: bool = Field(..., description="Prêt à égalité")
-    loan_amount: float = Field(..., ge=0, le=99999.99, description="Montant du prêt")
-
-    other_fixed_simple: bool = Field(..., description="Charges fixes simplifiées")
-    other_fixed_monthly: float = Field(..., ge=0, le=99999.99, description="Charges fixes mensuelles")
-    taxe_fonciere_ann: float = Field(..., ge=0, le=99999.99, description="Taxe foncière annuelle")
-    copro_montant: float = Field(..., ge=0, le=99999.99, description="Montant copropriété")
-    copro_freq: str = Field(..., pattern="^(mensuelle|trimestrielle)$", description="Fréquence copropriété")
     other_split_mode: str = Field(..., pattern="^(clé|50/50)$", description="Mode répartition autres")
-
-    vac_percent: float = Field(..., ge=0, le=100, description="Pourcentage vacances")
-    vac_base: str = Field(..., pattern="^(1|2|2nd)$", description="Base calcul vacances")
+    
+    # Configuration des dépenses variables
+    var_percent: float = Field(30.0, ge=0, le=100, description="Pourcentage revenus pour dépenses variables")
+    max_var: float = Field(0.0, ge=0, le=99999.99, description="Plafond maximum dépenses variables")
+    min_fixed: float = Field(0.0, ge=0, le=99999.99, description="Minimum charges fixes")
     
     @validator('member1', 'member2')
     def sanitize_member_names(cls, v):
@@ -274,11 +442,8 @@ class TxOut(BaseModel):
 class SummaryOut(BaseModel):
     month: str
     var_total: float
-    loan_amount: float
-    taxe_m: float
-    copro_m: float
-    other_fixed_total: float
-    vac_monthly_total: float
+    fixed_lines_total: float      # Total des lignes fixes personnalisables
+    provisions_total: float       # Total des provisions personnalisables 
     r1: float
     r2: float
     member1: str
@@ -300,6 +465,7 @@ class FixedLineIn(BaseModel):
     split_mode: str = Field(..., pattern="^(clé|50/50|m1|m2|manuel)$", description="Mode de répartition")
     split1: float = Field(0.5, ge=0, le=1, description="Part membre 1")
     split2: float = Field(0.5, ge=0, le=1, description="Part membre 2")
+    category: str = Field("autres", pattern="^(logement|transport|services|loisirs|santé|autres)$", description="Catégorie")
     active: bool = Field(True, description="Ligne active")
     
     @validator('label')
@@ -308,6 +474,90 @@ class FixedLineIn(BaseModel):
 
 class FixedLineOut(FixedLineIn):
     id: int
+
+# Modèles Pydantic pour les provisions personnalisables
+class CustomProvisionBase(BaseModel):
+    """Base model pour les provisions personnalisables"""
+    name: str = Field(..., min_length=1, max_length=100, description="Nom de la provision")
+    description: Optional[str] = Field(None, max_length=500, description="Description optionnelle")
+    percentage: float = Field(..., ge=0, le=100, description="Pourcentage du revenu")
+    base_calculation: str = Field("total", pattern="^(total|member1|member2|fixed)$")
+    fixed_amount: Optional[float] = Field(0, ge=0, description="Montant fixe si applicable")
+    split_mode: str = Field("key", pattern="^(key|50/50|custom|100/0|0/100)$")
+    split_member1: Optional[float] = Field(50, ge=0, le=100)
+    split_member2: Optional[float] = Field(50, ge=0, le=100)
+    icon: str = Field("💰", max_length=50)
+    color: str = Field("#6366f1", pattern="^#[0-9A-Fa-f]{6}$")
+    display_order: Optional[int] = Field(999, ge=0)
+    is_active: bool = Field(True)
+    is_temporary: bool = Field(False)
+    start_date: Optional[dt.datetime] = None
+    end_date: Optional[dt.datetime] = None
+    target_amount: Optional[float] = Field(None, ge=0)
+    category: str = Field("custom", pattern="^(savings|investment|project|custom)$")
+    
+    @validator('split_member1', 'split_member2')
+    def validate_splits(cls, v, values):
+        """Valide que les splits totalisent 100% si mode custom"""
+        if values.get('split_mode') == 'custom':
+            if 'split_member1' in values and values['split_member1'] + v != 100:
+                raise ValueError('Les pourcentages membre1 + membre2 doivent totaliser 100%')
+        return v
+    
+    @validator('fixed_amount')
+    def validate_fixed_amount(cls, v, values):
+        """Valide que le montant fixe est fourni si base_calculation = fixed"""
+        if values.get('base_calculation') == 'fixed' and (v is None or v <= 0):
+            raise ValueError('Un montant fixe positif est requis si base_calculation = fixed')
+        return v
+
+class CustomProvisionCreate(CustomProvisionBase):
+    """Modèle pour créer une provision"""
+    pass
+
+class CustomProvisionUpdate(BaseModel):
+    """Modèle pour mettre à jour une provision (tous les champs optionnels)"""
+    name: Optional[str] = Field(None, min_length=1, max_length=100)
+    description: Optional[str] = Field(None, max_length=500)
+    percentage: Optional[float] = Field(None, ge=0, le=100)
+    base_calculation: Optional[str] = Field(None, pattern="^(total|member1|member2|fixed)$")
+    fixed_amount: Optional[float] = Field(None, ge=0)
+    split_mode: Optional[str] = Field(None, pattern="^(key|50/50|custom|100/0|0/100)$")
+    split_member1: Optional[float] = Field(None, ge=0, le=100)
+    split_member2: Optional[float] = Field(None, ge=0, le=100)
+    icon: Optional[str] = Field(None, max_length=50)
+    color: Optional[str] = Field(None, pattern="^#[0-9A-Fa-f]{6}$")
+    display_order: Optional[int] = Field(None, ge=0)
+    is_active: Optional[bool] = None
+    is_temporary: Optional[bool] = None
+    start_date: Optional[dt.datetime] = None
+    end_date: Optional[dt.datetime] = None
+    target_amount: Optional[float] = Field(None, ge=0)
+    current_amount: Optional[float] = Field(None, ge=0)
+    category: Optional[str] = Field(None, pattern="^(savings|investment|project|custom)$")
+
+class CustomProvisionResponse(CustomProvisionBase):
+    """Modèle de réponse pour une provision"""
+    id: int
+    current_amount: float
+    created_at: dt.datetime
+    updated_at: Optional[dt.datetime]
+    created_by: Optional[str]
+    monthly_amount: Optional[float] = Field(None, description="Montant mensuel calculé")
+    progress_percentage: Optional[float] = Field(None, description="Progression vers l'objectif")
+    
+    class Config:
+        from_attributes = True
+
+class CustomProvisionSummary(BaseModel):
+    """Résumé des provisions personnalisées pour le dashboard"""
+    total_provisions: int
+    active_provisions: int
+    total_monthly_amount: float
+    total_monthly_member1: float
+    total_monthly_member2: float
+    provisions_by_category: Dict[str, int]
+    provisions_details: List[CustomProvisionResponse]
 
 # Types pour le nouveau système d'import optimisé
 class ImportMonth(BaseModel):
@@ -764,6 +1014,147 @@ def get_split(cfg: Config):
     else:
         return cfg.split1, cfg.split2
 
+# ---------- Fonctions utilitaires pour les provisions personnalisables ----------
+
+def calculate_provision_amount(provision: CustomProvision, config: Config) -> tuple:
+    """
+    Calcule le montant mensuel d'une provision et sa répartition
+    Returns: (montant_total, montant_membre1, montant_membre2)
+    """
+    # Calcul de la base
+    if provision.base_calculation == "total":
+        base = (config.rev1 or 0) + (config.rev2 or 0)
+    elif provision.base_calculation == "member1":
+        base = config.rev1 or 0
+    elif provision.base_calculation == "member2":
+        base = config.rev2 or 0
+    elif provision.base_calculation == "fixed":
+        base = provision.fixed_amount or 0
+    else:
+        base = 0
+    
+    # Calcul du montant mensuel
+    if provision.base_calculation == "fixed":
+        monthly_amount = base  # Déjà mensuel
+    else:
+        monthly_amount = (base * provision.percentage / 100.0) / 12.0 if base else 0.0
+    
+    # Calcul de la répartition
+    if provision.split_mode == "key":
+        # Utiliser la clé de répartition globale
+        total_rev = (config.rev1 or 0) + (config.rev2 or 0)
+        if total_rev > 0:
+            r1 = (config.rev1 or 0) / total_rev
+            r2 = (config.rev2 or 0) / total_rev
+        else:
+            r1 = r2 = 0.5
+        member1_amount = monthly_amount * r1
+        member2_amount = monthly_amount * r2
+    elif provision.split_mode == "50/50":
+        member1_amount = monthly_amount * 0.5
+        member2_amount = monthly_amount * 0.5
+    elif provision.split_mode == "100/0":
+        member1_amount = monthly_amount
+        member2_amount = 0
+    elif provision.split_mode == "0/100":
+        member1_amount = 0
+        member2_amount = monthly_amount
+    elif provision.split_mode == "custom":
+        member1_amount = monthly_amount * (provision.split_member1 / 100.0)
+        member2_amount = monthly_amount * (provision.split_member2 / 100.0)
+    else:
+        member1_amount = member2_amount = monthly_amount * 0.5
+    
+    return monthly_amount, member1_amount, member2_amount
+
+def get_active_provisions(db: Session, current_date: dt.datetime = None) -> List[CustomProvision]:
+    """Récupère toutes les provisions actives à une date donnée"""
+    if current_date is None:
+        current_date = dt.datetime.now()
+    
+    query = db.query(CustomProvision).filter(CustomProvision.is_active == True)
+    
+    # Filtrer par dates si applicable
+    query = query.filter(
+        (CustomProvision.start_date == None) | (CustomProvision.start_date <= current_date)
+    ).filter(
+        (CustomProvision.end_date == None) | (CustomProvision.end_date >= current_date)
+    )
+    
+    return query.order_by(CustomProvision.display_order, CustomProvision.name).all()
+
+def calculate_provisions_summary(db: Session, config: Config) -> CustomProvisionSummary:
+    """Calcule le résumé complet des provisions personnalisables"""
+    provisions = get_active_provisions(db)
+    
+    total_provisions = db.query(CustomProvision).count()
+    active_provisions = len(provisions)
+    total_monthly_amount = 0.0
+    total_monthly_member1 = 0.0
+    total_monthly_member2 = 0.0
+    
+    # Comptage par catégorie
+    provisions_by_category = {}
+    provisions_details = []
+    
+    for provision in provisions:
+        # Calculs pour chaque provision
+        monthly_amount, member1_amount, member2_amount = calculate_provision_amount(provision, config)
+        
+        # Calcul du pourcentage de progression
+        progress_percentage = None
+        if provision.target_amount and provision.target_amount > 0:
+            progress_percentage = min(100.0, (provision.current_amount / provision.target_amount) * 100)
+        
+        # Créer la réponse avec calculs
+        provision_response = CustomProvisionResponse(
+            id=provision.id,
+            name=provision.name,
+            description=provision.description,
+            percentage=provision.percentage,
+            base_calculation=provision.base_calculation,
+            fixed_amount=provision.fixed_amount,
+            split_mode=provision.split_mode,
+            split_member1=provision.split_member1,
+            split_member2=provision.split_member2,
+            icon=provision.icon,
+            color=provision.color,
+            display_order=provision.display_order,
+            is_active=provision.is_active,
+            is_temporary=provision.is_temporary,
+            start_date=provision.start_date,
+            end_date=provision.end_date,
+            target_amount=provision.target_amount,
+            category=provision.category,
+            current_amount=provision.current_amount,
+            created_at=provision.created_at,
+            updated_at=provision.updated_at,
+            created_by=provision.created_by,
+            monthly_amount=monthly_amount,
+            progress_percentage=progress_percentage
+        )
+        
+        provisions_details.append(provision_response)
+        
+        # Agrégation
+        total_monthly_amount += monthly_amount
+        total_monthly_member1 += member1_amount
+        total_monthly_member2 += member2_amount
+        
+        # Comptage par catégorie
+        category = provision.category or "custom"
+        provisions_by_category[category] = provisions_by_category.get(category, 0) + 1
+    
+    return CustomProvisionSummary(
+        total_provisions=total_provisions,
+        active_provisions=active_provisions,
+        total_monthly_amount=total_monthly_amount,
+        total_monthly_member1=total_monthly_member1,
+        total_monthly_member2=total_monthly_member2,
+        provisions_by_category=provisions_by_category,
+        provisions_details=provisions_details
+    )
+
 def is_income_or_transfer(label: str, cat_parent: str) -> bool:
     l = (label or "").lower(); cp = (cat_parent or "").lower()
     if "virement" in l or "vir " in l or "vir/" in l or "virements emis" in cp: return True
@@ -784,19 +1175,270 @@ def split_amount(amount: float, mode: str, r1: float, r2: float, s1: float, s2: 
         return amount*(s1 or 0.0), amount*(s2 or 0.0)
     return amount*r1, amount*r2
 
-# ---------- Routes ----------
-@app.get("/config", response_model=ConfigOut)
-def get_config(db: Session = Depends(get_db)):
-    cfg = ensure_default_config(db)
-    return ConfigOut(
-        id=cfg.id, member1=cfg.member1, member2=cfg.member2, rev1=cfg.rev1, rev2=cfg.rev2,
-        split_mode=cfg.split_mode, split1=cfg.split1, split2=cfg.split2,
-        loan_equal=cfg.loan_equal, loan_amount=cfg.loan_amount,
-        other_fixed_simple=cfg.other_fixed_simple, other_fixed_monthly=cfg.other_fixed_monthly,
-        taxe_fonciere_ann=cfg.taxe_fonciere_ann, copro_montant=cfg.copro_montant,
-        copro_freq=cfg.copro_freq, other_split_mode=cfg.other_split_mode,
-        vac_percent=cfg.vac_percent, vac_base=cfg.vac_base
+# ---------- Analytics Helper Functions ----------
+def calculate_monthly_trends(db: Session, months: List[str]) -> List[MonthlyTrend]:
+    """Calcule les tendances mensuelles pour les mois spécifiés"""
+    trends = []
+    for month in months:
+        expenses_result = db.query(Transaction).filter(
+            Transaction.month == month,
+            Transaction.is_expense == True,
+            Transaction.exclude == False,
+            Transaction.amount < 0
+        ).all()
+        
+        income_result = db.query(Transaction).filter(
+            Transaction.month == month,
+            Transaction.is_expense == False,
+            Transaction.exclude == False,
+            Transaction.amount > 0
+        ).all()
+        
+        total_expenses = sum(abs(tx.amount or 0) for tx in expenses_result)
+        total_income = sum(tx.amount or 0 for tx in income_result)
+        net = total_income - total_expenses
+        transaction_count = len(expenses_result) + len(income_result)
+        
+        trends.append(MonthlyTrend(
+            month=month,
+            total_expenses=total_expenses,
+            total_income=total_income,
+            net=net,
+            transaction_count=transaction_count
+        ))
+    
+    return trends
+
+def calculate_category_breakdown(db: Session, month: str) -> List[CategoryBreakdown]:
+    """Calcule la répartition par catégorie pour un mois donné"""
+    categories = {}
+    
+    transactions = db.query(Transaction).filter(
+        Transaction.month == month,
+        Transaction.is_expense == True,
+        Transaction.exclude == False,
+        Transaction.amount < 0
+    ).all()
+    
+    total_expenses = 0
+    for tx in transactions:
+        amount = abs(tx.amount or 0)
+        total_expenses += amount
+        category = tx.category or "Autre"
+        
+        if category not in categories:
+            categories[category] = {"amount": 0, "count": 0}
+        
+        categories[category]["amount"] += amount
+        categories[category]["count"] += 1
+    
+    breakdown = []
+    for category, data in categories.items():
+        percentage = (data["amount"] / total_expenses * 100) if total_expenses > 0 else 0
+        avg_transaction = data["amount"] / data["count"] if data["count"] > 0 else 0
+        
+        breakdown.append(CategoryBreakdown(
+            category=category,
+            amount=data["amount"],
+            percentage=percentage,
+            transaction_count=data["count"],
+            avg_transaction=avg_transaction
+        ))
+    
+    return sorted(breakdown, key=lambda x: x.amount, reverse=True)
+
+def calculate_kpi_summary(db: Session, months: List[str]) -> KPISummary:
+    """Calcule les KPIs généraux pour une période"""
+    all_expenses = []
+    all_income = []
+    total_transactions = 0
+    
+    for month in months:
+        transactions = db.query(Transaction).filter(
+            Transaction.month == month,
+            Transaction.exclude == False
+        ).all()
+        
+        for tx in transactions:
+            total_transactions += 1
+            if tx.is_expense and tx.amount < 0:
+                all_expenses.append(abs(tx.amount or 0))
+            elif not tx.is_expense and tx.amount > 0:
+                all_income.append(tx.amount or 0)
+    
+    total_expenses = sum(all_expenses)
+    total_income = sum(all_income)
+    net_balance = total_income - total_expenses
+    
+    months_count = len(months)
+    avg_monthly_expenses = total_expenses / months_count if months_count > 0 else 0
+    avg_monthly_income = total_income / months_count if months_count > 0 else 0
+    
+    # Calcul de la tendance
+    if months_count >= 2:
+        recent_months = months[-2:]  # 2 derniers mois
+        old_expenses = db.query(Transaction).filter(
+            Transaction.month == recent_months[0],
+            Transaction.is_expense == True,
+            Transaction.exclude == False,
+            Transaction.amount < 0
+        ).all()
+        new_expenses = db.query(Transaction).filter(
+            Transaction.month == recent_months[1],
+            Transaction.is_expense == True,
+            Transaction.exclude == False,
+            Transaction.amount < 0
+        ).all()
+        
+        old_total = sum(abs(tx.amount or 0) for tx in old_expenses)
+        new_total = sum(abs(tx.amount or 0) for tx in new_expenses)
+        
+        if new_total > old_total * 1.05:  # +5%
+            expense_trend = "up"
+        elif new_total < old_total * 0.95:  # -5%
+            expense_trend = "down"
+        else:
+            expense_trend = "stable"
+    else:
+        expense_trend = "stable"
+    
+    # Top catégorie de dépense
+    top_category = None
+    top_amount = 0.0
+    if months:
+        latest_month = months[-1]
+        breakdown = calculate_category_breakdown(db, latest_month)
+        if breakdown:
+            top_category = breakdown[0].category
+            top_amount = breakdown[0].amount
+    
+    return KPISummary(
+        period_start=months[0] if months else "",
+        period_end=months[-1] if months else "",
+        total_expenses=total_expenses,
+        total_income=total_income,
+        net_balance=net_balance,
+        avg_monthly_expenses=avg_monthly_expenses,
+        avg_monthly_income=avg_monthly_income,
+        top_expense_category=top_category,
+        top_expense_amount=top_amount,
+        transaction_count=total_transactions,
+        expense_trend=expense_trend
     )
+
+def detect_anomalies(db: Session, month: str) -> List[AnomalyDetection]:
+    """Détecte les anomalies dans les dépenses d'un mois"""
+    anomalies = []
+    
+    # Récupérer toutes les transactions du mois
+    transactions = db.query(Transaction).filter(
+        Transaction.month == month,
+        Transaction.exclude == False
+    ).all()
+    
+    # Calcul des seuils basés sur l'historique
+    historical_transactions = db.query(Transaction).filter(
+        Transaction.exclude == False,
+        Transaction.is_expense == True,
+        Transaction.amount < 0
+    ).all()
+    
+    if not historical_transactions:
+        return anomalies
+    
+    amounts = [abs(tx.amount or 0) for tx in historical_transactions]
+    avg_amount = np.mean(amounts) if amounts else 0
+    std_amount = np.std(amounts) if amounts else 0
+    
+    # Seuil pour montants élevés (> moyenne + 2 écarts-types)
+    high_amount_threshold = avg_amount + (2 * std_amount)
+    
+    for tx in transactions:
+        score = 0.0
+        anomaly_type = None
+        
+        if tx.is_expense and tx.amount < 0:
+            amount = abs(tx.amount or 0)
+            
+            # Détection montant élevé
+            if amount > high_amount_threshold:
+                anomaly_type = "high_amount"
+                score = min(1.0, amount / high_amount_threshold - 1)
+        
+        if score > 0.3 and anomaly_type:  # Seuil de confiance
+            anomalies.append(AnomalyDetection(
+                transaction_id=tx.id,
+                date=str(tx.date_op),
+                amount=tx.amount or 0,
+                category=tx.category or "Autre",
+                label=tx.label or "",
+                anomaly_type=anomaly_type,
+                score=score
+            ))
+    
+    return sorted(anomalies, key=lambda x: x.score, reverse=True)[:10]  # Top 10
+
+def calculate_spending_patterns(db: Session, months: List[str]) -> List[SpendingPattern]:
+    """Analyse les patterns de dépense par jour de la semaine"""
+    import calendar
+    from collections import defaultdict
+    
+    patterns = defaultdict(lambda: {"amounts": [], "count": 0})
+    
+    for month in months:
+        transactions = db.query(Transaction).filter(
+            Transaction.month == month,
+            Transaction.is_expense == True,
+            Transaction.exclude == False,
+            Transaction.amount < 0,
+            Transaction.date_op.isnot(None)
+        ).all()
+        
+        for tx in transactions:
+            if tx.date_op:
+                day_of_week = tx.date_op.weekday()  # 0 = Monday
+                amount = abs(tx.amount or 0)
+                patterns[day_of_week]["amounts"].append(amount)
+                patterns[day_of_week]["count"] += 1
+    
+    result = []
+    day_names = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"]
+    
+    for day_idx in range(7):
+        data = patterns[day_idx]
+        avg_amount = np.mean(data["amounts"]) if data["amounts"] else 0
+        
+        result.append(SpendingPattern(
+            day_of_week=day_idx,
+            day_name=day_names[day_idx],
+            avg_amount=avg_amount,
+            transaction_count=data["count"]
+        ))
+    
+    return result
+
+# ---------- Routes ----------
+def _build_config_response(cfg: Config) -> ConfigOut:
+    """Helper function to build ConfigOut response"""
+    return ConfigOut(
+        id=cfg.id, 
+        member1=cfg.member1, 
+        member2=cfg.member2, 
+        rev1=cfg.rev1, 
+        rev2=cfg.rev2,
+        split_mode=cfg.split_mode, 
+        split1=cfg.split1, 
+        split2=cfg.split2,
+        other_split_mode=cfg.other_split_mode,
+        var_percent=getattr(cfg, 'var_percent', 30.0),
+        max_var=getattr(cfg, 'max_var', 0.0),
+        min_fixed=getattr(cfg, 'min_fixed', 0.0)
+    )
+
+@app.get("/config", response_model=ConfigOut)
+def get_config(current_user = Depends(get_current_user), db: Session = Depends(get_db)):
+    cfg = ensure_default_config(db)
+    return _build_config_response(cfg)
 
 @app.post("/token", response_model=Token)
 async def login(form_data: OAuth2PasswordRequestForm = Depends()):
@@ -849,38 +1491,654 @@ def update_config(payload: ConfigIn, current_user = Depends(get_current_user), d
         success=True
     )
     
-    return get_config(db)
+    cfg = ensure_default_config(db)
+    return _build_config_response(cfg)
 
 @app.get("/fixed-lines", response_model=List[FixedLineOut])
-def list_fixed_lines(db: Session = Depends(get_db)):
-    items = db.query(FixedLine).filter(FixedLine.active == True).order_by(FixedLine.id.asc()).all()
-    return [FixedLineOut(id=i.id, label=i.label, amount=i.amount, freq=i.freq, split_mode=i.split_mode, split1=i.split1, split2=i.split2, active=i.active) for i in items]
+def list_fixed_lines(
+    category: Optional[str] = Query(None, regex="^(logement|transport|services|loisirs|santé|autres)$", description="Filtrer par catégorie"),
+    active_only: bool = Query(True, description="Afficher uniquement les lignes actives"),
+    current_user = Depends(get_current_user), 
+    db: Session = Depends(get_db)
+):
+    """Liste toutes les lignes fixes avec filtrage par catégorie"""
+    query = db.query(FixedLine)
+    
+    if active_only:
+        query = query.filter(FixedLine.active == True)
+    
+    if category:
+        query = query.filter(FixedLine.category == category)
+    
+    items = query.order_by(FixedLine.category, FixedLine.id.asc()).all()
+    return [FixedLineOut(
+        id=i.id, 
+        label=i.label, 
+        amount=i.amount, 
+        freq=i.freq, 
+        split_mode=i.split_mode, 
+        split1=i.split1, 
+        split2=i.split2, 
+        category=i.category,
+        active=i.active
+    ) for i in items]
 
 @app.post("/fixed-lines", response_model=FixedLineOut)
 def create_fixed_line(payload: FixedLineIn, current_user = Depends(get_current_user), db: Session = Depends(get_db)):
-    logger.info(f"Création ligne fixe par utilisateur: {current_user.username}")
-    f = FixedLine(label=payload.label, amount=payload.amount, freq=payload.freq,
-                  split_mode=payload.split_mode, split1=payload.split1, split2=payload.split2, active=payload.active)
+    """Crée une nouvelle ligne fixe"""
+    logger.info(f"Création ligne fixe '{payload.label}' catégorie '{payload.category}' par utilisateur: {current_user.username}")
+    f = FixedLine(
+        label=payload.label, 
+        amount=payload.amount, 
+        freq=payload.freq,
+        split_mode=payload.split_mode, 
+        split1=payload.split1, 
+        split2=payload.split2, 
+        category=payload.category,
+        active=payload.active
+    )
     db.add(f); db.commit(); db.refresh(f)
-    return FixedLineOut(id=f.id, label=f.label, amount=f.amount, freq=f.freq, split_mode=f.split_mode, split1=f.split1, split2=f.split2, active=f.active)
+    return FixedLineOut(
+        id=f.id, 
+        label=f.label, 
+        amount=f.amount, 
+        freq=f.freq, 
+        split_mode=f.split_mode, 
+        split1=f.split1, 
+        split2=f.split2, 
+        category=f.category,
+        active=f.active
+    )
+
+@app.get("/fixed-lines/{lid}", response_model=FixedLineOut)
+def get_fixed_line(lid: int, current_user = Depends(get_current_user), db: Session = Depends(get_db)):
+    """Récupère une ligne fixe par son ID"""
+    f = db.query(FixedLine).filter(FixedLine.id == lid).first()
+    if not f:
+        raise HTTPException(status_code=404, detail="Ligne fixe introuvable")
+    
+    return FixedLineOut(
+        id=f.id, 
+        label=f.label, 
+        amount=f.amount, 
+        freq=f.freq, 
+        split_mode=f.split_mode, 
+        split1=f.split1, 
+        split2=f.split2, 
+        category=f.category,
+        active=f.active
+    )
 
 @app.patch("/fixed-lines/{lid}", response_model=FixedLineOut)
 def update_fixed_line(lid: int, payload: FixedLineIn, current_user = Depends(get_current_user), db: Session = Depends(get_db)):
+    """Met à jour une ligne fixe existante"""
     logger.info(f"Mise à jour ligne fixe {lid} par utilisateur: {current_user.username}")
     f = db.query(FixedLine).filter(FixedLine.id == lid).first()
-    if not f: raise HTTPException(status_code=404, detail="Ligne fixe introuvable")
+    if not f: 
+        raise HTTPException(status_code=404, detail="Ligne fixe introuvable")
+    
+    # Mise à jour avec validation
     for k, v in payload.dict().items():
         setattr(f, k, v)
+    
     db.add(f); db.commit(); db.refresh(f)
-    return FixedLineOut(id=f.id, label=f.label, amount=f.amount, freq=f.freq, split_mode=f.split_mode, split1=f.split1, split2=f.split2, active=f.active)
+    logger.info(f"Ligne fixe {lid} mise à jour: '{f.label}' - {f.category}")
+    
+    return FixedLineOut(
+        id=f.id, 
+        label=f.label, 
+        amount=f.amount, 
+        freq=f.freq, 
+        split_mode=f.split_mode, 
+        split1=f.split1, 
+        split2=f.split2, 
+        category=f.category,
+        active=f.active
+    )
 
 @app.delete("/fixed-lines/{lid}")
 def delete_fixed_line(lid: int, current_user = Depends(get_current_user), db: Session = Depends(get_db)):
+    """Supprime une ligne fixe"""
     logger.info(f"Suppression ligne fixe {lid} par utilisateur: {current_user.username}")
     f = db.query(FixedLine).filter(FixedLine.id == lid).first()
-    if not f: raise HTTPException(status_code=404, detail="Ligne fixe introuvable")
+    if not f: 
+        raise HTTPException(status_code=404, detail="Ligne fixe introuvable")
+    
+    logger.info(f"Suppression confirmée: '{f.label}' - {f.category}")
     db.delete(f); db.commit()
-    return {"ok": True}
+    return {"ok": True, "message": f"Ligne fixe '{f.label}' supprimée"}
+
+@app.get("/fixed-lines/stats/by-category")
+def get_fixed_lines_stats_by_category(current_user = Depends(get_current_user), db: Session = Depends(get_db)):
+    """Récupère les statistiques des lignes fixes par catégorie"""
+    from sqlalchemy import func
+    
+    # Statistiques par catégorie
+    stats = db.query(
+        FixedLine.category,
+        func.count(FixedLine.id).label('count'),
+        func.sum(FixedLine.amount).label('total_amount')
+    ).filter(
+        FixedLine.active == True
+    ).group_by(FixedLine.category).all()
+    
+    # Conversion en montants mensuels
+    monthly_stats = []
+    for cat, count, total in stats:
+        # Calculer le total mensuel pour cette catégorie
+        lines = db.query(FixedLine).filter(
+            FixedLine.category == cat, 
+            FixedLine.active == True
+        ).all()
+        
+        monthly_total = 0.0
+        for line in lines:
+            if line.freq == "mensuelle":
+                monthly_total += line.amount
+            elif line.freq == "trimestrielle":
+                monthly_total += (line.amount or 0.0) / 3.0
+            else:  # annuelle
+                monthly_total += (line.amount or 0.0) / 12.0
+        
+        monthly_stats.append({
+            "category": cat,
+            "count": count,
+            "monthly_total": round(monthly_total, 2)
+        })
+    
+    # Total général
+    global_monthly_total = sum(s["monthly_total"] for s in monthly_stats)
+    
+    return {
+        "by_category": monthly_stats,
+        "global_monthly_total": round(global_monthly_total, 2),
+        "total_lines": sum(s["count"] for s in monthly_stats)
+    }
+
+# ---------- Endpoints Provisions Personnalisables ----------
+
+@app.get("/provisions", response_model=List[CustomProvisionResponse])
+def list_provisions(
+    active_only: bool = True,
+    category: Optional[str] = None,
+    current_user = Depends(get_current_user), 
+    db: Session = Depends(get_db)
+):
+    """Liste toutes les provisions personnalisables de l'utilisateur"""
+    logger.info(f"Liste provisions demandée par utilisateur: {current_user.username}")
+    
+    query = db.query(CustomProvision).filter(CustomProvision.created_by == current_user.username)
+    
+    if active_only:
+        query = query.filter(CustomProvision.is_active == True)
+    
+    if category:
+        query = query.filter(CustomProvision.category == category)
+    
+    provisions = query.order_by(CustomProvision.display_order, CustomProvision.name).all()
+    
+    # Calculer les montants pour chaque provision
+    config = ensure_default_config(db)
+    result = []
+    
+    for provision in provisions:
+        monthly_amount, _, _ = calculate_provision_amount(provision, config)
+        
+        # Calcul du pourcentage de progression
+        progress_percentage = None
+        if provision.target_amount and provision.target_amount > 0:
+            progress_percentage = min(100.0, (provision.current_amount / provision.target_amount) * 100)
+        
+        provision_response = CustomProvisionResponse(
+            id=provision.id,
+            name=provision.name,
+            description=provision.description,
+            percentage=provision.percentage,
+            base_calculation=provision.base_calculation,
+            fixed_amount=provision.fixed_amount,
+            split_mode=provision.split_mode,
+            split_member1=provision.split_member1,
+            split_member2=provision.split_member2,
+            icon=provision.icon,
+            color=provision.color,
+            display_order=provision.display_order,
+            is_active=provision.is_active,
+            is_temporary=provision.is_temporary,
+            start_date=provision.start_date,
+            end_date=provision.end_date,
+            target_amount=provision.target_amount,
+            category=provision.category,
+            current_amount=provision.current_amount,
+            created_at=provision.created_at,
+            updated_at=provision.updated_at,
+            created_by=provision.created_by,
+            monthly_amount=monthly_amount,
+            progress_percentage=progress_percentage
+        )
+        result.append(provision_response)
+    
+    return result
+
+@app.post("/provisions", response_model=CustomProvisionResponse)
+def create_provision(
+    payload: CustomProvisionCreate,
+    current_user = Depends(get_current_user), 
+    db: Session = Depends(get_db)
+):
+    """Crée une nouvelle provision personnalisable"""
+    audit_logger = get_audit_logger()
+    logger.info(f"Création provision '{payload.name}' par utilisateur: {current_user.username}")
+    
+    # Vérifier qu'il n'y a pas de doublons de nom pour cet utilisateur
+    existing = db.query(CustomProvision).filter(
+        CustomProvision.created_by == current_user.username,
+        CustomProvision.name == payload.name
+    ).first()
+    
+    if existing:
+        raise HTTPException(
+            status_code=400, 
+            detail=f"Une provision nommée '{payload.name}' existe déjà"
+        )
+    
+    # Créer la nouvelle provision
+    provision = CustomProvision(
+        name=payload.name,
+        description=payload.description,
+        percentage=payload.percentage,
+        base_calculation=payload.base_calculation,
+        fixed_amount=payload.fixed_amount,
+        split_mode=payload.split_mode,
+        split_member1=payload.split_member1,
+        split_member2=payload.split_member2,
+        icon=payload.icon,
+        color=payload.color,
+        display_order=payload.display_order,
+        is_active=payload.is_active,
+        is_temporary=payload.is_temporary,
+        start_date=payload.start_date,
+        end_date=payload.end_date,
+        target_amount=payload.target_amount,
+        category=payload.category,
+        created_by=current_user.username
+    )
+    
+    db.add(provision)
+    db.commit()
+    db.refresh(provision)
+    
+    # Audit de création
+    audit_logger.log_event(
+        AuditEventType.CONFIG_UPDATE,
+        username=current_user.username,
+        details={
+            "action": "create_provision",
+            "provision_id": provision.id,
+            "provision_name": provision.name,
+            "percentage": provision.percentage
+        },
+        success=True
+    )
+    
+    # Calculer le montant mensuel pour la réponse
+    config = ensure_default_config(db)
+    monthly_amount, _, _ = calculate_provision_amount(provision, config)
+    
+    # Calcul du pourcentage de progression
+    progress_percentage = None
+    if provision.target_amount and provision.target_amount > 0:
+        progress_percentage = min(100.0, (provision.current_amount / provision.target_amount) * 100)
+    
+    return CustomProvisionResponse(
+        id=provision.id,
+        name=provision.name,
+        description=provision.description,
+        percentage=provision.percentage,
+        base_calculation=provision.base_calculation,
+        fixed_amount=provision.fixed_amount,
+        split_mode=provision.split_mode,
+        split_member1=provision.split_member1,
+        split_member2=provision.split_member2,
+        icon=provision.icon,
+        color=provision.color,
+        display_order=provision.display_order,
+        is_active=provision.is_active,
+        is_temporary=provision.is_temporary,
+        start_date=provision.start_date,
+        end_date=provision.end_date,
+        target_amount=provision.target_amount,
+        category=provision.category,
+        current_amount=provision.current_amount,
+        created_at=provision.created_at,
+        updated_at=provision.updated_at,
+        created_by=provision.created_by,
+        monthly_amount=monthly_amount,
+        progress_percentage=progress_percentage
+    )
+
+@app.get("/provisions/summary", response_model=CustomProvisionSummary)
+def get_provisions_summary_endpoint(
+    current_user = Depends(get_current_user), 
+    db: Session = Depends(get_db)
+):
+    """Récupère le résumé complet des provisions personnalisables"""
+    logger.info(f"Résumé provisions demandé par utilisateur: {current_user.username}")
+    
+    config = ensure_default_config(db)
+    
+    # Filtrer par utilisateur
+    user_provisions = db.query(CustomProvision).filter(
+        CustomProvision.created_by == current_user.username
+    ).all()
+    
+    total_provisions = len(user_provisions)
+    active_provisions_list = [p for p in user_provisions if p.is_active]
+    active_provisions = len(active_provisions_list)
+    
+    total_monthly_amount = 0.0
+    total_monthly_member1 = 0.0
+    total_monthly_member2 = 0.0
+    
+    # Comptage par catégorie
+    provisions_by_category = {}
+    provisions_details = []
+    
+    for provision in active_provisions_list:
+        # Calculs pour chaque provision
+        monthly_amount, member1_amount, member2_amount = calculate_provision_amount(provision, config)
+        
+        # Calcul du pourcentage de progression
+        progress_percentage = None
+        if provision.target_amount and provision.target_amount > 0:
+            progress_percentage = min(100.0, (provision.current_amount / provision.target_amount) * 100)
+        
+        # Créer la réponse avec calculs
+        provision_response = CustomProvisionResponse(
+            id=provision.id,
+            name=provision.name,
+            description=provision.description,
+            percentage=provision.percentage,
+            base_calculation=provision.base_calculation,
+            fixed_amount=provision.fixed_amount,
+            split_mode=provision.split_mode,
+            split_member1=provision.split_member1,
+            split_member2=provision.split_member2,
+            icon=provision.icon,
+            color=provision.color,
+            display_order=provision.display_order,
+            is_active=provision.is_active,
+            is_temporary=provision.is_temporary,
+            start_date=provision.start_date,
+            end_date=provision.end_date,
+            target_amount=provision.target_amount,
+            category=provision.category,
+            current_amount=provision.current_amount,
+            created_at=provision.created_at,
+            updated_at=provision.updated_at,
+            created_by=provision.created_by,
+            monthly_amount=monthly_amount,
+            progress_percentage=progress_percentage
+        )
+        
+        provisions_details.append(provision_response)
+        
+        # Agrégation
+        total_monthly_amount += monthly_amount
+        total_monthly_member1 += member1_amount
+        total_monthly_member2 += member2_amount
+        
+        # Comptage par catégorie
+        category = provision.category or "custom"
+        provisions_by_category[category] = provisions_by_category.get(category, 0) + 1
+    
+    return CustomProvisionSummary(
+        total_provisions=total_provisions,
+        active_provisions=active_provisions,
+        total_monthly_amount=total_monthly_amount,
+        total_monthly_member1=total_monthly_member1,
+        total_monthly_member2=total_monthly_member2,
+        provisions_by_category=provisions_by_category,
+        provisions_details=provisions_details
+    )
+
+@app.get("/provisions/{provision_id}", response_model=CustomProvisionResponse)
+def get_provision(
+    provision_id: int,
+    current_user = Depends(get_current_user), 
+    db: Session = Depends(get_db)
+):
+    """Récupère les détails d'une provision spécifique"""
+    provision = db.query(CustomProvision).filter(
+        CustomProvision.id == provision_id,
+        CustomProvision.created_by == current_user.username
+    ).first()
+    
+    if not provision:
+        raise HTTPException(status_code=404, detail="Provision introuvable")
+    
+    # Calculer le montant mensuel
+    config = ensure_default_config(db)
+    monthly_amount, _, _ = calculate_provision_amount(provision, config)
+    
+    # Calcul du pourcentage de progression
+    progress_percentage = None
+    if provision.target_amount and provision.target_amount > 0:
+        progress_percentage = min(100.0, (provision.current_amount / provision.target_amount) * 100)
+    
+    return CustomProvisionResponse(
+        id=provision.id,
+        name=provision.name,
+        description=provision.description,
+        percentage=provision.percentage,
+        base_calculation=provision.base_calculation,
+        fixed_amount=provision.fixed_amount,
+        split_mode=provision.split_mode,
+        split_member1=provision.split_member1,
+        split_member2=provision.split_member2,
+        icon=provision.icon,
+        color=provision.color,
+        display_order=provision.display_order,
+        is_active=provision.is_active,
+        is_temporary=provision.is_temporary,
+        start_date=provision.start_date,
+        end_date=provision.end_date,
+        target_amount=provision.target_amount,
+        category=provision.category,
+        current_amount=provision.current_amount,
+        created_at=provision.created_at,
+        updated_at=provision.updated_at,
+        created_by=provision.created_by,
+        monthly_amount=monthly_amount,
+        progress_percentage=progress_percentage
+    )
+
+@app.put("/provisions/{provision_id}", response_model=CustomProvisionResponse)
+def update_provision(
+    provision_id: int,
+    payload: CustomProvisionUpdate,
+    current_user = Depends(get_current_user), 
+    db: Session = Depends(get_db)
+):
+    """Met à jour une provision existante"""
+    audit_logger = get_audit_logger()
+    logger.info(f"Mise à jour provision {provision_id} par utilisateur: {current_user.username}")
+    
+    provision = db.query(CustomProvision).filter(
+        CustomProvision.id == provision_id,
+        CustomProvision.created_by == current_user.username
+    ).first()
+    
+    if not provision:
+        raise HTTPException(status_code=404, detail="Provision introuvable")
+    
+    # Vérifier les doublons de nom si le nom change
+    if payload.name and payload.name != provision.name:
+        existing = db.query(CustomProvision).filter(
+            CustomProvision.created_by == current_user.username,
+            CustomProvision.name == payload.name,
+            CustomProvision.id != provision_id
+        ).first()
+        
+        if existing:
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Une provision nommée '{payload.name}' existe déjà"
+            )
+    
+    # Capturer les changements pour audit
+    changes = {}
+    update_data = payload.dict(exclude_unset=True)
+    
+    for key, new_value in update_data.items():
+        old_value = getattr(provision, key, None)
+        if old_value != new_value:
+            changes[key] = {"old": old_value, "new": new_value}
+            setattr(provision, key, new_value)
+    
+    # Mettre à jour la date de modification
+    provision.updated_at = dt.datetime.now()
+    
+    db.add(provision)
+    db.commit()
+    db.refresh(provision)
+    
+    # Audit de modification
+    if changes:
+        audit_logger.log_event(
+            AuditEventType.CONFIG_UPDATE,
+            username=current_user.username,
+            details={
+                "action": "update_provision",
+                "provision_id": provision.id,
+                "provision_name": provision.name,
+                "changes_count": len(changes)
+            },
+            success=True
+        )
+    
+    # Calculer le montant mensuel pour la réponse
+    config = ensure_default_config(db)
+    monthly_amount, _, _ = calculate_provision_amount(provision, config)
+    
+    # Calcul du pourcentage de progression
+    progress_percentage = None
+    if provision.target_amount and provision.target_amount > 0:
+        progress_percentage = min(100.0, (provision.current_amount / provision.target_amount) * 100)
+    
+    return CustomProvisionResponse(
+        id=provision.id,
+        name=provision.name,
+        description=provision.description,
+        percentage=provision.percentage,
+        base_calculation=provision.base_calculation,
+        fixed_amount=provision.fixed_amount,
+        split_mode=provision.split_mode,
+        split_member1=provision.split_member1,
+        split_member2=provision.split_member2,
+        icon=provision.icon,
+        color=provision.color,
+        display_order=provision.display_order,
+        is_active=provision.is_active,
+        is_temporary=provision.is_temporary,
+        start_date=provision.start_date,
+        end_date=provision.end_date,
+        target_amount=provision.target_amount,
+        category=provision.category,
+        current_amount=provision.current_amount,
+        created_at=provision.created_at,
+        updated_at=provision.updated_at,
+        created_by=provision.created_by,
+        monthly_amount=monthly_amount,
+        progress_percentage=progress_percentage
+    )
+
+@app.delete("/provisions/{provision_id}")
+def delete_provision(
+    provision_id: int,
+    current_user = Depends(get_current_user), 
+    db: Session = Depends(get_db)
+):
+    """Supprime une provision personnalisable"""
+    audit_logger = get_audit_logger()
+    logger.info(f"Suppression provision {provision_id} par utilisateur: {current_user.username}")
+    
+    provision = db.query(CustomProvision).filter(
+        CustomProvision.id == provision_id,
+        CustomProvision.created_by == current_user.username
+    ).first()
+    
+    if not provision:
+        raise HTTPException(status_code=404, detail="Provision introuvable")
+    
+    provision_name = provision.name
+    
+    db.delete(provision)
+    db.commit()
+    
+    # Audit de suppression
+    audit_logger.log_event(
+        AuditEventType.CONFIG_UPDATE,
+        username=current_user.username,
+        details={
+            "action": "delete_provision",
+            "provision_id": provision_id,
+            "provision_name": provision_name
+        },
+        success=True
+    )
+    
+    return {"ok": True, "message": f"Provision '{provision_name}' supprimée avec succès"}
+
+
+# ---------- Endpoints Custom Provisions (alias pour compatibilité frontend) ----------
+
+@app.get("/custom-provisions", response_model=List[CustomProvisionResponse])
+def list_custom_provisions(
+    active_only: bool = True,
+    category: Optional[str] = None,
+    current_user = Depends(get_current_user), 
+    db: Session = Depends(get_db)
+):
+    """Liste toutes les provisions personnalisables de l'utilisateur - alias pour /provisions"""
+    return list_provisions(active_only, category, current_user, db)
+
+@app.post("/custom-provisions", response_model=CustomProvisionResponse)
+def create_custom_provision(
+    payload: CustomProvisionCreate,
+    current_user = Depends(get_current_user), 
+    db: Session = Depends(get_db)
+):
+    """Crée une nouvelle provision personnalisable - alias pour /provisions"""
+    return create_provision(payload, current_user, db)
+
+@app.get("/custom-provisions/{provision_id}", response_model=CustomProvisionResponse)
+def get_custom_provision(
+    provision_id: int,
+    current_user = Depends(get_current_user), 
+    db: Session = Depends(get_db)
+):
+    """Récupère les détails d'une provision spécifique - alias pour /provisions/{id}"""
+    return get_provision(provision_id, current_user, db)
+
+@app.put("/custom-provisions/{provision_id}", response_model=CustomProvisionResponse)
+def update_custom_provision(
+    provision_id: int,
+    payload: CustomProvisionUpdate,
+    current_user = Depends(get_current_user), 
+    db: Session = Depends(get_db)
+):
+    """Met à jour une provision existante - alias pour /provisions/{id}"""
+    return update_provision(provision_id, payload, current_user, db)
+
+@app.delete("/custom-provisions/{provision_id}")
+def delete_custom_provision(
+    provision_id: int,
+    current_user = Depends(get_current_user), 
+    db: Session = Depends(get_db)
+):
+    """Supprime une provision personnalisable - alias pour /provisions/{id}"""
+    return delete_provision(provision_id, current_user, db)
+
 
 @app.post("/import", response_model=ImportResponse)
 def import_file(file: UploadFile = File(...), current_user = Depends(get_current_user), db: Session = Depends(get_db)):
@@ -1206,30 +2464,20 @@ def tags_summary(month: str, db: Session = Depends(get_db)):
     return [{"tag": k, "total": round(v, 2)} for k, v in out]
 
 @app.get("/summary", response_model=SummaryOut)
-def summary(month: str, db: Session = Depends(get_db)):
+def summary(month: str, current_user = Depends(get_current_user), db: Session = Depends(get_db)):
     cfg = ensure_default_config(db)
     r1, r2 = get_split(cfg)
 
-    # Crédit immo + voiture
-    loan_p1 = (cfg.loan_amount/2.0) if cfg.loan_equal else (cfg.loan_amount * r1)
-    loan_p2 = (cfg.loan_amount/2.0) if cfg.loan_equal else (cfg.loan_amount * r2)
+    # Anciens champs supprimés - utiliser les FixedLine pour crédit immo
+    loan_p1 = 0.0  # Géré par FixedLine maintenant
+    loan_p2 = 0.0
 
-    # Autres charges fixes (ancien système)
-    if cfg.other_fixed_simple:
-        other_fixed_total = cfg.other_fixed_monthly or 0.0
-        taxe_m = 0.0
-        copro_m = 0.0
-    else:
-        taxe_m = (cfg.taxe_fonciere_ann or 0.0) / 12.0
-        copro_m = cfg.copro_montant if cfg.copro_freq == "mensuelle" else ((cfg.copro_montant or 0.0) / 3.0)
-        other_fixed_total = taxe_m + copro_m
-
-    if cfg.other_split_mode == "50/50":
-        other_p1 = other_fixed_total/2.0
-        other_p2 = other_fixed_total/2.0
-    else:
-        other_p1 = other_fixed_total * r1
-        other_p2 = other_fixed_total * r2
+    # Anciens systèmes de charges fixes supprimés - utiliser FixedLine maintenant
+    other_fixed_total = 0.0  # Géré par FixedLine maintenant
+    taxe_m = 0.0
+    copro_m = 0.0
+    other_p1 = 0.0
+    other_p2 = 0.0
 
     # Lignes fixes personnalisées
     lines = db.query(FixedLine).filter(FixedLine.active == True).all()
@@ -1246,16 +2494,35 @@ def summary(month: str, db: Session = Depends(get_db)):
         lines_total += mval
         lines_detail.append( (ln.label or "Fixe", p1, p2) )
 
-    # Provision vacances/bébé/plaisir
-    if cfg.vac_base == "2":
-        base = (cfg.rev1 or 0) + (cfg.rev2 or 0)
-    elif cfg.vac_base == "1":
-        base = (cfg.rev1 or 0)
-    else:
-        base = (cfg.rev2 or 0)
-    vac_monthly_total = (base * (cfg.vac_percent or 0) / 100.0) / 12.0 if base else 0.0
-    vac_p1 = vac_monthly_total * r1
-    vac_p2 = vac_monthly_total * r2
+    # Ancien système provision vacances supprimé - utiliser CustomProvision maintenant
+    vac_monthly_total = 0.0  # Géré par CustomProvision maintenant
+    vac_p1 = 0.0
+    vac_p2 = 0.0
+    
+    # Provisions personnalisables
+    custom_provisions = db.query(CustomProvision).filter(
+        CustomProvision.created_by == current_user.username,
+        CustomProvision.is_active == True
+    ).order_by(CustomProvision.display_order, CustomProvision.name).all()
+    
+    custom_provisions_total = 0.0
+    custom_provisions_detail = []
+    custom_provisions_p1_total = 0.0
+    custom_provisions_p2_total = 0.0
+    
+    for provision in custom_provisions:
+        # Vérifier si la provision est active à cette date
+        current_date = dt.datetime.now()
+        if provision.start_date and provision.start_date > current_date:
+            continue
+        if provision.end_date and provision.end_date < current_date:
+            continue
+            
+        monthly_amount, member1_amount, member2_amount = calculate_provision_amount(provision, cfg)
+        custom_provisions_total += monthly_amount
+        custom_provisions_p1_total += member1_amount
+        custom_provisions_p2_total += member2_amount
+        custom_provisions_detail.append((provision.name, member1_amount, member2_amount, provision.icon))
 
     # Variables
     txs = db.query(Transaction).filter(Transaction.month == month).all()
@@ -1263,38 +2530,41 @@ def summary(month: str, db: Session = Depends(get_db)):
     var_p1 = var_total * r1
     var_p2 = var_total * r2
 
-    # Totaux
-    total_p1 = loan_p1 + other_p1 + vac_p1 + var_p1 + sum(p1 for _,p1,_ in lines_detail)
-    total_p2 = loan_p2 + other_p2 + vac_p2 + var_p2 + sum(p2 for _,_,p2 in lines_detail)
+    # Totaux (incluant les provisions personnalisables)
+    total_p1 = loan_p1 + other_p1 + vac_p1 + var_p1 + sum(p1 for _,p1,_ in lines_detail) + custom_provisions_p1_total
+    total_p2 = loan_p2 + other_p2 + vac_p2 + var_p2 + sum(p2 for _,_,p2 in lines_detail) + custom_provisions_p2_total
 
-    # Détail
+    # Détail - nouveau système uniquement
     detail = {}
-    detail["Crédit immo+voiture"] = {cfg.member1: loan_p1, cfg.member2: loan_p2}
-    if cfg.other_fixed_simple:
-        detail["Autres charges fixes (mensuel)"] = {cfg.member1: (other_fixed_total/2.0 if cfg.other_split_mode=="50/50" else other_fixed_total*r1),
-                                                    cfg.member2: (other_fixed_total/2.0 if cfg.other_split_mode=="50/50" else other_fixed_total*r2)}
-        taxe_m_out = 0.0; copro_m_out = 0.0
-    else:
-        detail["Taxe foncière (mensualisée)"] = {cfg.member1: (taxe_m/2.0 if cfg.other_split_mode=="50/50" else taxe_m*r1),
-                                                 cfg.member2: (taxe_m/2.0 if cfg.other_split_mode=="50/50" else taxe_m*r2)}
-        detail["Copro (mensualisée)"] = {cfg.member1: (copro_m/2.0 if cfg.other_split_mode=="50/50" else copro_m*r1),
-                                         cfg.member2: (copro_m/2.0 if cfg.other_split_mode=="50/50" else copro_m*r2)}
-        taxe_m_out = taxe_m; copro_m_out = copro_m
+    # Les anciens systèmes ne sont plus affichés - tout passe par FixedLine et CustomProvision
+    taxe_m_out = 0.0
+    copro_m_out = 0.0
+    # Anciens systèmes supprimés
 
     for label, p1, p2 in lines_detail:
         detail[f"Fixe — {label}"] = {cfg.member1: p1, cfg.member2: p2}
-
-    detail["Provision vacances/bébé"] = {cfg.member1: vac_p1, cfg.member2: vac_p2}
+    
+    # Ajout des provisions personnalisables au détail
+    if custom_provisions_detail:
+        for prov_name, prov_p1, prov_p2, prov_icon in custom_provisions_detail:
+            detail[f"Provision — {prov_icon} {prov_name}"] = {cfg.member1: prov_p1, cfg.member2: prov_p2}
+    
+    # Ancienne provision vacances supprimée
+    
     detail["Dépenses variables"] = {cfg.member1: var_p1, cfg.member2: var_p2}
 
     return SummaryOut(
-        month=month, var_total=round(var_total,2), loan_amount=round(cfg.loan_amount,2),
-        taxe_m=round(taxe_m_out if not cfg.other_fixed_simple else 0.0,2),
-        copro_m=round(copro_m_out if not cfg.other_fixed_simple else 0.0,2),
-        other_fixed_total=round((cfg.other_fixed_monthly if cfg.other_fixed_simple else (taxe_m_out+copro_m_out)) + lines_total,2),
-        vac_monthly_total=round(vac_monthly_total,2), r1=round(r1,4), r2=round(r2,4),
-        member1=cfg.member1, member2=cfg.member2,
-        total_p1=round(total_p1,2), total_p2=round(total_p2,2), detail=detail
+        month=month, 
+        var_total=round(var_total, 2),
+        fixed_lines_total=round(lines_total, 2),
+        provisions_total=round(custom_provisions_total, 2),
+        r1=round(r1, 4), 
+        r2=round(r2, 4),
+        member1=cfg.member1, 
+        member2=cfg.member2,
+        total_p1=round(total_p1, 2), 
+        total_p2=round(total_p2, 2), 
+        detail=detail
     )
 
 @app.get("/health")
@@ -1350,3 +2620,291 @@ def debug_jwt_token(request_data: dict):
         "timestamp": dt.datetime.now().isoformat(),
         "endpoint": "/debug/jwt"
     }
+
+# ---------- Analytics Endpoints ----------
+@app.get("/analytics/kpis", response_model=KPISummary)
+def get_kpi_summary(
+    months: str = "last3",  # "last3", "last6", "last12", "2024-01,2024-02" 
+    current_user = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Récupère les KPIs généraux pour une période"""
+    audit_logger = get_audit_logger()
+    logger.info(f"Analytics KPIs demandés par utilisateur: {current_user.username}")
+    
+    # Déterminer les mois à analyser
+    if months.startswith("last"):
+        num_months = int(months[4:])
+        all_months = db.query(Transaction.month).distinct().order_by(Transaction.month.desc()).limit(num_months).all()
+        selected_months = [m[0] for m in reversed(all_months)]
+    else:
+        selected_months = [m.strip() for m in months.split(",")]
+    
+    try:
+        kpis = calculate_kpi_summary(db, selected_months)
+        
+        audit_logger.log_event(
+            AuditEventType.ANALYTICS_ACCESS,
+            username=current_user.username,
+            details={"endpoint": "/analytics/kpis", "months": len(selected_months)},
+            success=True
+        )
+        
+        return kpis
+    except Exception as e:
+        logger.error(f"Erreur calcul KPIs: {e}")
+        raise HTTPException(status_code=500, detail="Erreur lors du calcul des KPIs")
+
+@app.get("/analytics/trends", response_model=List[MonthlyTrend])
+def get_monthly_trends(
+    months: str = "last6",
+    current_user = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Récupère les tendances mensuelles"""
+    logger.info(f"Analytics trends demandés par utilisateur: {current_user.username}")
+    
+    # Déterminer les mois à analyser
+    if months.startswith("last"):
+        num_months = int(months[4:])
+        all_months = db.query(Transaction.month).distinct().order_by(Transaction.month.desc()).limit(num_months).all()
+        selected_months = [m[0] for m in reversed(all_months)]
+    else:
+        selected_months = [m.strip() for m in months.split(",")]
+    
+    try:
+        trends = calculate_monthly_trends(db, selected_months)
+        return trends
+    except Exception as e:
+        logger.error(f"Erreur calcul trends: {e}")
+        raise HTTPException(status_code=500, detail="Erreur lors du calcul des tendances")
+
+@app.get("/analytics/categories", response_model=List[CategoryBreakdown])
+def get_category_breakdown(
+    month: str,
+    current_user = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Récupère la répartition par catégorie pour un mois"""
+    logger.info(f"Analytics categories demandées pour {month} par utilisateur: {current_user.username}")
+    
+    try:
+        breakdown = calculate_category_breakdown(db, month)
+        return breakdown
+    except Exception as e:
+        logger.error(f"Erreur calcul catégories: {e}")
+        raise HTTPException(status_code=500, detail="Erreur lors du calcul des catégories")
+
+@app.get("/analytics/anomalies", response_model=List[AnomalyDetection])
+def get_anomalies(
+    month: str,
+    current_user = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Détecte les anomalies pour un mois donné"""
+    logger.info(f"Détection anomalies pour {month} par utilisateur: {current_user.username}")
+    
+    try:
+        anomalies = detect_anomalies(db, month)
+        return anomalies
+    except Exception as e:
+        logger.error(f"Erreur détection anomalies: {e}")
+        raise HTTPException(status_code=500, detail="Erreur lors de la détection d'anomalies")
+
+@app.get("/analytics/patterns", response_model=List[SpendingPattern])
+def get_spending_patterns(
+    months: str = "last3",
+    current_user = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Analyse les patterns de dépense par jour de la semaine"""
+    logger.info(f"Analytics patterns demandés par utilisateur: {current_user.username}")
+    
+    # Déterminer les mois à analyser
+    if months.startswith("last"):
+        num_months = int(months[4:])
+        all_months = db.query(Transaction.month).distinct().order_by(Transaction.month.desc()).limit(num_months).all()
+        selected_months = [m[0] for m in reversed(all_months)]
+    else:
+        selected_months = [m.strip() for m in months.split(",")]
+    
+    try:
+        patterns = calculate_spending_patterns(db, selected_months)
+        return patterns
+    except Exception as e:
+        logger.error(f"Erreur calcul patterns: {e}")
+        raise HTTPException(status_code=500, detail="Erreur lors du calcul des patterns")
+
+@app.get("/analytics/available-months")
+def get_available_months(
+    current_user = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Récupère la liste des mois disponibles pour l'analyse"""
+    try:
+        months = db.query(Transaction.month).distinct().order_by(Transaction.month.desc()).all()
+        return {"months": [m[0] for m in months]}
+    except Exception as e:
+        logger.error(f"Erreur récupération mois: {e}")
+        raise HTTPException(status_code=500, detail="Erreur lors de la récupération des mois")
+
+# ========== ENDPOINTS D'EXPORT COMPLET ==========
+
+@app.post("/export")
+async def create_export(
+    request: ExportRequest,
+    current_user = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Endpoint principal d'export multi-formats"""
+    audit_logger = get_audit_logger()
+    logger.info(f"Export {request.format.value} demandé par utilisateur: {current_user.username}")
+    
+    try:
+        # Validation des paramètres
+        if request.format == ExportFormat.ZIP and not request.options:
+            raise HTTPException(
+                status_code=400, 
+                detail="Options requises pour export ZIP (formats à inclure)"
+            )
+        
+        # Initialiser le gestionnaire d'export
+        export_manager = ExportManager(db)
+        
+        # Audit de la demande
+        audit_logger.log_event(
+            AuditEventType.ANALYTICS_ACCESS,
+            username=current_user.username,
+            details={
+                "export_format": request.format.value,
+                "export_scope": request.scope.value,
+                "filters": request.filters.dict() if request.filters else None
+            },
+            success=True
+        )
+        
+        # Exécuter l'export
+        response = export_manager.execute_export(request, current_user.username)
+        
+        logger.info(f"Export {request.format.value} généré avec succès pour {current_user.username}")
+        return response
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Erreur lors de l'export: {e}")
+        audit_logger.log_event(
+            AuditEventType.ANALYTICS_ACCESS,
+            username=current_user.username,
+            details={
+                "export_format": request.format.value,
+                "error": str(e)[:200]
+            },
+            success=False
+        )
+        raise HTTPException(status_code=500, detail=f"Erreur lors de l'export: {str(e)[:100]}")
+
+@app.get("/export/templates")
+def get_export_templates(
+    current_user = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Récupère les templates d'export disponibles"""
+    export_manager = ExportManager(db)
+    templates = export_manager.get_export_templates()
+    
+    return {
+        "templates": templates,
+        "available_formats": [format.value for format in ExportFormat],
+        "available_scopes": [scope.value for scope in ExportScope]
+    }
+
+@app.post("/export/quick/{format}")
+async def quick_export(
+    format: ExportFormat,
+    months: Optional[str] = None,
+    categories: Optional[str] = None,
+    current_user = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Export rapide avec paramètres simplifiés"""
+    # Construire la requête d'export
+    filters = ExportFilters()
+    
+    if months:
+        # Format attendu: "2024-01,2024-02" ou "last3"
+        if months.startswith("last"):
+            # Récupérer les N derniers mois
+            num_months = int(months[4:])
+            all_months = db.query(Transaction.month).distinct().order_by(Transaction.month.desc()).limit(num_months).all()
+            filters.months = [m[0] for m in reversed(all_months)]
+        else:
+            filters.months = [m.strip() for m in months.split(",")]
+    
+    if categories:
+        filters.categories = [c.strip() for c in categories.split(",")]
+    
+    request = ExportRequest(
+        format=format,
+        scope=ExportScope.ALL,
+        filters=filters
+    )
+    
+    # Réutiliser l'endpoint principal
+    return await create_export(request, current_user, db)
+
+@app.get("/export/history")
+def get_export_history(
+    limit: int = 20,
+    current_user = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Récupère l'historique des exports de l'utilisateur"""
+    # TODO: Implémenter le modèle ExportHistory en base
+    # Pour l'instant, retourner un historique factice
+    return {
+        "exports": [],
+        "message": "Historique des exports à implémenter avec table dédiée"
+    }
+
+@app.delete("/export/cleanup")
+def cleanup_old_exports(
+    days_old: int = 7,
+    current_user = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Nettoie les anciens fichiers d'export"""
+    # TODO: Implémenter le nettoyage des fichiers temporaires
+    return {
+        "message": f"Nettoyage des exports > {days_old} jours à implémenter",
+        "cleaned_count": 0
+    }
+
+# Endpoint legacy pour compatibilité avec l'interface existante
+@app.post("/analytics/export")
+def export_analytics_legacy(
+    months: List[str],
+    format: str = "csv",
+    include_charts: bool = True,
+    current_user = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Export legacy des analytics - redirige vers le nouveau système"""
+    try:
+        export_format = ExportFormat(format)
+    except ValueError:
+        export_format = ExportFormat.CSV
+    
+    filters = ExportFilters(months=months)
+    options = {"include_charts": include_charts} if format == "pdf" else {}
+    
+    request = ExportRequest(
+        format=export_format,
+        scope=ExportScope.ANALYTICS,
+        filters=filters,
+        options=options
+    )
+    
+    # Réutiliser le nouveau endpoint
+    import asyncio
+    return asyncio.create_task(create_export(request, current_user, db))

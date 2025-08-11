@@ -1,0 +1,175 @@
+[
+  {
+    "id": "R001",
+    "priority": 1,
+    "match_type": "regex",
+    "pattern": "VIR.*SALAIRE|SALAIRE",
+    "category": "Revenus",
+    "explanation": "Virement identifié comme salaire",
+    "conditions": null
+  },
+  {
+    "id": "R002",
+    "priority": 1,
+    "match_type": "contains",
+    "pattern": "URSSAF",
+    "category": "Impôts & Taxes",
+    "explanation": "Prélèvement URSSAF détecté",
+    "conditions": null
+  },
+  {
+    "id": "R003",
+    "priority": 1,
+    "match_type": "regex",
+    "pattern": "TOTAL\\s+\\d|SHELL|ESSO|STATION",
+    "category": "Carburant",
+    "explanation": "Station-service identifiée",
+    "conditions": null
+  },
+  {
+    "id": "R004",
+    "priority": 1,
+    "match_type": "regex",
+    "pattern": "LECLERC|CARREFOUR|MONOPRIX|AUCHAN|PICARD",
+    "category": "Alimentation",
+    "explanation": "Enseigne alimentaire identifiée",
+    "conditions": null
+  },
+  {
+    "id": "R005",
+    "priority": 1,
+    "match_type": "regex",
+    "pattern": "PHARMACIE|PHIE\\s",
+    "category": "Pharmacie et laboratoire",
+    "explanation": "Pharmacie détectée",
+    "conditions": null
+  },
+  {
+    "id": "R010",
+    "priority": 2,
+    "match_type": "regex",
+    "pattern": "AMAZON|AMZN",
+    "category": "Livres, CD/DVD, bijoux, jouets…",
+    "explanation": "Amazon détecté",
+    "conditions": null
+  },
+  {
+    "id": "R011",
+    "priority": 2,
+    "match_type": "contains",
+    "pattern": "ALIEXPRESS",
+    "category": "Livres, CD/DVD, bijoux, jouets…",
+    "explanation": "AliExpress détecté",
+    "conditions": null
+  },
+  {
+    "id": "R012",
+    "priority": 2,
+    "match_type": "contains",
+    "pattern": "TEMU",
+    "category": "Vie Quotidienne - Autres",
+    "explanation": "Temu marketplace détecté",
+    "conditions": null
+  },
+  {
+    "id": "R013",
+    "priority": 2,
+    "match_type": "regex",
+    "pattern": "DELIVEROO|UBER\\s*EATS",
+    "category": "Restaurants, bars, discothèques…",
+    "explanation": "Livraison de repas",
+    "conditions": null
+  },
+  {
+    "id": "R014",
+    "priority": 2,
+    "match_type": "regex",
+    "pattern": "RESTAURANT|BISTRO|BRASSERIE",
+    "category": "Restaurants, bars, discothèques…",
+    "explanation": "Établissement de restauration",
+    "conditions": null
+  },
+  {
+    "id": "R015",
+    "priority": 2,
+    "match_type": "regex",
+    "pattern": "PÉAGE|COFIROUTE|FLOWBIRD",
+    "category": "Péages",
+    "explanation": "Péage autoroutier ou parking",
+    "conditions": null
+  },
+  {
+    "id": "R016",
+    "priority": 2,
+    "match_type": "contains",
+    "pattern": "NAVIGO",
+    "category": "Transport",
+    "explanation": "Pass transport public",
+    "conditions": null
+  },
+  {
+    "id": "R017",
+    "priority": 2,
+    "match_type": "regex",
+    "pattern": "EDF|ENEDIS|GAZ",
+    "category": "Énergie",
+    "explanation": "Fournisseur d'énergie",
+    "conditions": null
+  },
+  {
+    "id": "R018",
+    "priority": 2,
+    "match_type": "contains",
+    "pattern": "BOUYGUES TELECOM",
+    "category": "Télécom",
+    "explanation": "Opérateur télécom",
+    "conditions": null
+  },
+  {
+    "id": "R020",
+    "priority": 3,
+    "match_type": "regex",
+    "pattern": "RETRAIT\\s+DAB",
+    "category": "Retraits cash",
+    "explanation": "Retrait distributeur automatique",
+    "conditions": null
+  },
+  {
+    "id": "R021",
+    "priority": 3,
+    "match_type": "regex",
+    "pattern": "VIR.*INTERNE",
+    "category": "Virements émis de comptes à comptes",
+    "explanation": "Virement interne",
+    "conditions": null
+  },
+  {
+    "id": "R025",
+    "priority": 3,
+    "match_type": "amount_range",
+    "pattern": "",
+    "category": "Parking",
+    "explanation": "Petit montant parking",
+    "conditions": {
+      "amount_max": 10,
+      "keywords": [
+        "PARK",
+        "FLOW"
+      ]
+    }
+  },
+  {
+    "id": "R026",
+    "priority": 3,
+    "match_type": "amount_range",
+    "pattern": "",
+    "category": "Pharmacie et laboratoire",
+    "explanation": "Petit montant pharmacie",
+    "conditions": {
+      "amount_max": 30,
+      "keywords": [
+        "PHIE"
+      ]
+    }
+  }
+]

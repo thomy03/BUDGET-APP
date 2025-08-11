@@ -1,0 +1,85 @@
+{
+  "model_name": "Rule Engine v1.0",
+  "evaluation_timestamp": "2025-08-11T01:55:09.396573",
+  "global_metrics": {
+    "accuracy": 0.4,
+    "precision": 0.5177631578947368,
+    "recall": 0.4,
+    "f1_score": 0.39940476190476193,
+    "coverage": 0.525,
+    "avg_confidence": 0.46175,
+    "processing_time_ms": 0.05289912223815918,
+    "false_positive_rate": 0.05555555555555555,
+    "false_negative_rate": 0.5555555555555556
+  },
+  "threshold_checks": {
+    "precision_ok": "False",
+    "coverage_ok": false,
+    "latency_ok": "True",
+    "false_positive_ok": "False",
+    "confidence_ok": "False",
+    "all_passed": false
+  },
+  "performance_status": "FAIL",
+  "top_performing_categories": [
+    {
+      "category": "Livres, CD/DVD, bijoux, jouets…",
+      "f1_score": 1.0,
+      "support": "7"
+    },
+    {
+      "category": "Vie Quotidienne - Autres",
+      "f1_score": 0.8571428571428571,
+      "support": "4"
+    },
+    {
+      "category": "Carburant",
+      "f1_score": 0.6666666666666666,
+      "support": "1"
+    },
+    {
+      "category": "Alimentation",
+      "f1_score": 0.5,
+      "support": "9"
+    },
+    {
+      "category": "Non catégorisé",
+      "f1_score": 0.1904761904761905,
+      "support": "2"
+    }
+  ],
+  "worst_performing_categories": [
+    {
+      "category": "Restaurants, bars, discothèques…",
+      "f1_score": 0,
+      "support": "5"
+    },
+    {
+      "category": "Transport",
+      "f1_score": 0,
+      "support": "1"
+    },
+    {
+      "category": "Urssaf et charges patronales",
+      "f1_score": 0,
+      "support": "1"
+    },
+    {
+      "category": "Virements reçus",
+      "f1_score": 0,
+      "support": "1"
+    },
+    {
+      "category": "Virements reçus de comptes à comptes",
+      "f1_score": 0,
+      "support": "1"
+    }
+  ],
+  "total_categories_evaluated": 11,
+  "recommendations": [
+    "Améliorer la précision: 0.52 < 0.85",
+    "Augmenter la couverture: 0.53 < 0.9",
+    "Réduire les faux positifs: 0.056 > 0.05",
+    "Améliorer la confiance: 0.46 < 0.7"
+  ]
+}

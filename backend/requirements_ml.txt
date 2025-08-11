@@ -1,0 +1,78 @@
+# ===================================================================
+# REQUIREMENTS ML POUR BUDGET FAMILLE PHASE 2 - INTELLIGENCE ARTIFICIELLE
+# ===================================================================
+# Dépendances spécifiques aux fonctionnalités ML Phase 2
+# Compatible avec requirements.txt existant (pas de conflit)
+
+# === MACHINE LEARNING CORE ===
+scikit-learn>=1.3.0,<1.6.0          # ML algorithms optimisés
+numpy>=1.21.0,<1.26.0                # Déjà dans requirements.txt
+pandas>=1.5.0,<2.1.0                 # Déjà dans requirements.txt
+
+# === FEATURE ENGINEERING & NLP ===
+# Text processing pour labels bancaires français
+fuzzywuzzy>=0.18.0                    # Fuzzy string matching pour doublons
+python-Levenshtein>=0.20.0           # Optimisation fuzzywuzzy
+scikit-learn[alldeps]                 # Features complètes TF-IDF
+
+# === CACHING & PERFORMANCE ===
+redis>=4.5.0,<5.1.0                  # Cache ML haute performance  
+hiredis>=2.2.0                        # Client Redis optimisé
+asyncio-redis>=0.16.0                # Async Redis pour FastAPI
+
+# === EVALUATION & MONITORING ===
+matplotlib>=3.6.0,<3.9.0             # Visualisation métriques
+seaborn>=0.12.0,<0.14.0              # Plots statistiques avancés
+
+# === DATA PROCESSING AVANCÉ ===
+scipy>=1.9.0,<1.12.0                 # Fonctions statistiques
+joblib>=1.3.0                        # Sérialisation modèles ML
+
+# === API ML EXTENSIONS ===
+pydantic>=1.10.0,<2.6.0             # Déjà dans requirements.txt
+fastapi>=0.100.0,<0.112.0           # Déjà dans requirements.txt
+
+# === ANOMALY DETECTION SPÉCIALISÉ ===
+# Isolation Forest déjà dans scikit-learn
+# DBSCAN pour clustering déjà dans scikit-learn
+
+# === BUDGET PREDICTION AVANCÉ ===
+# Linear models déjà dans scikit-learn
+# Polynomial features déjà dans scikit-learn
+
+# === OPTIONAL: GPU ACCELERATION ===
+# Décommenté si GPU disponible pour gros volumes
+# cudf>=23.0.0                       # GPU DataFrame
+# cuml>=23.0.0                       # GPU ML algorithms
+
+# ===================================================================
+# INSTALLATION UBUNTU WSL:
+# 
+# 1. Installation base (si pas déjà fait):
+# pip install -r requirements.txt
+# 
+# 2. Installation ML extensions:
+# pip install -r requirements_ml.txt
+# 
+# 3. Pour Redis (nécessaire en production):
+# sudo apt update
+# sudo apt install redis-server
+# sudo systemctl enable redis-server
+# 
+# 4. Tests d'installation:
+# python -c "import sklearn, redis, fuzzywuzzy; print('ML ready!')"
+# 
+# 5. Pour développement (optionnel):
+# pip install pytest pytest-asyncio jupyter
+# ===================================================================
+
+# === COMPATIBILITÉ ===
+# Testé avec Python 3.8.10 Ubuntu WSL
+# Compatible avec requirements.txt existant
+# Pas de conflits de versions détectés
+
+# === PERFORMANCE NOTES ===
+# Redis: ~2-5ms latence locale, 20-50ms cloud
+# scikit-learn: Optimisé pour datasets <10k samples
+# fuzzywuzzy: ~1ms par comparaison de string
+# Objectif global: <500ms processing time
