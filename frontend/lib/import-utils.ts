@@ -23,22 +23,22 @@ export function pickTargetMonth(
 
   // Prioriser le mois suggéré par le backend s'il existe et contient des nouvelles transactions
   if (suggestedMonth) {
-    const suggested = months.find(m => m.month === suggestedMonth && m.newCount > 0);
+    const suggested = months.find(m => m.month === suggestedMonth && m.transaction_count > 0);
     if (suggested) {
       return suggestedMonth;
     }
   }
 
   // Sinon, prendre le mois avec le plus de nouvelles transactions
-  const monthsWithNew = months.filter(m => m?.newCount > 0);
+  const monthsWithNew = months.filter(m => m?.transaction_count > 0);
   if (monthsWithNew.length === 0) {
     return months[0]?.month || null; // Fallback sur le premier mois
   }
 
   // Trier par nombre de nouvelles transactions (décroissant), puis par date (décroissant)
   const bestMonth = monthsWithNew.sort((a, b) => {
-    if (a.newCount !== b.newCount) {
-      return b.newCount - a.newCount;
+    if (a.transaction_count !== b.transaction_count) {
+      return b.transaction_count - a.transaction_count;
     }
     return b.month.localeCompare(a.month);
   })[0];
@@ -86,7 +86,7 @@ export function generateImportSummary(months: ImportMonth[]): {
     };
   }
 
-  const totalNew = months.reduce((sum, month) => sum + month.newCount, 0);
+  const totalNew = months.reduce((sum, month) => sum + month.transaction_count, 0);
 
   if (months.length === 1) {
     return {
@@ -97,7 +97,7 @@ export function generateImportSummary(months: ImportMonth[]): {
 
   // Trier les mois par ordre chronologique pour l'affichage
   const sortedMonths = months
-    .filter(m => m.newCount > 0) // Seulement les mois avec nouvelles transactions
+    .filter(m => m.transaction_count > 0) // Seulement les mois avec nouvelles transactions
     .sort((a, b) => a.month.localeCompare(b.month));
 
   if (sortedMonths.length === 0) {
@@ -110,7 +110,7 @@ export function generateImportSummary(months: ImportMonth[]): {
   if (sortedMonths.length <= 3) {
     // Afficher tous les mois si 3 ou moins
     const monthsText = sortedMonths
-      .map(m => `${humanizeMonth(m.month)} (${m.newCount})`)
+      .map(m => `${humanizeMonth(m.month)} (${m.transaction_count})`)
       .join(', ');
     return {
       totalNew,
@@ -120,7 +120,7 @@ export function generateImportSummary(months: ImportMonth[]): {
 
   // Si plus de 3 mois, afficher les 2 premiers et le décompte
   const firstTwo = sortedMonths.slice(0, 2)
-    .map(m => `${humanizeMonth(m.month)} (${m.newCount})`)
+    .map(m => `${humanizeMonth(m.month)} (${m.transaction_count})`)
     .join(', ');
   const remaining = sortedMonths.length - 2;
   

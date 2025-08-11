@@ -5,6 +5,14 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "../../lib/auth";
 import { Button, Input, Card, LoadingSpinner, Alert } from "../../components/ui";
 
+// Import centralized utilities (simplified for demo)
+import { 
+  createErrorMessage 
+} from "../../lib/utils/errorHandling";
+import { 
+  userPreferences 
+} from "../../lib/utils/storageUtils";
+
 interface LoginFormData {
   username: string;
   password: string;
@@ -20,6 +28,14 @@ export default function LoginPage() {
   const router = useRouter();
   const { isAuthenticated, loading, login } = useAuth();
 
+  // Load preferences
+  useEffect(() => {
+    const showPasswordPref = userPreferences.get('showPasswordOnLogin', false) as boolean;
+    if (showPasswordPref !== undefined) {
+      setShowPassword(showPasswordPref);
+    }
+  }, []);
+
   // Rediriger si déjà connecté
   useEffect(() => {
     if (isAuthenticated && !loading) {
@@ -33,7 +49,8 @@ export default function LoginPage() {
       ...prev,
       [name]: value
     }));
-    // Effacer l'erreur quand l'utilisateur tape
+    
+    // Clear error when user types
     if (error) {
       setError("");
     }
@@ -43,28 +60,38 @@ export default function LoginPage() {
     e.preventDefault();
     setError("");
 
-    // Validation côté client
-    if (!formData.username.trim() || !formData.password.trim()) {
-      setError("Veuillez remplir tous les champs");
-      return;
-    }
+    try {
+      // Basic validation
+      if (!formData.username.trim() || !formData.password.trim()) {
+        setError("Veuillez remplir tous les champs");
+        return;
+      }
 
-    if (formData.username.trim().length < 2) {
-      setError("Le nom d'utilisateur doit contenir au moins 2 caractères");
-      return;
-    }
+      if (formData.username.trim().length < 2) {
+        setError("Le nom d'utilisateur doit contenir au moins 2 caractères");
+        return;
+      }
 
-    if (formData.password.length < 3) {
-      setError("Le mot de passe doit contenir au moins 3 caractères");
-      return;
-    }
+      if (formData.password.length < 3) {
+        setError("Le mot de passe doit contenir au moins 3 caractères");
+        return;
+      }
 
-    const result = await login(formData.username.trim(), formData.password);
-    
-    if (result.success) {
-      router.push("/");
-    } else {
-      setError(result.error || "Erreur de connexion");
+      // Save preference for showing password
+      userPreferences.set('showPasswordOnLogin', showPassword);
+
+      // Attempt login
+      const result = await login(formData.username.trim(), formData.password);
+      
+      if (result.success) {
+        router.push("/");
+      } else {
+        const errorMessage = createErrorMessage(new Error(result.error || "Erreur de connexion"));
+        setError(errorMessage);
+      }
+    } catch (error) {
+      const errorMessage = createErrorMessage(error, "Erreur de connexion inattendue");
+      setError(errorMessage);
     }
   };
 
@@ -119,7 +146,10 @@ export default function LoginPage() {
               disabled={loading}
               leftIcon="🔐"
               rightIcon={showPassword ? "🙈" : "👁️"}
-              onRightIconClick={() => setShowPassword(!showPassword)}
+              onRightIconClick={() => {
+                setShowPassword(!showPassword);
+                userPreferences.set('showPasswordOnLogin', !showPassword);
+              }}
             />
 
             {error && (

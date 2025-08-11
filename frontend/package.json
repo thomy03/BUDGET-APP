@@ -6,8 +6,11 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
+    "type-check": "tsc --noEmit",
+    "type-check:watch": "tsc --noEmit --watch",
+    "lint:types": "tsc --noEmit --pretty",
     "dev": "next dev -p 45678",
-    "build": "next build",
+    "build": "npm run type-check && next build",
     "start": "next start"
   },
   "dependencies": {

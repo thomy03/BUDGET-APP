@@ -27,7 +27,7 @@ declare global {
   type Status = "idle" | "loading" | "success" | "error";
 
   // Pour les réponses d'API génériques
-  interface ApiResponse<T = any> {
+  interface ApiResponse<T = unknown> {
     data: T;
     message?: string;
     status?: number;
@@ -67,7 +67,7 @@ declare global {
   }
 
   // Types de formulaires
-  interface FormState<T = any> {
+  interface FormState<T = unknown> {
     data: T;
     errors: Record<string, string>;
     isSubmitting: boolean;

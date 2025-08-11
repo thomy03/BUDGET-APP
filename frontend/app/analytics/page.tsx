@@ -37,11 +37,12 @@ export default function Analytics() {
       
       const response = await api.get("/tags-summary", { params: { month } });
       
-      // Convertir l'objet en array
-      const summaryData = response.data;
+      // La réponse contient un objet avec { month, tags, total_tagged_transactions }
+      // Nous devons extraire l'objet "tags" et l'adapter
+      const summaryData = response.data.tags || {};
       const rowsArray = Object.entries(summaryData).map(([tag, data]: [string, any]) => ({
         tag,
-        total: Math.abs(data.total || 0), // Valeur absolue pour les dépenses
+        total: Math.abs(data.total_amount || 0), // Le backend retourne total_amount, pas total
         count: data.count || 0
       }));
       

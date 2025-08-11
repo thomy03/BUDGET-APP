@@ -1,8 +1,6 @@
 "use client";
 
-// @ts-ignore: Next.js handles CSS imports
 import "./globals.css";
-// @ts-ignore: Next.js handles CSS imports  
 import "./calendar-modern.css";
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";

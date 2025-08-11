@@ -58,7 +58,8 @@ export function TrendsChart({ period = "last6", height = 400, className = "" }: 
       'Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Jun',
       'Jul', 'Aoû', 'Sep', 'Oct', 'Nov', 'Déc'
     ];
-    return `${monthNames[parseInt(monthNum) - 1]} ${year.slice(2)}`;
+    if (!year || !monthNum) return month; // Fallback si format invalide
+    return `${monthNames[parseInt(monthNum) - 1] || monthNum} ${year.slice(2)}`;
   };
 
   // Transformation des données pour le graphique

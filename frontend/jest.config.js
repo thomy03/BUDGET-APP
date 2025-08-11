@@ -1,29 +1,173 @@
-module.exports = {
+const nextJest = require('next/jest')
+
+const createJestConfig = nextJest({
+  // Path to your Next.js app to load next.config.js and .env files
+  dir: './',
+})
+
+// Custom Jest configuration
+const customJestConfig = {
+  // Test environment
   testEnvironment: 'jsdom',
+  
+  // Setup files
   setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
-  moduleNameMapper: {
-    '^@/(.*)$': '<rootDir>/$1',
-    '\\.(css|less|scss|sass)$': 'identity-obj-proxy'
+  
+  // Module paths
+  moduleNameMapping: {
+    '^@/components/(.*)$': '<rootDir>/components/$1',
+    '^@/lib/(.*)$': '<rootDir>/lib/$1',
+    '^@/app/(.*)$': '<rootDir>/app/$1',
+    '^@/types/(.*)$': '<rootDir>/types/$1',
   },
+  
+  // Test file patterns
+  testMatch: [
+    '<rootDir>/__tests__/**/*.{js,jsx,ts,tsx}',
+    '<rootDir>/**/*.(test|spec).{js,jsx,ts,tsx}',
+  ],
+  
+  // Files to ignore
+  testPathIgnorePatterns: [
+    '<rootDir>/.next/',
+    '<rootDir>/node_modules/',
+    '<rootDir>/coverage/',
+    '<rootDir>/dist/',
+  ],
+  
+  // Transform configuration
+  transform: {
+    '^.+\\.(js|jsx|ts|tsx)$': ['babel-jest', { presets: ['next/babel'] }],
+  },
+  
+  // Module file extensions
+  moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'],
+  
+  // Coverage configuration
   collectCoverage: true,
+  coverageDirectory: 'coverage',
+  coverageReporters: [
+    'text',
+    'lcov',
+    'html',
+    'json',
+    'clover',
+  ],
+  
+  // Coverage collection patterns
   collectCoverageFrom: [
-    'components/**/*.{ts,tsx}',
-    'lib/**/*.{ts,tsx}',
-    'app/**/*.{ts,tsx}',
+    'app/**/*.{js,ts,jsx,tsx}',
+    'components/**/*.{js,ts,jsx,tsx}',
+    'lib/**/*.{js,ts,jsx,tsx}',
     '!**/*.d.ts',
     '!**/node_modules/**',
-    '!**/__tests__/**'
+    '!**/.next/**',
+    '!**/coverage/**',
+    '!**/dist/**',
+    '!**/*.config.{js,ts}',
+    '!**/jest.setup.js',
   ],
+  
+  // Coverage thresholds - enforcing 85% minimum
   coverageThreshold: {
     global: {
-      branches: 50,
-      functions: 50,
-      lines: 50,
-      statements: 50
-    }
+      branches: 80,
+      functions: 85,
+      lines: 85,
+      statements: 85,
+    },
+    // Specific thresholds for critical modules
+    'lib/calculations.ts': {
+      branches: 90,
+      functions: 95,
+      lines: 95,
+      statements: 95,
+    },
+    'lib/api.ts': {
+      branches: 85,
+      functions: 90,
+      lines: 90,
+      statements: 90,
+    },
   },
-  testPathIgnorePatterns: ['/node_modules/', '/.next/'],
-  transform: {
-    '^.+\\.(js|jsx|ts|tsx)$': ['babel-jest', { presets: ['next/babel'] }]
-  }
+  
+  // Global test setup
+  globals: {
+    'ts-jest': {
+      tsconfig: 'tsconfig.json',
+    },
+  },
+  
+  // Test timeout
+  testTimeout: 10000,
+  
+  // Verbose output for CI
+  verbose: process.env.CI === 'true',
+  
+  // Error reporting
+  errorOnDeprecated: true,
+  
+  // Mock configuration
+  clearMocks: true,
+  resetMocks: true,
+  restoreMocks: true,
+  
+  // Snapshot configuration
+  updateSnapshot: process.env.UPDATE_SNAPSHOTS === 'true',
+  
+  // Parallel execution
+  maxWorkers: process.env.CI ? 2 : '50%',
+  
+  // Watch mode configuration (for development)
+  watchman: true,
+  watchPlugins: [
+    'jest-watch-typeahead/filename',
+    'jest-watch-typeahead/testname',
+  ],
+  
+  // Performance monitoring
+  detectOpenHandles: true,
+  detectLeaks: false, // Enable in CI if memory leaks suspected
+  
+  // Test result processors
+  reporters: [
+    'default',
+    [
+      'jest-html-reporters',
+      {
+        publicPath: './coverage',
+        filename: 'report.html',
+        expand: true,
+      },
+    ],
+    [
+      'jest-junit',
+      {
+        outputDirectory: './coverage',
+        outputName: 'junit.xml',
+        ancestorSeparator: ' › ',
+        uniqueOutputName: 'false',
+        suiteNameTemplate: '{filepath}',
+        classNameTemplate: '{classname}',
+        titleTemplate: '{title}',
+      },
+    ],
+  ],
+  
+  // Custom test patterns for different types
+  projects: [
+    {
+      displayName: 'unit',
+      testMatch: ['<rootDir>/__tests__/**/*.(test|spec).{js,jsx,ts,tsx}'],
+      testPathIgnorePatterns: ['<rootDir>/__tests__/e2e/', '<rootDir>/__tests__/integration/'],
+    },
+    {
+      displayName: 'integration',
+      testMatch: ['<rootDir>/__tests__/integration/**/*.(test|spec).{js,jsx,ts,tsx}'],
+      setupFilesAfterEnv: ['<rootDir>/jest.integration.setup.js'],
+    },
+  ],
 }
+
+// Create and export configuration
+module.exports = createJestConfig(customJestConfig)

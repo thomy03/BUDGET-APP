@@ -16,25 +16,33 @@ type Props = {
   hint?: string
   error?: string | null
   className?: string
+  fileSize?: number // Taille du fichier en bytes
+  estimatedLines?: number // Nombre de lignes estimé
 }
 
 function clamp(n: number, min = 0, max = 100) {
   return Math.max(min, Math.min(max, Math.round(n)))
 }
 
-function phaseLabel(phase?: CsvImportPhase) {
+function phaseLabel(phase?: CsvImportPhase, estimatedLines?: number) {
   switch (phase) {
     case 'upload':
       return 'Téléversement en cours…'
     case 'parse':
       return 'Analyse du fichier…'
     case 'validate':
-      return 'Validation des lignes…'
+      return estimatedLines ? `Validation de ~${estimatedLines} lignes…` : 'Validation des lignes…'
     case 'import':
-      return 'Importation des données…'
+      return estimatedLines ? `Importation de ~${estimatedLines} transactions…` : 'Importation des données…'
     default:
       return 'Traitement en cours…'
   }
+}
+
+function formatFileSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
 export function CsvImportProgress({
@@ -46,6 +54,8 @@ export function CsvImportProgress({
   hint,
   error,
   className,
+  fileSize,
+  estimatedLines,
 }: Props) {
   const pct = typeof progress === 'number' ? clamp(progress) : null
 
@@ -61,11 +71,19 @@ export function CsvImportProgress({
               <div className="min-w-0">
                 <div className="font-semibold text-zinc-900">Import CSV</div>
                 {fileName && (
-                  <div 
-                    title={fileName}
-                    className="text-sm text-zinc-600 truncate max-w-xs"
-                  >
-                    {fileName}
+                  <div className="space-y-1">
+                    <div 
+                      title={fileName}
+                      className="text-sm text-zinc-600 truncate max-w-xs"
+                    >
+                      {fileName}
+                    </div>
+                    {(fileSize || estimatedLines) && (
+                      <div className="flex items-center gap-3 text-xs text-zinc-500">
+                        {fileSize && <span>📁 {formatFileSize(fileSize)}</span>}
+                        {estimatedLines && <span>📊 ~{estimatedLines} lignes</span>}
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -92,7 +110,7 @@ export function CsvImportProgress({
               className="flex items-center gap-3"
             >
               <LoadingSpinner size="sm" />
-              <div className="text-sm text-zinc-700">{phaseLabel(phase)}</div>
+              <div className="text-sm text-zinc-700">{phaseLabel(phase, estimatedLines)}</div>
             </div>
           ) : (
             <div className="space-y-2">
@@ -112,7 +130,7 @@ export function CsvImportProgress({
                 </div>
               </div>
               <div className="flex items-center justify-between text-sm">
-                <span className="text-zinc-700">{phaseLabel(phase)}</span>
+                <span className="text-zinc-700">{phaseLabel(phase, estimatedLines)}</span>
                 <span className="font-mono text-blue-600 font-medium">{pct}%</span>
               </div>
             </div>

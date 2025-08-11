@@ -74,8 +74,11 @@ describe('TransactionsPage - Financial Improvements', () => {
       isAuthenticated: true,
       loading: false,
       user: null,
+      token: 'mock-token',
       login: jest.fn(),
-      logout: jest.fn()
+      logout: jest.fn(),
+      refreshToken: jest.fn(),
+      validateSession: jest.fn()
     })
     
     mockUseGlobalMonthWithUrl.mockReturnValue(['2023-06', jest.fn()])

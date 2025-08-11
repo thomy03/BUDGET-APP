@@ -1,7 +1,7 @@
 import axios, { AxiosError, AxiosResponse, InternalAxiosRequestConfig } from "axios";
 
 // Configuration de l'API
-export const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "http://127.0.0.1:5000";
+export const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || process.env.NEXT_PUBLIC_API_BASE || "http://127.0.0.1:8000";
 
 // Types de données de l'application
 export type ConfigOut = {
@@ -39,17 +39,20 @@ export type ConfigOut = {
 export type Tx = {
   id: number;
   date_op: string; // Date format backend
+  date_valeur?: string; // Date de valeur (optional - sent by backend)
   label: string; // Libellé
   category: string; // Catégorie
-  category_parent: string; // Catégorie parent
+  subcategory?: string; // Sous-catégorie (sent by backend as subcategory)
   amount: number; // Montant  
-  account_label: string; // Compte
   tags: string[]; // Tags as array
   month: string;
   is_expense: boolean;
   exclude?: boolean; // Optionnel
-  row_id: string; // Hash unique
-  import_id?: string; // ID de l'import pour traçabilité
+  // Optional fields for backward compatibility
+  category_parent?: string; // Legacy field - mapped from subcategory
+  account_label?: string; // Legacy field - not used in current backend
+  row_id?: string; // Legacy field - not used in current backend
+  import_id?: string; // Legacy field - not used in current backend
 };
 
 export type Summary = {
@@ -89,23 +92,26 @@ export type FixedLine = {
 // Types pour le nouveau système d'import optimisé
 export type ImportMonth = {
   month: string; // Format YYYY-MM
-  newCount: number; // Nouvelles transactions créées
-  totalCount: number; // Total dans le fichier pour ce mois
-  txIds: number[]; // IDs des nouvelles transactions (optionnel)
-  firstDate: string; // Première date du mois
-  lastDate: string; // Dernière date du mois
+  transaction_count: number; // Nombre de transactions créées
+  date_range: {
+    start?: string;
+    end?: string;
+  }; // Plage de dates du mois
+  total_amount: number; // Montant total des transactions
+  categories: string[]; // Catégories détectées
 };
 
 export type ImportResponse = {
-  importId: string; // UUID unique de l'import
-  months: ImportMonth[]; // Mois détectés avec métadonnées
-  suggestedMonth: string | null; // Mois recommandé pour la redirection
-  duplicatesCount: number; // Nombre de doublons ignorés
-  warnings: string[]; // Avertissements (optionnel)
-  errors: string[]; // Erreurs de parsing (optionnel)
-  processing: "done" | "processing"; // État du traitement
-  fileName: string; // Nom du fichier original
-  processingMs: number; // Temps de traitement en millisecondes
+  import_id: string; // UUID unique de l'import
+  status: string; // État de l'import
+  filename: string; // Nom du fichier original
+  rows_processed: number; // Nombre de lignes traitées
+  months_detected: ImportMonth[]; // Mois détectés avec métadonnées
+  duplicates_info: { // Information sur les doublons
+    duplicates_count?: number;
+  };
+  validation_errors: string[]; // Erreurs de validation
+  message: string; // Message de réponse
 };
 
 // Types pour les provisions personnalisables
@@ -173,7 +179,7 @@ export interface ApiError {
   message: string;
   status?: number;
   code?: string;
-  details?: any;
+  details?: Record<string, unknown>;
 }
 
 // Déclaration pour étendre le type de config axios
@@ -321,7 +327,7 @@ api.interceptors.response.use(
 // Fonction utilitaire pour créer des erreurs API structurées
 function createApiError(axiosError: AxiosError, customMessage?: string): ApiError {
   const status = axiosError.response?.status;
-  const data = axiosError.response?.data as any;
+  const data = axiosError.response?.data as Record<string, unknown> | undefined;
   
   let message = customMessage || "Une erreur est survenue";
   
@@ -359,11 +365,11 @@ function createApiError(axiosError: AxiosError, customMessage?: string): ApiErro
     }
     
     // Utiliser le message du serveur si disponible
-    if (data?.detail) {
+    if (data?.detail && typeof data.detail === 'string') {
       message = data.detail;
-    } else if (data?.message) {
+    } else if (data?.message && typeof data.message === 'string') {
       message = data.message;
-    } else if (data?.error) {
+    } else if (data?.error && typeof data.error === 'string') {
       message = data.error;
     }
   }

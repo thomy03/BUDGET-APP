@@ -3,15 +3,21 @@
 import { usePathname } from 'next/navigation';
 import { useGlobalMonth, useGlobalMonthWithUrl } from '../lib/month';
 
-export default function MonthPicker() {
+interface MonthPickerProps {
+  currentMonth?: string;
+  onMonthChange?: (month: string) => void;
+}
+
+export default function MonthPicker({ currentMonth, onMonthChange }: MonthPickerProps = {}) {
   const pathname = usePathname();
   
-  // Utiliser le hook approprié selon la page
-  // Sur /transactions, on synchronise avec l'URL
+  // Utiliser les props si fournis (pour les tests), sinon utiliser les hooks normalement
   const isTransactionsPage = pathname === '/transactions';
-  const [month, setMonth] = isTransactionsPage 
-    ? useGlobalMonthWithUrl() 
-    : useGlobalMonth();
+  const [month, setMonth] = currentMonth && onMonthChange 
+    ? [currentMonth, onMonthChange]
+    : (isTransactionsPage 
+        ? useGlobalMonthWithUrl() 
+        : useGlobalMonth());
 
   console.log('📅 MonthPicker render - Page:', pathname, 'Month:', month, 'URL sync:', isTransactionsPage);
 

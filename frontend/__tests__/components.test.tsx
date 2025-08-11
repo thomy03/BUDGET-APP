@@ -2,7 +2,7 @@ import React from 'react'
 import { render, screen, fireEvent } from '@testing-library/react'
 import Button from '../components/ui/Button'
 import Card from '../components/ui/Card'
-import Toast from '../components/ui/Toast'
+import Alert from '../components/ui/Alert'
 import MonthPicker from '../components/MonthPicker'
 
 describe('Composants UI', () => {
@@ -36,10 +36,10 @@ describe('Composants UI', () => {
 
   describe('Toast', () => {
     it('affiche le message de toast', () => {
-      render(<Toast message="Message de test" type="success" />)
+      render(<Alert message="Message de test" type="success" />)
       const toastElement = screen.getByText('Message de test')
       expect(toastElement).toBeInTheDocument()
-      expect(toastElement).toHaveClass('toast-success')
+      expect(toastElement).toHaveClass('text-green-800')
     })
   })
 
