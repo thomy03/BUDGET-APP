@@ -5,6 +5,9 @@ import { useRouter } from "next/navigation";
 import { api, ConfigOut, FixedLine } from "../../lib/api";
 import { useAuth } from "../../lib/auth";
 import { LoadingSpinner, Card, Button, Input, Alert } from "../../components/ui";
+import CustomProvisions from "../../components/CustomProvisions";
+import FixedExpenses from "../../components/FixedExpenses";
+import APIDebugPanel from "../../components/APIDebugPanel";
 
 export default function Settings() {
   const { isAuthenticated, loading: authLoading } = useAuth();
@@ -307,21 +310,17 @@ export default function Settings() {
         </div>
       </Card>
 
-      {/* Section Dépenses Fixes - Simplifiée pour les tests */}
+      {/* Debug Panel - Temporaire */}
+      <APIDebugPanel />
+
+      {/* Section Provisions Personnalisables */}
       <Card className="p-6">
-        <div className="space-y-4">
-          <div className="border-b border-gray-200 pb-4">
-            <h2 className="text-xl font-semibold text-gray-900">Dépenses Fixes</h2>
-            <p className="text-sm text-gray-600 mt-1">
-              Fonctionnalité avancée - sera implémentée dans une version future.
-            </p>
-          </div>
-          
-          <div className="text-center py-8 text-gray-500">
-            <p className="text-lg">🚧 En construction</p>
-            <p className="text-sm mt-2">Cette section sera disponible dans la v3.1</p>
-          </div>
-        </div>
+        <CustomProvisions config={cfg} onDataChange={load} />
+      </Card>
+
+      {/* Section Dépenses Fixes */}
+      <Card className="p-6">
+        <FixedExpenses config={cfg} onDataChange={load} />
       </Card>
     </main>
   );

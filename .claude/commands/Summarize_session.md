@@ -1,0 +1,18 @@
+# Summarize Session
+
+Document session progress and achievements in project documentation.
+
+## Instructions
+
+At the end of the development session, create a comprehensive summary:
+1. Document all completed tasks and achievements during this session
+2. Note any problems solved and solutions implemented  
+3. Record any new issues discovered or blockers encountered
+4. Update progress status for ongoing features
+5. Add this summary to the appropriate documentation files:
+   - .claude/CLAUDE.md - for technical changes and setup updates
+   - .claude/PRD.md - for product requirement updates and feature status
+   - .claude/ROADMAP_MASTER_V3.md - for roadmap progress and task completion tracking
+   - .claude/README.md - for all new informations that enhance the product
+
+This ensures continuity between sessions and maintains accurate project documentation.

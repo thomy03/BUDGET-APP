@@ -1,0 +1,367 @@
+import { api } from '../lib/api'
+import axios from 'axios'
+
+// Mock axios
+jest.mock('axios')
+const mockedAxios = axios as jest.Mocked<typeof axios>
+
+// Mock API responses
+const mockEnhancedSummaryResponse = {
+  data: {
+    month: '2023-06',
+    var_total: 2500,
+    provisions_total: 629.17,
+    fixed_expenses_total: 1240.00,
+    budget_total: 4369.17,
+    member1: 'Alice',
+    member2: 'Bob',
+    member1_total: 2400.50,
+    member2_total: 1968.67,
+    detailed_breakdown: {
+      provisions: {
+        'Vacances': { member1: 126.04, member2: 103.13 },
+        'Rénovation': { member1: 200, member2: 200 }
+      },
+      fixed_expenses: {
+        'Prêt immobilier': { member1: 660, member2: 540 },
+        'Assurance habitation': { member1: 20, member2: 20 }
+      },
+      variables: {
+        'Alimentation': { member1: 800, member2: 600 },
+        'Transport': { member1: 350, member2: 250 },
+        'Loisirs': { member1: 250, member2: 250 }
+      }
+    }
+  }
+}
+
+const mockBatchSummaryResponse = {
+  data: {
+    months: [
+      {
+        month: '2023-04',
+        var_total: 2300,
+        provisions_total: 629.17,
+        fixed_expenses_total: 1240.00,
+        budget_total: 4169.17
+      },
+      {
+        month: '2023-05',
+        var_total: 2400,
+        provisions_total: 629.17,
+        fixed_expenses_total: 1240.00,
+        budget_total: 4269.17
+      },
+      {
+        month: '2023-06',
+        var_total: 2500,
+        provisions_total: 629.17,
+        fixed_expenses_total: 1240.00,
+        budget_total: 4369.17
+      }
+    ],
+    summary: {
+      total_months: 3,
+      average_budget: 4269.17,
+      trend: 'increasing'
+    }
+  }
+}
+
+describe('API Endpoints - New Financial Features', () => {
+  beforeEach(() => {
+    // Reset mocks
+    mockedAxios.create.mockReturnValue(mockedAxios)
+    mockedAxios.interceptors = {
+      request: { use: jest.fn(), eject: jest.fn(), clear: jest.fn() },
+      response: { use: jest.fn(), eject: jest.fn(), clear: jest.fn() }
+    } as any
+  })
+
+  afterEach(() => {
+    jest.clearAllMocks()
+  })
+
+  describe('/summary/enhanced endpoint', () => {
+    it('should fetch enhanced summary with authentication', async () => {
+      mockedAxios.get.mockResolvedValueOnce(mockEnhancedSummaryResponse)
+
+      const response = await api.get('/summary/enhanced', { 
+        params: { month: '2023-06' },
+        headers: { Authorization: 'Bearer test-token' }
+      })
+
+      expect(mockedAxios.get).toHaveBeenCalledWith('/summary/enhanced', {
+        params: { month: '2023-06' },
+        headers: { Authorization: 'Bearer test-token' }
+      })
+
+      expect(response.data).toHaveProperty('month', '2023-06')
+      expect(response.data).toHaveProperty('provisions_total', 629.17)
+      expect(response.data).toHaveProperty('fixed_expenses_total', 1240.00)
+      expect(response.data).toHaveProperty('budget_total', 4369.17)
+      expect(response.data).toHaveProperty('detailed_breakdown')
+    })
+
+    it('should validate enhanced summary data structure', async () => {
+      mockedAxios.get.mockResolvedValueOnce(mockEnhancedSummaryResponse)
+
+      const response = await api.get('/summary/enhanced', { 
+        params: { month: '2023-06' } 
+      })
+
+      const data = response.data
+
+      // Validate required fields
+      expect(data).toHaveProperty('month')
+      expect(data).toHaveProperty('var_total')
+      expect(data).toHaveProperty('provisions_total')
+      expect(data).toHaveProperty('fixed_expenses_total')
+      expect(data).toHaveProperty('budget_total')
+      expect(data).toHaveProperty('member1')
+      expect(data).toHaveProperty('member2')
+
+      // Validate detailed breakdown structure
+      expect(data.detailed_breakdown).toHaveProperty('provisions')
+      expect(data.detailed_breakdown).toHaveProperty('fixed_expenses')
+      expect(data.detailed_breakdown).toHaveProperty('variables')
+
+      // Validate provisions breakdown
+      expect(data.detailed_breakdown.provisions['Vacances']).toHaveProperty('member1')
+      expect(data.detailed_breakdown.provisions['Vacances']).toHaveProperty('member2')
+      
+      // Validate calculations consistency
+      expect(typeof data.var_total).toBe('number')
+      expect(typeof data.provisions_total).toBe('number')
+      expect(typeof data.fixed_expenses_total).toBe('number')
+      expect(typeof data.budget_total).toBe('number')
+    })
+
+    it('should handle enhanced summary error responses', async () => {
+      const errorResponse = {
+        response: {
+          status: 404,
+          data: { detail: 'Month not found' }
+        }
+      }
+
+      mockedAxios.get.mockRejectedValueOnce(errorResponse)
+
+      await expect(api.get('/summary/enhanced', { 
+        params: { month: '2023-13' } // Invalid month
+      })).rejects.toEqual(errorResponse)
+    })
+  })
+
+  describe('/summary/batch endpoint', () => {
+    it('should fetch batch summary for multiple months', async () => {
+      mockedAxios.get.mockResolvedValueOnce(mockBatchSummaryResponse)
+
+      const response = await api.get('/summary/batch', {
+        params: { 
+          months: ['2023-04', '2023-05', '2023-06'] 
+        }
+      })
+
+      expect(mockedAxios.get).toHaveBeenCalledWith('/summary/batch', {
+        params: { 
+          months: ['2023-04', '2023-05', '2023-06'] 
+        }
+      })
+
+      expect(response.data).toHaveProperty('months')
+      expect(response.data).toHaveProperty('summary')
+      expect(response.data.months).toHaveLength(3)
+    })
+
+    it('should validate batch summary response structure', async () => {
+      mockedAxios.get.mockResolvedValueOnce(mockBatchSummaryResponse)
+
+      const response = await api.get('/summary/batch', {
+        params: { months: ['2023-04', '2023-05', '2023-06'] }
+      })
+
+      const data = response.data
+
+      // Validate main structure
+      expect(data).toHaveProperty('months')
+      expect(data).toHaveProperty('summary')
+      expect(Array.isArray(data.months)).toBe(true)
+
+      // Validate each month data
+      data.months.forEach((monthData: any) => {
+        expect(monthData).toHaveProperty('month')
+        expect(monthData).toHaveProperty('var_total')
+        expect(monthData).toHaveProperty('provisions_total')
+        expect(monthData).toHaveProperty('fixed_expenses_total')
+        expect(monthData).toHaveProperty('budget_total')
+        expect(typeof monthData.var_total).toBe('number')
+        expect(typeof monthData.provisions_total).toBe('number')
+        expect(typeof monthData.fixed_expenses_total).toBe('number')
+        expect(typeof monthData.budget_total).toBe('number')
+      })
+
+      // Validate summary metadata
+      expect(data.summary).toHaveProperty('total_months', 3)
+      expect(data.summary).toHaveProperty('average_budget')
+      expect(data.summary).toHaveProperty('trend')
+      expect(typeof data.summary.average_budget).toBe('number')
+      expect(['increasing', 'decreasing', 'stable']).toContain(data.summary.trend)
+    })
+
+    it('should handle batch calculation accuracy', async () => {
+      mockedAxios.get.mockResolvedValueOnce(mockBatchSummaryResponse)
+
+      const response = await api.get('/summary/batch', {
+        params: { months: ['2023-04', '2023-05', '2023-06'] }
+      })
+
+      const data = response.data
+
+      // Verify calculation accuracy
+      const totalBudgets = data.months.reduce((sum: number, month: any) => sum + month.budget_total, 0)
+      const expectedAverage = totalBudgets / data.months.length
+      
+      expect(Math.abs(data.summary.average_budget - expectedAverage)).toBeLessThan(0.01) // Allow for floating point precision
+
+      // Verify each month's budget total calculation
+      data.months.forEach((monthData: any) => {
+        const calculatedTotal = monthData.var_total + monthData.provisions_total + monthData.fixed_expenses_total
+        expect(Math.abs(monthData.budget_total - calculatedTotal)).toBeLessThan(0.01)
+      })
+    })
+
+    it('should handle empty months array', async () => {
+      const emptyResponse = {
+        data: {
+          months: [],
+          summary: {
+            total_months: 0,
+            average_budget: 0,
+            trend: 'stable'
+          }
+        }
+      }
+
+      mockedAxios.get.mockResolvedValueOnce(emptyResponse)
+
+      const response = await api.get('/summary/batch', {
+        params: { months: [] }
+      })
+
+      expect(response.data.months).toHaveLength(0)
+      expect(response.data.summary.total_months).toBe(0)
+      expect(response.data.summary.average_budget).toBe(0)
+    })
+  })
+
+  describe('Calculation Consistency Tests', () => {
+    it('should maintain consistency between old and new summary formats', async () => {
+      // Mock old format response
+      const oldFormatResponse = {
+        data: {
+          month: '2023-06',
+          var_total: 2500,
+          member1: 'Alice',
+          member2: 'Bob',
+          total_p1: 2400.50,
+          total_p2: 1968.67,
+          detail: {
+            'Alimentation': { 'Alice': 800, 'Bob': 600 },
+            'Transport': { 'Alice': 350, 'Bob': 250 }
+          }
+        }
+      }
+
+      // Test old format
+      mockedAxios.get.mockResolvedValueOnce(oldFormatResponse)
+      const oldResponse = await api.get('/summary', { params: { month: '2023-06' } })
+
+      // Test new enhanced format
+      mockedAxios.get.mockResolvedValueOnce(mockEnhancedSummaryResponse)
+      const newResponse = await api.get('/summary/enhanced', { params: { month: '2023-06' } })
+
+      // Verify consistency
+      expect(oldResponse.data.month).toBe(newResponse.data.month)
+      expect(oldResponse.data.var_total).toBe(newResponse.data.var_total)
+      expect(oldResponse.data.member1).toBe(newResponse.data.member1)
+      expect(oldResponse.data.member2).toBe(newResponse.data.member2)
+
+      // Verify enhanced data is additive
+      expect(newResponse.data).toHaveProperty('provisions_total')
+      expect(newResponse.data).toHaveProperty('fixed_expenses_total')
+      expect(newResponse.data).toHaveProperty('budget_total')
+    })
+
+    it('should handle precision in financial calculations', async () => {
+      mockedAxios.get.mockResolvedValueOnce(mockEnhancedSummaryResponse)
+
+      const response = await api.get('/summary/enhanced', { 
+        params: { month: '2023-06' } 
+      })
+
+      const data = response.data
+
+      // All monetary values should be rounded to 2 decimal places
+      expect(data.var_total.toFixed(2)).toBe(data.var_total.toString())
+      expect(data.provisions_total.toFixed(2)).toBe(data.provisions_total.toString())
+      expect(data.fixed_expenses_total.toFixed(2)).toBe(data.fixed_expenses_total.toString())
+      expect(data.budget_total.toFixed(2)).toBe(data.budget_total.toString())
+
+      // Detailed breakdown should also maintain precision
+      Object.values(data.detailed_breakdown.provisions).forEach((provision: any) => {
+        expect(provision.member1.toFixed(2)).toBe(provision.member1.toString())
+        expect(provision.member2.toFixed(2)).toBe(provision.member2.toString())
+      })
+    })
+  })
+
+  describe('Authentication and Error Handling', () => {
+    it('should handle 401 authentication errors', async () => {
+      const authError = {
+        response: {
+          status: 401,
+          data: { detail: 'Authentication required' }
+        }
+      }
+
+      mockedAxios.get.mockRejectedValueOnce(authError)
+
+      await expect(api.get('/summary/enhanced')).rejects.toEqual(authError)
+    })
+
+    it('should handle 422 validation errors', async () => {
+      const validationError = {
+        response: {
+          status: 422,
+          data: { 
+            detail: [
+              {
+                loc: ['month'],
+                msg: 'Invalid month format',
+                type: 'value_error'
+              }
+            ]
+          }
+        }
+      }
+
+      mockedAxios.get.mockRejectedValueOnce(validationError)
+
+      await expect(api.get('/summary/enhanced', {
+        params: { month: 'invalid-month' }
+      })).rejects.toEqual(validationError)
+    })
+
+    it('should handle network errors', async () => {
+      const networkError = {
+        code: 'ERR_NETWORK',
+        message: 'Network Error'
+      }
+
+      mockedAxios.get.mockRejectedValueOnce(networkError)
+
+      await expect(api.get('/summary/enhanced')).rejects.toEqual(networkError)
+    })
+  })
+})

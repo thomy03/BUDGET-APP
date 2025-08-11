@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
 import { api, Tx } from "../../lib/api";
 import { useGlobalMonthWithUrl } from "../../lib/month";
@@ -18,6 +18,33 @@ export default function TransactionsPage() {
 
   // Paramètres d'URL
   const importId = searchParams.get('importId');
+
+  // Calculs des totaux
+  const calculations = React.useMemo(() => {
+    const includedTransactions = rows.filter(tx => !tx.exclude);
+    const excludedCount = rows.filter(tx => tx.exclude).length;
+    
+    const totalExpenses = includedTransactions
+      .filter(tx => tx.amount < 0)
+      .reduce((sum, tx) => sum + Math.abs(tx.amount), 0);
+    
+    const totalIncome = includedTransactions
+      .filter(tx => tx.amount > 0)
+      .reduce((sum, tx) => sum + tx.amount, 0);
+    
+    const netBalance = totalIncome - totalExpenses;
+    const totalAmount = includedTransactions.reduce((sum, tx) => sum + tx.amount, 0);
+    
+    return {
+      totalExpenses,
+      totalIncome,
+      netBalance,
+      totalAmount,
+      includedCount: includedTransactions.length,
+      excludedCount,
+      totalCount: rows.length
+    };
+  }, [rows]);
   
   console.log('📊 Transactions page - Current month:', month, 'ImportId:', importId);
 
@@ -124,6 +151,45 @@ export default function TransactionsPage() {
         </Alert>
       )}
 
+      {/* Rappel des totaux du mois */}
+      {!loading && rows.length > 0 && (
+        <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 border-l-4 border-l-blue-500">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-lg font-semibold text-gray-900 mb-2">
+                Résumé du mois - {month}
+              </h2>
+              <div className="flex items-center gap-6">
+                <div className="flex items-center gap-2">
+                  <span className="text-2xl font-bold text-gray-900">
+                    {calculations.totalAmount >= 0 ? '+' : ''}{calculations.totalAmount.toFixed(2)} €
+                  </span>
+                  <span className="text-sm text-gray-600">Total du mois</span>
+                </div>
+                <div className="text-sm text-gray-600">
+                  {calculations.includedCount} transaction{calculations.includedCount > 1 ? 's' : ''} incluse{calculations.includedCount > 1 ? 's' : ''}
+                  {calculations.excludedCount > 0 && (
+                    <span className="ml-1">({calculations.excludedCount} exclue{calculations.excludedCount > 1 ? 's' : ''})</span>
+                  )}
+                </div>
+              </div>
+            </div>
+            <div className="text-right space-y-1">
+              <div className="text-sm">
+                <span className="text-green-600 font-medium">
+                  +{calculations.totalIncome.toFixed(2)} € revenus
+                </span>
+              </div>
+              <div className="text-sm">
+                <span className="text-red-600 font-medium">
+                  -{calculations.totalExpenses.toFixed(2)} € dépenses
+                </span>
+              </div>
+            </div>
+          </div>
+        </Card>
+      )}
+
       {/* Bandeau d'import success si importId présent */}
       {importId && (
         <ImportSuccessBanner
@@ -203,6 +269,54 @@ export default function TransactionsPage() {
                   );
                 })}
               </tbody>
+              {/* Ligne de totaux */}
+              {rows.length > 0 && (
+                <tfoot>
+                  <tr className="border-t-2 border-gray-300 bg-gray-50">
+                    <td className="p-3 font-medium text-gray-700" colSpan={3}>
+                      <div className="flex items-center justify-between">
+                        <span>TOTAUX DU MOIS</span>
+                        <span className="text-sm text-gray-600">
+                          {calculations.includedCount}/{calculations.totalCount} transactions
+                          {calculations.excludedCount > 0 && (
+                            <span className="ml-2 text-red-600">
+                              ({calculations.excludedCount} exclue{calculations.excludedCount > 1 ? 's' : ''})
+                            </span>
+                          )}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="p-3 text-right font-mono">
+                      <div className="space-y-1">
+                        <div className="text-red-600 font-medium">
+                          -{calculations.totalExpenses.toFixed(2)} €
+                        </div>
+                        <div className="text-green-600 font-medium">
+                          +{calculations.totalIncome.toFixed(2)} €
+                        </div>
+                        <div className="border-t border-gray-400 pt-1">
+                          <span className={`font-bold text-lg ${
+                            calculations.netBalance >= 0 ? 'text-green-700' : 'text-red-700'
+                          }`}>
+                            {calculations.netBalance >= 0 ? '+' : ''}{calculations.netBalance.toFixed(2)} €
+                          </span>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="p-3" colSpan={2}>
+                      <div className="text-sm text-gray-600 space-y-1">
+                        <div>Dépenses: {rows.filter(tx => !tx.exclude && tx.amount < 0).length} transactions</div>
+                        <div>Revenus: {rows.filter(tx => !tx.exclude && tx.amount > 0).length} transactions</div>
+                        <div className="font-medium">
+                          Solde net: <span className={calculations.netBalance >= 0 ? 'text-green-700' : 'text-red-700'}>
+                            {calculations.netBalance >= 0 ? '+' : ''}{calculations.netBalance.toFixed(2)} €
+                          </span>
+                        </div>
+                      </div>
+                    </td>
+                  </tr>
+                </tfoot>
+              )}
             </table>
             
             {rows.length === 0 && !loading && (

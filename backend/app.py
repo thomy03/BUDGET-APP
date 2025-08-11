@@ -451,6 +451,20 @@ class SummaryOut(BaseModel):
     total_p1: float
     total_p2: float
     detail: dict
+    
+    # Nouveaux champs pour optimiser les calculs frontend
+    var_p1: Optional[float] = None       # Part membre 1 des variables
+    var_p2: Optional[float] = None       # Part membre 2 des variables
+    fixed_p1: Optional[float] = None     # Part membre 1 des fixes
+    fixed_p2: Optional[float] = None     # Part membre 2 des fixes
+    provisions_p1: Optional[float] = None # Part membre 1 des provisions
+    provisions_p2: Optional[float] = None # Part membre 2 des provisions
+    grand_total: Optional[float] = None   # Total général (P1 + P2)
+    
+    # Métadonnées pour les calculs
+    transaction_count: Optional[int] = None      # Nombre total de transactions
+    active_fixed_lines: Optional[int] = None     # Nombre de lignes fixes actives
+    active_provisions: Optional[int] = None      # Nombre de provisions actives
 
 class ExcludeIn(BaseModel):
     exclude: bool
@@ -2553,6 +2567,15 @@ def summary(month: str, current_user = Depends(get_current_user), db: Session = 
     
     detail["Dépenses variables"] = {cfg.member1: var_p1, cfg.member2: var_p2}
 
+    # Calcul des parts par type de poste pour optimisation frontend
+    fixed_p1 = sum(p1 for _, p1, _ in lines_detail)
+    fixed_p2 = sum(p2 for _, _, p2 in lines_detail)
+    
+    # Comptage des éléments actifs
+    transaction_count = len(txs)
+    active_fixed_lines = len([l for l in lines if l.active])
+    active_provisions_count = len(custom_provisions)
+    
     return SummaryOut(
         month=month, 
         var_total=round(var_total, 2),
@@ -2564,7 +2587,21 @@ def summary(month: str, current_user = Depends(get_current_user), db: Session = 
         member2=cfg.member2,
         total_p1=round(total_p1, 2), 
         total_p2=round(total_p2, 2), 
-        detail=detail
+        detail=detail,
+        
+        # Nouveaux champs pour optimiser les calculs frontend
+        var_p1=round(var_p1, 2),
+        var_p2=round(var_p2, 2),
+        fixed_p1=round(fixed_p1, 2),
+        fixed_p2=round(fixed_p2, 2),
+        provisions_p1=round(custom_provisions_p1_total, 2),
+        provisions_p2=round(custom_provisions_p2_total, 2),
+        grand_total=round(total_p1 + total_p2, 2),
+        
+        # Métadonnées pour les calculs
+        transaction_count=transaction_count,
+        active_fixed_lines=active_fixed_lines,
+        active_provisions=active_provisions_count
     )
 
 @app.get("/health")
@@ -2710,6 +2747,116 @@ def get_anomalies(
     except Exception as e:
         logger.error(f"Erreur détection anomalies: {e}")
         raise HTTPException(status_code=500, detail="Erreur lors de la détection d'anomalies")
+
+def get_previous_month(month: str) -> Optional[str]:
+    """Calcule le mois précédent au format YYYY-MM"""
+    try:
+        year, month_num = month.split('-')
+        year, month_num = int(year), int(month_num)
+        
+        if month_num == 1:
+            return f"{year-1}-12"
+        else:
+            return f"{year}-{month_num-1:02d}"
+    except:
+        return None
+
+@app.get("/summary/enhanced")
+def get_enhanced_summary(
+    month: str,
+    current_user = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Endpoint enrichi combinant summary + analytics pour optimiser les appels frontend"""
+    logger.info(f"Summary enrichi demandé pour {month} par utilisateur: {current_user.username}")
+    
+    try:
+        # Récupération du summary standard
+        summary_data = summary(month, current_user, db)
+        
+        # Ajout des analytics
+        categories = calculate_category_breakdown(db, month)
+        
+        # Calcul des tendances simples
+        prev_month = get_previous_month(month)
+        prev_summary = None
+        if prev_month:
+            try:
+                prev_summary = summary(prev_month, current_user, db)
+            except:
+                prev_summary = None
+        
+        # Construction de la réponse enrichie
+        enhanced_data = {
+            "summary": summary_data.dict(),
+            "categories": [cat.dict() for cat in categories],
+            "trends": {
+                "expense_evolution": None,
+                "fixed_evolution": None,
+                "provisions_evolution": None
+            },
+            "metadata": {
+                "has_previous_data": prev_summary is not None,
+                "previous_month": prev_month
+            }
+        }
+        
+        # Calcul des évolutions si mois précédent disponible
+        if prev_summary:
+            enhanced_data["trends"]["expense_evolution"] = round(
+                ((summary_data.var_total - prev_summary.var_total) / prev_summary.var_total * 100) 
+                if prev_summary.var_total > 0 else 0, 2
+            )
+            enhanced_data["trends"]["fixed_evolution"] = round(
+                ((summary_data.fixed_lines_total - prev_summary.fixed_lines_total) / prev_summary.fixed_lines_total * 100) 
+                if prev_summary.fixed_lines_total > 0 else 0, 2
+            )
+            enhanced_data["trends"]["provisions_evolution"] = round(
+                ((summary_data.provisions_total - prev_summary.provisions_total) / prev_summary.provisions_total * 100) 
+                if prev_summary.provisions_total > 0 else 0, 2
+            )
+        
+        return enhanced_data
+        
+    except Exception as e:
+        logger.error(f"Erreur summary enrichi: {e}")
+        raise HTTPException(status_code=500, detail="Erreur lors du calcul du summary enrichi")
+
+@app.get("/summary/batch")
+def get_batch_summary(
+    months: str,  # Format: "2024-01,2024-02,2024-03"
+    current_user = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Récupère les summaries pour plusieurs mois en une seule requête"""
+    logger.info(f"Batch summary demandé par utilisateur: {current_user.username}")
+    
+    try:
+        month_list = [m.strip() for m in months.split(",") if m.strip()]
+        if len(month_list) > 12:  # Limite de sécurité
+            raise HTTPException(status_code=400, detail="Maximum 12 mois par requête")
+        
+        results = {}
+        for month in month_list:
+            try:
+                month_summary = summary(month, current_user, db)
+                results[month] = month_summary.dict()
+            except Exception as e:
+                logger.warning(f"Erreur pour le mois {month}: {e}")
+                results[month] = None
+        
+        return {
+            "months": results,
+            "metadata": {
+                "requested_months": len(month_list),
+                "successful_months": len([m for m in results.values() if m is not None]),
+                "failed_months": len([m for m in results.values() if m is None])
+            }
+        }
+        
+    except Exception as e:
+        logger.error(f"Erreur batch summary: {e}")
+        raise HTTPException(status_code=500, detail="Erreur lors du calcul batch summary")
 
 @app.get("/analytics/patterns", response_model=List[SpendingPattern])
 def get_spending_patterns(

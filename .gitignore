@@ -73,3 +73,7 @@ coverage/
 
 # Crush workspace
 .crush/
+
+# Claude Code folders - ignore completely
+.claude-flow/
+.swarm/

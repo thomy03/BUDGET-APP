@@ -338,6 +338,168 @@
 }
 
 /* ========================================
+   PROVISIONS ANIMATIONS
+======================================== */
+@layer components {
+  /* Animations pour les provisions */
+  .provision-card {
+    @apply transition-all duration-300 ease-in-out;
+    transform: translateY(0);
+  }
+  
+  .provision-card:hover {
+    @apply shadow-lg;
+    transform: translateY(-2px);
+  }
+  
+  .provision-appear {
+    animation: provisionAppear 0.5s ease-out forwards;
+  }
+  
+  .provision-disappear {
+    animation: provisionDisappear 0.3s ease-in forwards;
+  }
+  
+  /* Progress bar animation */
+  .progress-bar {
+    @apply transition-all duration-1000 ease-out;
+  }
+  
+  /* Modal animations */
+  .modal-overlay {
+    animation: modalOverlayFadeIn 0.2s ease-out;
+  }
+  
+  .modal-content {
+    animation: modalContentSlideIn 0.3s ease-out;
+  }
+  
+  .modal-exit {
+    animation: modalContentSlideOut 0.2s ease-in forwards;
+  }
+  
+  /* Icon hover effects */
+  .icon-hover {
+    @apply transition-transform duration-200 ease-in-out;
+  }
+  
+  .icon-hover:hover {
+    transform: scale(1.1);
+  }
+  
+  /* Color picker animation */
+  .color-option {
+    @apply transition-all duration-200 ease-in-out;
+  }
+  
+  .color-option:hover {
+    transform: scale(1.15);
+  }
+  
+  /* Slider custom styles */
+  .provision-slider {
+    @apply appearance-none h-2 rounded-lg cursor-pointer;
+    transition: background 0.3s ease;
+  }
+  
+  .provision-slider::-webkit-slider-thumb {
+    @apply appearance-none w-5 h-5 rounded-full cursor-pointer;
+    background: currentColor;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    transition: transform 0.2s ease;
+  }
+  
+  .provision-slider::-webkit-slider-thumb:hover {
+    transform: scale(1.1);
+  }
+  
+  /* Toast notification animations */
+  .toast-enter {
+    animation: toastSlideIn 0.3s ease-out;
+  }
+  
+  .toast-exit {
+    animation: toastSlideOut 0.2s ease-in forwards;
+  }
+}
+
+/* Keyframes pour les provisions */
+@keyframes provisionAppear {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes provisionDisappear {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.95);
+  }
+}
+
+@keyframes modalOverlayFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes modalContentSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(30px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes modalContentSlideOut {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(30px) scale(0.95);
+  }
+}
+
+@keyframes toastSlideIn {
+  from {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes toastSlideOut {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+}
+
+/* ========================================
    PRINT STYLES
 ======================================== */
 @media print {

@@ -17,7 +17,7 @@ case "$1" in
       -v $(pwd):/app \
       -v /app/node_modules \
       -v /app/.next \
-      -e NEXT_PUBLIC_API_BASE=http://localhost:8001 \
+      -e NEXT_PUBLIC_API_BASE=http://localhost:8000 \
       --name budget-frontend budget-frontend-dev
     
     echo "✅ Serveur disponible sur http://localhost:45678"
@@ -37,7 +37,7 @@ case "$1" in
       -v $(pwd):/app \
       -v /app/node_modules \
       -v /app/.next \
-      -e NEXT_PUBLIC_API_BASE=http://localhost:8001 \
+      -e NEXT_PUBLIC_API_BASE=http://localhost:8000 \
       --name budget-frontend budget-frontend-dev
     echo "✅ Serveur redémarré sur http://localhost:45678"
     ;;
@@ -65,7 +65,7 @@ case "$1" in
       -v $(pwd):/app \
       -v /app/node_modules \
       -v /app/.next \
-      -e NEXT_PUBLIC_API_BASE=http://localhost:8001 \
+      -e NEXT_PUBLIC_API_BASE=http://localhost:8000 \
       --name budget-frontend budget-frontend-dev
     echo "✅ Rebuild terminé - serveur sur http://localhost:45678"
     ;;

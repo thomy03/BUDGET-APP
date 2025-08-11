@@ -1,0 +1,43 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+metadata:
+  name: budget-famille-production
+
+namespace: budget-famille-prod
+
+resources:
+- ../../base
+
+patchesStrategicMerge:
+- deployment-patches.yaml
+- ingress-patch.yaml
+
+configMapGenerator:
+- name: app-config
+  literals:
+  - NODE_ENV=production
+  - LOG_LEVEL=info
+  - WORKERS=4
+  - MAX_REQUESTS=1000
+
+secretGenerator:
+- name: backend-secrets
+  literals:
+  - jwt-secret-key=REPLACE_WITH_ACTUAL_SECRET
+  - database-url=postgresql://user:pass@postgres:5432/budget_prod
+
+replicas:
+- name: backend
+  count: 3
+- name: frontend
+  count: 2
+
+images:
+- name: ghcr.io/your-org/budget-famille/budget-famille-backend
+  newTag: prod-latest
+- name: ghcr.io/your-org/budget-famille/budget-famille-frontend
+  newTag: prod-latest
+
+commonLabels:
+  environment: production

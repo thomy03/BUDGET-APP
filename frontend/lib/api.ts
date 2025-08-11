@@ -1,7 +1,7 @@
 import axios, { AxiosError, AxiosResponse, InternalAxiosRequestConfig } from "axios";
 
 // Configuration de l'API
-export const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "http://127.0.0.1:8000";
+export const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "http://127.0.0.1:5000";
 
 // Types de données de l'application
 export type ConfigOut = {
@@ -13,15 +13,26 @@ export type ConfigOut = {
   split_mode: "revenus" | "manuel";
   split1: number;
   split2: number;
+  // Champs obsolètes - remplacés par le système de dépenses fixes personnalisables
+  /** @deprecated Utiliser le système de dépenses fixes personnalisables */
   loan_equal: boolean;
+  /** @deprecated Utiliser le système de dépenses fixes personnalisables */
   loan_amount: number;
+  /** @deprecated Utiliser le système de dépenses fixes personnalisables */
   other_fixed_simple: boolean;
+  /** @deprecated Utiliser le système de dépenses fixes personnalisables */
   other_fixed_monthly: number;
+  /** @deprecated Utiliser le système de dépenses fixes personnalisables */
   taxe_fonciere_ann: number;
+  /** @deprecated Utiliser le système de dépenses fixes personnalisables */
   copro_montant: number;
+  /** @deprecated Utiliser le système de dépenses fixes personnalisables */
   copro_freq: "mensuelle" | "trimestrielle";
+  /** @deprecated Utiliser le système de dépenses fixes personnalisables */
   other_split_mode: "clé" | "50/50";
+  /** @deprecated Utiliser le système de provisions personnalisables */
   vac_percent: number;
+  /** @deprecated Utiliser le système de provisions personnalisables */
   vac_base: "2" | "1" | "2nd";
 };
 
@@ -44,11 +55,6 @@ export type Tx = {
 export type Summary = {
   month: string;
   var_total: number;
-  loan_amount: number;
-  taxe_m: number;
-  copro_m: number;
-  other_fixed_total: number;
-  vac_monthly_total: number;
   r1: number;
   r2: number;
   member1: string;
@@ -56,6 +62,17 @@ export type Summary = {
   total_p1: number;
   total_p2: number;
   detail: Record<string, Record<string, number>>;
+  // Champs obsolètes - conservés pour compatibilité backend mais non utilisés dans l'interface
+  /** @deprecated Données maintenant calculées via le système de dépenses fixes personnalisables */
+  loan_amount: number;
+  /** @deprecated Données maintenant calculées via le système de dépenses fixes personnalisables */
+  taxe_m: number;
+  /** @deprecated Données maintenant calculées via le système de dépenses fixes personnalisables */
+  copro_m: number;
+  /** @deprecated Données maintenant calculées via le système de dépenses fixes personnalisables */
+  other_fixed_total: number;
+  /** @deprecated Données maintenant calculées via le système de provisions personnalisables */
+  vac_monthly_total: number;
 };
 
 export type FixedLine = {
@@ -89,6 +106,66 @@ export type ImportResponse = {
   processing: "done" | "processing"; // État du traitement
   fileName: string; // Nom du fichier original
   processingMs: number; // Temps de traitement en millisecondes
+};
+
+// Types pour les provisions personnalisables
+export type CustomProvision = {
+  id: number;
+  name: string;
+  description?: string;
+  percentage: number;
+  base_calculation: "total" | "member1" | "member2" | "fixed";
+  fixed_amount?: number;
+  split_mode: "key" | "50/50" | "custom" | "100/0" | "0/100";
+  split_member1: number;
+  split_member2: number;
+  icon: string;
+  color: string;
+  display_order: number;
+  is_active: boolean;
+  is_temporary: boolean;
+  start_date?: string;
+  end_date?: string;
+  target_amount?: number;
+  current_amount: number;
+  created_at: string;
+  updated_at?: string;
+  created_by?: string;
+  category: "savings" | "investment" | "project" | "custom";
+  monthly_amount?: number;
+  progress_percentage?: number;
+};
+
+export type CustomProvisionCreate = {
+  name: string;
+  description?: string;
+  percentage: number;
+  base_calculation: "total" | "member1" | "member2" | "fixed";
+  fixed_amount?: number;
+  split_mode: "key" | "50/50" | "custom" | "100/0" | "0/100";
+  split_member1: number;
+  split_member2: number;
+  icon: string;
+  color: string;
+  display_order?: number;
+  is_active: boolean;
+  is_temporary: boolean;
+  start_date?: string;
+  end_date?: string;
+  target_amount?: number;
+  category: "savings" | "investment" | "project" | "custom";
+};
+
+export type CustomProvisionUpdate = Partial<CustomProvisionCreate>;
+
+export type CustomProvisionSummary = {
+  total_provisions: number;
+  active_provisions: number;
+  total_monthly_amount: number;
+  total_monthly_member1: number;
+  total_monthly_member2: number;
+  provisions_by_category: Record<string, number>;
+  provisions_details: CustomProvision[];
 };
 
 // Types pour les erreurs API
@@ -126,20 +203,34 @@ api.interceptors.request.use(
     // Assurer que le token d'authentification est présent sur chaque requête
     if (typeof window !== "undefined" && !config.headers.Authorization) {
       const token = localStorage.getItem("auth_token");
-      const tokenType = localStorage.getItem("token_type");
+      const tokenType = localStorage.getItem("token_type") || "Bearer";
       
-      if (token && tokenType) {
+      if (token) {
         config.headers.Authorization = `${tokenType} ${token}`;
         
-        // Logs spécifiques pour les requêtes d'import
-        if (process.env.NODE_ENV === "development" && config.url?.includes("/import")) {
-          console.log(`🔑 Auth header added to ${config.url}:`, config.headers.Authorization?.substring(0, 20) + "...");
+        // Logs spécifiques pour les requêtes critiques
+        if (process.env.NODE_ENV === "development" && (config.url?.includes("/import") || config.url?.includes("/provision"))) {
+          console.log(`🔑 Auth header added to ${config.url}:`, {
+            authHeader: config.headers.Authorization?.substring(0, 20) + "...",
+            tokenType,
+            hasToken: !!token
+          });
         }
+      } else if (process.env.NODE_ENV === "development") {
+        console.warn(`⚠️ No auth token found for ${config.url}`);
       }
     }
     
-    // Logs de développement
-    if (process.env.NODE_ENV === "development") {
+    // Logs de développement pour les provisions
+    if (process.env.NODE_ENV === "development" && config.url?.includes("provision")) {
+      console.log(`🚀 Provisions API Request: ${config.method?.toUpperCase()} ${config.url}`, {
+        baseURL: config.baseURL,
+        fullURL: `${config.baseURL}${config.url}`,
+        hasAuth: !!config.headers.Authorization,
+        contentType: config.headers["Content-Type"],
+        authType: String(config.headers.Authorization || '').split(' ')[0]
+      });
+    } else if (process.env.NODE_ENV === "development") {
       console.log(`🚀 API Request: ${config.method?.toUpperCase()} ${config.url}`, {
         hasAuth: !!config.headers.Authorization,
         contentType: config.headers["Content-Type"]
@@ -171,10 +262,12 @@ api.interceptors.response.use(
     // Logs d'erreur détaillés
     if (process.env.NODE_ENV === "development") {
       const isImportRequest = originalRequest?.url?.includes("/import");
+      const isProvisionRequest = originalRequest?.url?.includes("/provision");
       
-      if (isImportRequest) {
-        // Logs spécialement détaillés pour les requêtes d'import
-        console.error(`❌ Import API Error: ${error.response?.status} ${originalRequest?.url}`, {
+      if (isImportRequest || isProvisionRequest) {
+        // Logs spécialement détaillés pour les requêtes critiques
+        const requestType = isImportRequest ? "Import" : "Provision";
+        console.error(`❌ ${requestType} API Error: ${error.response?.status} ${originalRequest?.url}`, {
           status: error.response?.status,
           statusText: error.response?.statusText,
           headers: error.response?.headers,
@@ -182,9 +275,12 @@ api.interceptors.response.use(
           config: {
             url: originalRequest?.url,
             method: originalRequest?.method,
+            baseURL: originalRequest?.baseURL,
+            fullURL: `${originalRequest?.baseURL}${originalRequest?.url}`,
             headers: {
               'Content-Type': originalRequest?.headers?.['Content-Type'],
-              'Authorization': originalRequest?.headers?.['Authorization'] ? 'Bearer [TOKEN]' : 'None'
+              'Authorization': originalRequest?.headers?.['Authorization'] ? 
+                `${String(originalRequest?.headers?.['Authorization'] || '').split(' ')[0]} [TOKEN]` : 'None'
             }
           },
           networkError: error.code === 'ERR_NETWORK',
