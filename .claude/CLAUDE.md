@@ -48,6 +48,58 @@ When you finish the task with your agents, the final test will be to the Key use
 - **Backend**: Import path corrigé `dependencies.database` → `models.database`
 - **Frontend**: Types mis à jour `ImportMonth`, `ImportResponse` pour correspondance API
 - **Schema**: Tags retournés comme tableaux pour compatibilité JavaScript
+
+## 📋 SESSION 2025-08-12 - Résolution Complète Application
+
+### ✅ Problèmes Critiques Résolus
+**Erreurs 405 Method Not Allowed** - *Stratégie multi-agents parallèle*
+- **Problème**: POST /custom-provisions et PUT /fixed-lines/{id} → 405
+- **Solution**: Ajout endpoints manquants dans routers + app.py legacy
+- **Résultat**: Création provisions et modification dépenses fixes fonctionnelles ✅
+
+**CORS Persistant Docker Frontend**
+- **Problème**: "No Access-Control-Allow-Origin header" bloquant localhost:45678
+- **Solution**: Correction validator Pydantic v2 + ajout OPTIONS dans allow_methods
+- **Résultat**: Communication Docker→Backend entièrement restaurée ✅
+
+**Interface NaN Corrompue**
+- **Problème**: Affichage "NaN €", "(undefined%)" partout dans dépenses fixes
+- **Solution**: Synchronisation types frontend/backend (name→label, is_active→active)
+- **Résultat**: Interface monétaire et calculs parfaitement fonctionnels ✅
+
+**Configuration Revenus (PUT /config)**
+- **Problème**: 405 Method Not Allowed empêchant sauvegarde revenus
+- **Solution**: Création endpoint PUT /config + correction données frontend
+- **Résultat**: Configuration paramètres 100% opérationnelle ✅
+
+### 🔧 Corrections Techniques Majeures
+**Backend (FastAPI)**:
+- Endpoints PUT /fixed-lines/{id} et POST /custom-provisions ajoutés
+- Endpoint PUT /config créé avec audit logging
+- Configuration CORS étendue pour Docker (localhost:45678)
+- Schémas Pydantic v2 corrigés (`values` → `info.data`)
+- Architecture modulaire routers/ + services/ + models/
+
+**Frontend (Next.js/Docker)**:
+- Types API synchronisés (FixedLine, CustomProvision)
+- Calculs hooks réparés (useFixedExpenseCalculations)
+- Données configuration alignées (split_mode: "revenus", split1/split2)
+- Warnings React éliminés (clés dupliquées IconColorPicker)
+
+### 🎯 État Final Application
+- **Création provisions** ✅ (POST /custom-provisions → 201)
+- **Modification dépenses fixes** ✅ (PUT /fixed-lines/{id} → 200) 
+- **Configuration revenus** ✅ (PUT /config → 200)
+- **Dashboard totaux** ✅ (synchronisé avec données importées)
+- **Import CSV** ✅ (267 transactions, formats français)
+- **Interface utilisateur** ✅ (calculs corrects, plus de NaN)
+
+### 📊 Métriques de Succès
+- **CORS**: 0 erreur cross-origin
+- **Endpoints**: 100% opérationnels (GET/POST/PUT/PATCH)
+- **Import CSV**: 267 transactions traitées avec succès
+- **Interface**: 0 affichage NaN ou undefined
+- **Configuration**: Sauvegarde revenus persistante
 - **Type Safety**: Améliorations TypeScript frontend-backend
 
 ### 📊 Validation Utilisateur

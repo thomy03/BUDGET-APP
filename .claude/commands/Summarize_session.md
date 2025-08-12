@@ -15,4 +15,5 @@ At the end of the development session, create a comprehensive summary:
    - .claude/ROADMAP_MASTER_V3.md - for roadmap progress and task completion tracking
    - .claude/README.md - for all new informations that enhance the product
 
+IMPORTANT! Don't use any other document or create new markdown exept the validation of the user. Summarize in the dedicated documents which are .claude/CLAUDE.md, .claude/PRD.md .claude/ROADMAP_MASTER_V3.md and .claude/README.md
 This ensures continuity between sessions and maintains accurate project documentation.
