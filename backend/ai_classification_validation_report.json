@@ -1,0 +1,10 @@
+{
+  "test_results": [],
+  "summary": {},
+  "performance_metrics": {},
+  "recommendations": [
+    "Authentication failed - check credentials"
+  ],
+  "timestamp": "2025-08-12 17:37:00",
+  "version": "2.3"
+}

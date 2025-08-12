@@ -1,0 +1,190 @@
+{
+  "timestamp": "2025-08-12 17:41:12",
+  "summary": {
+    "total_tests": 29,
+    "passed_tests": 29,
+    "failed_tests": 0,
+    "success_rate": 1.0
+  },
+  "performance": {
+    "avg_response_time_ms": 0.11459986368815105
+  },
+  "detailed_results": [
+    {
+      "test": "Empty tag name",
+      "status": "PASS",
+      "response_time_ms": 1.2319087982177734,
+      "confidence": 0.55
+    },
+    {
+      "test": "Whitespace only tag",
+      "status": "PASS",
+      "response_time_ms": 0.04601478576660156,
+      "confidence": 0.55
+    },
+    {
+      "test": "Single character tag",
+      "status": "PASS",
+      "response_time_ms": 0.0457763671875,
+      "confidence": 0.55
+    },
+    {
+      "test": "Special character tag",
+      "status": "PASS",
+      "response_time_ms": 0.1289844512939453,
+      "confidence": 0.55
+    },
+    {
+      "test": "Emoji tag",
+      "status": "PASS",
+      "response_time_ms": 0.057697296142578125,
+      "confidence": 0.55
+    },
+    {
+      "test": "Numeric tag",
+      "status": "PASS",
+      "response_time_ms": 0.06031990051269531,
+      "confidence": 0.55
+    },
+    {
+      "test": "100 character tag",
+      "status": "PASS",
+      "response_time_ms": 0.09489059448242188,
+      "confidence": 0.55
+    },
+    {
+      "test": "Long French tag with accents",
+      "status": "PASS",
+      "response_time_ms": 0.09751319885253906,
+      "confidence": 0.62
+    },
+    {
+      "test": "English long tag",
+      "status": "PASS",
+      "response_time_ms": 0.08559226989746094,
+      "confidence": 0.55
+    },
+    {
+      "test": "Very small amount (0.01)",
+      "status": "PASS",
+      "response_time_ms": 0.0667572021484375,
+      "confidence": 0.577
+    },
+    {
+      "test": "Tiny amount (0.001)",
+      "status": "PASS",
+      "response_time_ms": 0.09298324584960938,
+      "confidence": 0.577
+    },
+    {
+      "test": "Very large negative (-999999.99)",
+      "status": "PASS",
+      "response_time_ms": 0.05316734313964844,
+      "confidence": 0.55
+    },
+    {
+      "test": "Small negative (-0.01)",
+      "status": "PASS",
+      "response_time_ms": 0.0476837158203125,
+      "confidence": 0.55
+    },
+    {
+      "test": "Very large positive (1000000)",
+      "status": "PASS",
+      "response_time_ms": 0.05269050598144531,
+      "confidence": 0.586
+    },
+    {
+      "test": "French accents",
+      "status": "PASS",
+      "response_time_ms": 0.07128715515136719,
+      "confidence": 0.55
+    },
+    {
+      "test": "Umlaut",
+      "status": "PASS",
+      "response_time_ms": 0.05936622619628906,
+      "confidence": 0.55
+    },
+    {
+      "test": "Cyrillic",
+      "status": "PASS",
+      "response_time_ms": 0.16546249389648438,
+      "confidence": 0.55
+    },
+    {
+      "test": "Chinese characters",
+      "status": "PASS",
+      "response_time_ms": 0.07772445678710938,
+      "confidence": 0.55
+    },
+    {
+      "test": "Path separators",
+      "status": "PASS",
+      "response_time_ms": 0.06604194641113281,
+      "confidence": 0.55
+    },
+    {
+      "test": "Email-like tag",
+      "status": "PASS",
+      "response_time_ms": 0.06365776062011719,
+      "confidence": 0.55
+    },
+    {
+      "test": "Hashtag style",
+      "status": "PASS",
+      "response_time_ms": 0.06532669067382812,
+      "confidence": 0.55
+    },
+    {
+      "test": "Currency symbol",
+      "status": "PASS",
+      "response_time_ms": 0.05984306335449219,
+      "confidence": 0.55
+    },
+    {
+      "test": "Ampersand",
+      "status": "PASS",
+      "response_time_ms": 0.059604644775390625,
+      "confidence": 0.55
+    },
+    {
+      "test": "Apostrophe",
+      "status": "PASS",
+      "response_time_ms": 0.058650970458984375,
+      "confidence": 0.55
+    },
+    {
+      "test": "Double quotes",
+      "status": "PASS",
+      "response_time_ms": 0.06389617919921875,
+      "confidence": 0.55
+    },
+    {
+      "test": "Tab character",
+      "status": "PASS",
+      "response_time_ms": 0.06008148193359375,
+      "confidence": 0.55
+    },
+    {
+      "test": "Line break",
+      "status": "PASS",
+      "response_time_ms": 0.06127357482910156,
+      "confidence": 0.55
+    },
+    {
+      "test": "Batch Processing Performance",
+      "status": "PASS",
+      "batch_time_ms": 2.8128623962402344,
+      "avg_time_per_item": 0.05625724792480469,
+      "avg_confidence": 0.7935600000000003
+    },
+    {
+      "test": "Database Integrity",
+      "status": "PASS",
+      "null_amounts": 6,
+      "null_ids": 0,
+      "invalid_types": 0
+    }
+  ]
+}

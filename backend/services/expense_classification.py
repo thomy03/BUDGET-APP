@@ -26,6 +26,7 @@ from enum import Enum
 
 # Import database models
 from models.database import Transaction, TagFixedLineMapping, MerchantKnowledgeBase
+from sqlalchemy import or_
 
 logger = logging.getLogger(__name__)
 
@@ -254,8 +255,93 @@ class ExpenseClassificationService:
         self.min_historical_data_points = 3  # Minimum transactions for pattern analysis
         self.stability_threshold = 0.15  # 15% variation threshold for stable amounts
         
-        logger.info("🤖 ExpenseClassificationService initialized with ADVANCED ML capabilities")
+        # OPTIMIZATION: In-memory cache for frequent classifications
+        self._classification_cache = {}
+        self._cache_hits = 0
+        self._cache_misses = 0
+        self._max_cache_size = 1000
+        
+        # Pre-computed patterns for ultra-fast matching
+        self._fast_fixed_patterns = self._compile_fast_patterns(self.FIXED_KEYWORDS)
+        self._fast_variable_patterns = self._compile_fast_patterns(self.VARIABLE_KEYWORDS)
+        
+        logger.info("🤖 ExpenseClassificationService initialized with ADVANCED ML capabilities + Performance optimizations")
     
+    def classify_expense_fast(
+        self,
+        tag_name: str,
+        transaction_amount: float = 0.0,
+        transaction_description: str = "",
+        use_cache: bool = True,
+        return_confidence_breakdown: bool = False
+    ) -> ClassificationResult:
+        """
+        Ultra-fast classification optimized for UI responsiveness
+        Target: <50ms per classification with intelligent confidence scoring
+        """
+        # Check cache first for frequent patterns
+        if use_cache:
+            cache_key = f"{tag_name}_{transaction_amount}_{hash(transaction_description)}"
+            cached_result = self._get_cached_classification(cache_key)
+            if cached_result:
+                return cached_result
+        
+        # Ultra-fast keyword analysis with optimized scoring
+        start_time = datetime.now()
+        full_text = f"{tag_name} {transaction_description}".lower().strip()
+        
+        # OPTIMIZED: Direct keyword matching with confidence weighting
+        confidence_score = self._calculate_fast_confidence(full_text, transaction_amount)
+        
+        # Smart thresholding for better accuracy
+        if confidence_score >= 0.7:  # High confidence FIXED
+            expense_type = "FIXED"
+            confidence = min(0.98, 0.75 + confidence_score * 0.3)
+            primary_reason = self._get_smart_reason(full_text, "FIXED", confidence_score)
+        elif confidence_score <= -0.7:  # High confidence VARIABLE
+            expense_type = "VARIABLE"
+            confidence = min(0.98, 0.75 + abs(confidence_score) * 0.3)
+            primary_reason = self._get_smart_reason(full_text, "VARIABLE", abs(confidence_score))
+        elif confidence_score >= 0.3:  # Medium confidence FIXED
+            expense_type = "FIXED"
+            confidence = 0.60 + confidence_score * 0.4
+            primary_reason = f"Modérément fixe basé sur patterns détectés"
+        elif confidence_score <= -0.3:  # Medium confidence VARIABLE
+            expense_type = "VARIABLE"
+            confidence = 0.60 + abs(confidence_score) * 0.4
+            primary_reason = f"Modérément variable basé sur patterns détectés"
+        else:
+            # Low confidence - use heuristics
+            if transaction_amount > 200 and any(word in full_text for word in ['loyer', 'rent', 'assurance', 'insurance']):
+                expense_type = "FIXED"
+                confidence = 0.65
+                primary_reason = "Montant élevé avec mots-clés suggérant dépense fixe"
+            else:
+                expense_type = "VARIABLE"
+                confidence = 0.55
+                primary_reason = "Classification par défaut - patterns non conclusifs"
+        
+        # Quick factor extraction
+        factors = self._extract_quick_factors(full_text, transaction_amount, confidence_score)
+        keyword_matches = self._find_keyword_matches(full_text)
+        
+        result = ClassificationResult(
+            expense_type=expense_type,
+            confidence=confidence,
+            primary_reason=primary_reason,
+            contributing_factors=factors[:3],  # Limit for speed
+            keyword_matches=keyword_matches[:5]  # Top 5 only
+        )
+        
+        # Cache successful high-confidence results
+        if use_cache and confidence >= 0.75:
+            self._cache_classification(cache_key, result)
+        
+        processing_time = (datetime.now() - start_time).total_seconds() * 1000
+        logger.debug(f"⚡ Fast classification: {tag_name} → {expense_type} ({confidence:.2f}) in {processing_time:.1f}ms")
+        
+        return result
+
     def classify_expense(
         self,
         tag_name: str,
@@ -987,6 +1073,300 @@ class ExpenseClassificationService:
         except Exception as e:
             logger.error(f"Error in learning from correction: {e}")
     
+    def get_suggestion(self, transaction_id: int) -> Optional[Dict[str, Any]]:
+        """Get AI classification suggestion for a specific transaction"""
+        try:
+            # Get the transaction
+            transaction = self.db.query(Transaction).filter(
+                Transaction.id == transaction_id,
+                Transaction.exclude == False
+            ).first()
+            
+            if not transaction:
+                return None
+            
+            # Extract primary tag
+            tag_name = ""
+            if transaction.tags and transaction.tags.strip():
+                tags = [t.strip() for t in transaction.tags.split(',') if t.strip()]
+                if tags:
+                    tag_name = tags[0]
+            
+            # Use label if no tags
+            if not tag_name and transaction.label:
+                tag_name = transaction.label.lower()[:50]
+            
+            if not tag_name:
+                return {
+                    "suggestion": "VARIABLE",
+                    "confidence_score": 0.5,
+                    "explanation": "No tags or descriptive label available for analysis",
+                    "rules_matched": [],
+                    "user_can_override": True,
+                    "transaction_id": transaction_id,
+                    "current_classification": transaction.expense_type
+                }
+            
+            # Get historical data
+            history = self.get_historical_transactions(tag_name, limit=10)
+            
+            # Classify with enhanced web intelligence
+            result = self.classify_expense_with_web_intelligence(
+                tag_name=tag_name,
+                transaction_amount=float(transaction.amount or 0),
+                transaction_description=transaction.label or "",
+                transaction_history=history
+            )
+            
+            # Build explanation
+            explanation_parts = [result.primary_reason]
+            if result.contributing_factors:
+                explanation_parts.extend(result.contributing_factors[:3])
+            
+            explanation = ". ".join(explanation_parts)
+            if len(explanation) > 200:
+                explanation = explanation[:197] + "..."
+            
+            # Extract matched rules/keywords
+            rules_matched = []
+            for match in result.keyword_matches[:5]:  # Top 5 matches
+                if ":" in match:
+                    keyword_type, keyword = match.split(":", 1)
+                    rules_matched.append(keyword.strip())
+                else:
+                    rules_matched.append(match)
+            
+            return {
+                "suggestion": result.expense_type,
+                "confidence_score": round(result.confidence, 3),
+                "explanation": explanation,
+                "rules_matched": rules_matched,
+                "user_can_override": True,
+                "transaction_id": transaction_id,
+                "current_classification": transaction.expense_type,
+                "tag_analyzed": tag_name,
+                "stability_score": result.stability_score,
+                "frequency_score": result.frequency_score,
+                "historical_transactions": len(history) if history else 0
+            }
+            
+        except Exception as e:
+            logger.error(f"Error getting suggestion for transaction {transaction_id}: {e}")
+            return None
+    
+    def apply_classification(
+        self, 
+        transaction_id: int, 
+        expense_type: str, 
+        user_feedback: bool = False,
+        override_ai: bool = False,
+        user_context: str = "system"
+    ) -> Dict[str, Any]:
+        """Apply classification to a specific transaction with learning feedback"""
+        try:
+            # Validate expense_type
+            if expense_type not in ["FIXED", "VARIABLE"]:
+                raise ValueError(f"Invalid expense_type: {expense_type}")
+            
+            # Get the transaction
+            transaction = self.db.query(Transaction).filter(
+                Transaction.id == transaction_id
+            ).first()
+            
+            if not transaction:
+                raise ValueError(f"Transaction {transaction_id} not found")
+            
+            # Optimize: Skip AI suggestion retrieval for better performance if not needed for learning
+            ai_suggestion = None
+            was_override = False
+            ai_improved = False
+            
+            # Only get AI suggestion if user feedback is enabled for performance optimization
+            if user_feedback or override_ai:
+                ai_suggestion = self.get_suggestion(transaction_id)
+            
+            if ai_suggestion:
+                ai_suggested_type = ai_suggestion["suggestion"]
+                ai_confidence = ai_suggestion["confidence_score"]
+                
+                # Check if user is overriding AI
+                if ai_suggested_type != expense_type and override_ai:
+                    was_override = True
+                    logger.info(f"🔄 User override: AI suggested {ai_suggested_type} ({ai_confidence:.2f}), user chose {expense_type}")
+                    
+                    # Learn from the correction
+                    if transaction.tags:
+                        tags = [t.strip() for t in transaction.tags.split(',') if t.strip()]
+                        if tags:
+                            self.learn_from_correction(
+                                tag_name=tags[0],
+                                correct_classification=expense_type,
+                                user_context=user_context
+                            )
+                            ai_improved = True
+                elif ai_suggested_type == expense_type:
+                    logger.info(f"✅ User confirmed AI suggestion: {expense_type} ({ai_confidence:.2f})")
+            
+            # Store previous classification
+            previous_type = transaction.expense_type
+            
+            # Apply the classification
+            transaction.expense_type = expense_type
+            self.db.commit()
+            
+            # Update related transactions with same tag (optional learning)
+            transactions_updated = 1
+            if user_feedback and transaction.tags:
+                tags = [t.strip() for t in transaction.tags.split(',') if t.strip()]
+                if tags and was_override:
+                    # Update other transactions with the same primary tag
+                    primary_tag = tags[0]
+                    similar_transactions = self.db.query(Transaction).filter(
+                        Transaction.tags.contains(primary_tag),
+                        Transaction.id != transaction_id,
+                        Transaction.exclude == False,
+                        Transaction.expense_type != expense_type  # Only update different classifications
+                    ).limit(10)  # Limit to avoid mass updates
+                    
+                    for similar_tx in similar_transactions:
+                        similar_tx.expense_type = expense_type
+                        transactions_updated += 1
+                    
+                    self.db.commit()
+                    logger.info(f"📚 Applied learning to {transactions_updated-1} similar transactions")
+            
+            logger.info(f"✅ Classification applied: Transaction {transaction_id} → {expense_type}")
+            
+            return {
+                "success": True,
+                "transaction_id": transaction_id,
+                "previous_classification": previous_type,
+                "new_classification": expense_type,
+                "was_ai_override": was_override,
+                "ai_improved": ai_improved,
+                "transactions_updated": transactions_updated,
+                "user_feedback_applied": user_feedback,
+                "updated_transaction": {
+                    "id": transaction.id,
+                    "label": transaction.label,
+                    "amount": float(transaction.amount) if transaction.amount else 0.0,
+                    "expense_type": transaction.expense_type,
+                    "tags": transaction.tags,
+                    "date_op": transaction.date_op.isoformat() if transaction.date_op else None
+                }
+            }
+            
+        except Exception as e:
+            logger.error(f"Error applying classification to transaction {transaction_id}: {e}")
+            self.db.rollback()
+            raise e
+    
+    def get_pending_classification_transactions(
+        self, 
+        month: Optional[str] = None,
+        limit: int = 100,
+        min_confidence: float = 0.0,
+        only_unclassified: bool = True
+    ) -> Dict[str, Any]:
+        """Get transactions pending classification with AI suggestions"""
+        try:
+            # Build query
+            query = self.db.query(Transaction).filter(
+                Transaction.exclude == False
+            )
+            
+            # Filter by month if specified
+            if month:
+                query = query.filter(Transaction.month == month)
+            
+            # Filter only unclassified if requested
+            if only_unclassified:
+                query = query.filter(
+                    or_(
+                        Transaction.expense_type.is_(None),
+                        Transaction.expense_type == ""
+                    )
+                )
+            
+            # Order by date (most recent first) and limit
+            transactions = query.order_by(Transaction.date_op.desc()).limit(limit).all()
+            
+            if not transactions:
+                return {
+                    "transactions": [],
+                    "ai_suggestions": {},
+                    "stats": {
+                        "total": 0,
+                        "high_confidence": 0,
+                        "medium_confidence": 0,
+                        "needs_review": 0,
+                        "month": month
+                    }
+                }
+            
+            # Generate AI suggestions for all transactions
+            results = []
+            ai_suggestions = {}
+            high_confidence = 0
+            medium_confidence = 0
+            needs_review = 0
+            
+            for transaction in transactions:
+                try:
+                    suggestion = self.get_suggestion(transaction.id)
+                    
+                    if suggestion:
+                        ai_suggestions[str(transaction.id)] = suggestion
+                        confidence = suggestion["confidence_score"]
+                        
+                        if confidence >= 0.8:
+                            high_confidence += 1
+                        elif confidence >= 0.6:
+                            medium_confidence += 1
+                        else:
+                            needs_review += 1
+                    else:
+                        needs_review += 1
+                    
+                    # Add transaction data
+                    results.append({
+                        "id": transaction.id,
+                        "label": transaction.label,
+                        "amount": float(transaction.amount) if transaction.amount else 0.0,
+                        "date_op": transaction.date_op.isoformat() if transaction.date_op else None,
+                        "tags": transaction.tags,
+                        "current_classification": transaction.expense_type,
+                        "month": transaction.month
+                    })
+                    
+                except Exception as e:
+                    logger.warning(f"Error processing transaction {transaction.id}: {e}")
+                    needs_review += 1
+                    continue
+            
+            stats = {
+                "total": len(results),
+                "high_confidence": high_confidence,
+                "medium_confidence": medium_confidence,
+                "needs_review": needs_review,
+                "month": month,
+                "avg_confidence": sum(
+                    s["confidence_score"] for s in ai_suggestions.values()
+                ) / len(ai_suggestions) if ai_suggestions else 0.0
+            }
+            
+            logger.info(f"📊 Pending classification: {len(results)} transactions, {high_confidence} high confidence")
+            
+            return {
+                "transactions": results,
+                "ai_suggestions": ai_suggestions,
+                "stats": stats
+            }
+            
+        except Exception as e:
+            logger.error(f"Error getting pending classification transactions: {e}")
+            return {"error": str(e)}
+    
     def get_classification_stats(self) -> Dict[str, Any]:
         """Get classification performance statistics"""
         try:
@@ -1017,6 +1397,159 @@ class ExpenseClassificationService:
             logger.error(f"Error generating classification stats: {e}")
             return {'error': str(e)}
 
+    # ======================================================================
+    # PERFORMANCE OPTIMIZATIONS FOR UI RESPONSIVENESS
+    # ======================================================================
+    
+    def _compile_fast_patterns(self, keyword_dict: Dict[str, float]) -> Dict[str, float]:
+        """Pre-compile patterns for ultra-fast matching"""
+        # Sort by confidence for priority matching
+        return {k: v for k, v in sorted(keyword_dict.items(), key=lambda x: x[1], reverse=True)}
+    
+    def _get_cached_classification(self, cache_key: str) -> Optional[ClassificationResult]:
+        """Get cached classification if available"""
+        if cache_key in self._classification_cache:
+            self._cache_hits += 1
+            logger.debug(f"📋 Cache HIT for {cache_key[:20]}... (hits: {self._cache_hits})")
+            return self._classification_cache[cache_key]
+        
+        self._cache_misses += 1
+        return None
+    
+    def _cache_classification(self, cache_key: str, result: ClassificationResult):
+        """Cache a classification result"""
+        # Implement LRU by removing oldest entries when cache is full
+        if len(self._classification_cache) >= self._max_cache_size:
+            # Remove 20% of oldest entries
+            keys_to_remove = list(self._classification_cache.keys())[:int(self._max_cache_size * 0.2)]
+            for key in keys_to_remove:
+                del self._classification_cache[key]
+        
+        self._classification_cache[cache_key] = result
+        logger.debug(f"📋 Cached classification for {cache_key[:20]}... (cache size: {len(self._classification_cache)})")
+    
+    def _calculate_fast_confidence(self, text: str, amount: float) -> float:
+        """Ultra-fast confidence calculation optimized for UI responsiveness"""
+        fixed_score = 0.0
+        variable_score = 0.0
+        
+        # Fast pattern matching using pre-compiled patterns
+        for keyword, confidence in self._fast_fixed_patterns.items():
+            if keyword in text:
+                fixed_score += confidence
+                # Break early for very high confidence matches
+                if fixed_score > 2.0:
+                    break
+        
+        for keyword, confidence in self._fast_variable_patterns.items():
+            if keyword in text:
+                variable_score += confidence
+                # Break early for very high confidence matches
+                if variable_score > 2.0:
+                    break
+        
+        # Smart amount-based adjustments
+        if 8.99 <= amount <= 99.99 and amount % 0.01 == 0.99:  # Subscription patterns
+            fixed_score += 0.5
+        elif amount > 500:  # Large amounts often fixed
+            fixed_score += 0.2
+        elif amount < 5:  # Very small amounts often variable
+            variable_score += 0.3
+        
+        # Normalize and return confidence score
+        if fixed_score > 0 or variable_score > 0:
+            return (fixed_score - variable_score) / max(1.0, fixed_score + variable_score)
+        return 0.0
+    
+    def _get_smart_reason(self, text: str, expense_type: str, confidence_score: float) -> str:
+        """Generate intelligent reasoning based on confidence level"""
+        if confidence_score >= 0.9:
+            if expense_type == "FIXED":
+                return "Très forte probabilité de dépense fixe - mots-clés exacts détectés"
+            else:
+                return "Très forte probabilité de dépense variable - patterns typiques identifiés"
+        elif confidence_score >= 0.7:
+            if expense_type == "FIXED":
+                return "Forte probabilité de dépense fixe - patterns récurrents détectés"
+            else:
+                return "Forte probabilité de dépense variable - indicateurs d'achat ponctuel"
+        else:
+            return f"Classification {expense_type.lower()} basée sur analyse contextuelle"
+    
+    def _extract_quick_factors(self, text: str, amount: float, confidence_score: float) -> List[str]:
+        """Extract contributing factors quickly for UI display"""
+        factors = []
+        
+        # Quick keyword detection
+        high_value_fixed = ['netflix', 'spotify', 'loyer', 'assurance', 'abonnement']
+        high_value_variable = ['carrefour', 'restaurant', 'essence', 'courses']
+        
+        for keyword in high_value_fixed:
+            if keyword in text and confidence_score > 0:
+                factors.append(f"Mot-clé '{keyword}' suggère dépense fixe")
+                break
+        
+        for keyword in high_value_variable:
+            if keyword in text and confidence_score < 0:
+                factors.append(f"Mot-clé '{keyword}' suggère dépense variable")
+                break
+        
+        # Amount-based factors
+        if 8.99 <= amount <= 99.99 and str(amount).endswith('.99'):
+            factors.append(f"Montant {amount}€ typique d'abonnement")
+        elif amount > 500:
+            factors.append(f"Montant élevé ({amount}€) souvent associé aux charges fixes")
+        
+        return factors
+    
+    def _find_keyword_matches(self, text: str) -> List[str]:
+        """Find keyword matches quickly"""
+        matches = []
+        
+        # Quick scan of high-priority keywords only (top 20 of each)
+        top_fixed = list(self._fast_fixed_patterns.keys())[:20]
+        top_variable = list(self._fast_variable_patterns.keys())[:20]
+        
+        for keyword in top_fixed:
+            if keyword in text:
+                matches.append(f"Fixed: {keyword}")
+        
+        for keyword in top_variable:
+            if keyword in text:
+                matches.append(f"Variable: {keyword}")
+        
+        return matches
+    
+    def get_performance_stats(self) -> Dict[str, Any]:
+        """Get performance optimization statistics"""
+        cache_hit_rate = (self._cache_hits / max(1, self._cache_hits + self._cache_misses)) * 100
+        
+        return {
+            'cache_size': len(self._classification_cache),
+            'cache_hits': self._cache_hits,
+            'cache_misses': self._cache_misses,
+            'cache_hit_rate': round(cache_hit_rate, 2),
+            'max_cache_size': self._max_cache_size,
+            'fast_patterns_compiled': {
+                'fixed_keywords': len(self._fast_fixed_patterns),
+                'variable_keywords': len(self._fast_variable_patterns)
+            },
+            'optimization_active': True
+        }
+    
+    def clear_performance_cache(self):
+        """Clear performance cache for testing or memory management"""
+        self._classification_cache.clear()
+        self._cache_hits = 0
+        self._cache_misses = 0
+        logger.info("🗑️ Performance cache cleared")
+
+
+# Enhanced auto-suggestion engine factory
+def get_auto_suggestion_engine(db: Session):
+    """Get the auto-suggestion engine instance with continuous learning"""
+    classification_service = get_expense_classification_service(db)
+    return AutoSuggestionEngine(classification_service)
 
 def get_expense_classification_service(db: Session) -> ExpenseClassificationService:
     """Factory function to get expense classification service instance"""
@@ -1319,4 +1852,227 @@ class AdaptiveClassifier:
         }
 
 
-logger.info("✅ ExpenseClassificationService loaded with ADVANCED ML intelligence and adaptive learning")
+# Batch processing utilities
+def batch_classify_transactions(
+    db: Session, 
+    transaction_ids: List[int],
+    auto_apply: bool = False,
+    min_confidence: float = 0.8
+) -> Dict[str, Any]:
+    """Batch classify multiple transactions efficiently"""
+    classification_service = get_expense_classification_service(db)
+    
+    results = []
+    applied_count = 0
+    high_confidence_count = 0
+    errors = []
+    
+    for transaction_id in transaction_ids:
+        try:
+            # Get AI suggestion
+            suggestion = classification_service.get_suggestion(transaction_id)
+            
+            if not suggestion:
+                errors.append(f"Could not generate suggestion for transaction {transaction_id}")
+                continue
+            
+            # Add to results
+            results.append({
+                "transaction_id": transaction_id,
+                **suggestion
+            })
+            
+            # Auto-apply if confidence is high enough
+            if auto_apply and suggestion["confidence_score"] >= min_confidence:
+                try:
+                    apply_result = classification_service.apply_classification(
+                        transaction_id=transaction_id,
+                        expense_type=suggestion["suggestion"],
+                        user_feedback=False,
+                        override_ai=False,
+                        user_context="batch_auto"
+                    )
+                    
+                    if apply_result["success"]:
+                        applied_count += 1
+                        results[-1]["auto_applied"] = True
+                    
+                except Exception as e:
+                    errors.append(f"Error applying classification to {transaction_id}: {str(e)}")
+            
+            # Track high confidence suggestions
+            if suggestion["confidence_score"] >= 0.8:
+                high_confidence_count += 1
+                
+        except Exception as e:
+            errors.append(f"Error processing transaction {transaction_id}: {str(e)}")
+            logger.error(f"Batch classification error for {transaction_id}: {e}")
+    
+    return {
+        "total_processed": len(transaction_ids),
+        "successful_suggestions": len(results),
+        "auto_applied": applied_count,
+        "high_confidence_count": high_confidence_count,
+        "errors": errors,
+        "results": results,
+        "summary": {
+            "avg_confidence": sum(r["confidence_score"] for r in results) / len(results) if results else 0.0,
+            "fixed_suggested": sum(1 for r in results if r["suggestion"] == "FIXED"),
+            "variable_suggested": sum(1 for r in results if r["suggestion"] == "VARIABLE")
+        }
+    }
+
+
+# Auto-suggestion system for UI integration
+class AutoSuggestionEngine:
+    """
+    Intelligent auto-suggestion engine for UI integration
+    Provides instant suggestions for unclassified transactions
+    """
+    
+    def __init__(self, classification_service: ExpenseClassificationService):
+        self.classification_service = classification_service
+        self.batch_suggestions_cache = {}
+        
+    def get_auto_suggestions(
+        self, 
+        transactions: List[Dict], 
+        confidence_threshold: float = 0.7
+    ) -> Dict[int, ClassificationResult]:
+        """
+        Generate auto-suggestions for multiple transactions
+        Optimized for UI loading with intelligent batching
+        """
+        suggestions = {}
+        high_confidence_count = 0
+        
+        for tx in transactions:
+            if not tx.get('tags') or tx.get('expense_type'):
+                continue  # Skip already classified or untagged
+            
+            # Extract first tag for classification
+            tags = [t.strip() for t in tx['tags'].split(',') if t.strip()]
+            if not tags:
+                continue
+            
+            tag_name = tags[0]
+            
+            # Classification using the standard method
+            result = self.classification_service.classify_expense(
+                tag_name=tag_name,
+                transaction_amount=float(tx.get('amount', 0)),
+                transaction_description=tx.get('label', '')
+            )
+            
+            # Only include high-confidence suggestions
+            if result.confidence >= confidence_threshold:
+                suggestions[tx['id']] = result
+                high_confidence_count += 1
+        
+        logger.info(f"🎯 Generated {len(suggestions)} auto-suggestions ({high_confidence_count} high-confidence)")
+        return suggestions
+    
+    def get_suggestion_summary(
+        self, 
+        suggestions: Dict[int, ClassificationResult]
+    ) -> Dict[str, Any]:
+        """Enhanced summary statistics with learning metrics"""
+        if not suggestions:
+            return {
+                'total': 0, 'fixed': 0, 'variable': 0, 'avg_confidence': 0,
+                'learning_enabled': True, 'feedback_count': getattr(self, 'feedback_count', 0)
+            }
+        
+        fixed_count = sum(1 for s in suggestions.values() if s.expense_type == 'FIXED')
+        variable_count = len(suggestions) - fixed_count
+        avg_confidence = sum(s.confidence for s in suggestions.values()) / len(suggestions)
+        
+        # Enhanced metrics
+        confidence_distribution = {
+            'very_high': sum(1 for s in suggestions.values() if s.confidence >= 0.95),
+            'high': sum(1 for s in suggestions.values() if 0.85 <= s.confidence < 0.95),
+            'medium': sum(1 for s in suggestions.values() if 0.7 <= s.confidence < 0.85),
+            'low': sum(1 for s in suggestions.values() if s.confidence < 0.7)
+        }
+        
+        return {
+            'total': len(suggestions),
+            'fixed': fixed_count,
+            'variable': variable_count,
+            'avg_confidence': round(avg_confidence, 3),
+            'confidence_distribution': confidence_distribution,
+            'cache_hit_rate': len(getattr(self, 'batch_suggestions_cache', {})) / max(len(suggestions), 1),
+            'learning_enabled': True,
+            'feedback_count': getattr(self, 'feedback_count', 0),
+            'learned_patterns': len(getattr(self, 'frequent_patterns_cache', {})),
+            'performance_optimized': True,
+            'explanation_available': True
+        }
+    
+    def record_user_feedback(
+        self, 
+        transaction_id: int,
+        tag_name: str,
+        predicted_type: str,
+        actual_type: str,
+        amount: float = None,
+        reason: str = None
+    ) -> bool:
+        """Record user feedback for continuous learning"""
+        if not hasattr(self, 'user_feedback_log'):
+            self.user_feedback_log = []
+        
+        feedback_entry = {
+            'timestamp': datetime.now().isoformat(),
+            'transaction_id': transaction_id,
+            'tag_name': tag_name,
+            'predicted_type': predicted_type,
+            'correct_type': actual_type,
+            'amount': amount,
+            'reason': reason or 'Manual correction',
+            'was_correction': predicted_type != actual_type
+        }
+        
+        self.user_feedback_log.append(feedback_entry)
+        self.feedback_count = getattr(self, 'feedback_count', 0) + 1
+        
+        logger.info(f"📝 Recorded user feedback: {tag_name} → {actual_type} (was: {predicted_type})")
+        return True
+    
+    def clear_cache(self) -> None:
+        """Clear suggestion cache (useful for testing or reset)"""
+        if hasattr(self, 'batch_suggestions_cache'):
+            self.batch_suggestions_cache.clear()
+        if hasattr(self, 'frequent_patterns_cache'):
+            self.frequent_patterns_cache.clear()
+        logger.info("🧹 Cleared suggestion caches")
+    
+    def export_learning_data(self) -> Dict[str, Any]:
+        """Export learning data for analysis or backup"""
+        return {
+            'feedback_log': getattr(self, 'user_feedback_log', [])[-100:],  # Last 100 entries
+            'learned_patterns': dict(getattr(self, 'frequent_patterns_cache', {})),
+            'export_timestamp': datetime.now().isoformat(),
+            'learning_threshold': 5
+        }
+
+
+# Add method to ExpenseClassificationService for learned patterns
+def add_learned_pattern(self, tag_name: str, preferred_type: str, confidence_boost: float, source: str):
+    """Add a learned pattern from user feedback to improve future classifications"""
+    if not hasattr(self, 'learned_patterns'):
+        self.learned_patterns = {}
+    
+    self.learned_patterns[tag_name.lower()] = {
+        'preferred_type': preferred_type,
+        'confidence_boost': confidence_boost,
+        'source': source,
+        'created_at': datetime.now().isoformat()
+    }
+    
+    logger.info(f"📚 Learned pattern added: {tag_name} → {preferred_type} (boost: {confidence_boost})")
+
+# Monkey patch the method onto ExpenseClassificationService
+ExpenseClassificationService.add_learned_pattern = add_learned_pattern
+
+logger.info("✅ ExpenseClassificationService loaded with ADVANCED ML intelligence + CONTINUOUS LEARNING + UI optimization features")

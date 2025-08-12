@@ -1,0 +1,81 @@
+{
+  "timestamp": "2025-08-12 17:38:54",
+  "summary": {
+    "total_tests": 5,
+    "successful_tests": 3,
+    "failed_tests": 2,
+    "success_rate": 0.6
+  },
+  "test_results": [
+    {
+      "name": "Classification Stats",
+      "endpoint": "/expense-classification/stats",
+      "status_code": 403,
+      "response_time_ms": 6.8,
+      "success": false,
+      "data": null,
+      "error": "{\"detail\":\"Not authenticated\"}"
+    },
+    {
+      "name": "Single Tag GET Classification",
+      "endpoint": "/expense-classification/suggest/netflix",
+      "status_code": 403,
+      "response_time_ms": 48.9,
+      "success": false,
+      "data": null,
+      "error": "{\"detail\":\"Not authenticated\"}"
+    },
+    {
+      "name": "OpenAPI Schema",
+      "endpoint": "/openapi.json",
+      "status_code": 200,
+      "response_time_ms": 192.1,
+      "success": true,
+      "data": {
+        "paths_count": 93
+      },
+      "error": null
+    },
+    {
+      "name": "Database Access",
+      "endpoint": "direct_database",
+      "success": true,
+      "data": {
+        "classified_count": 268,
+        "unclassified_count": 0,
+        "sample_transactions": 5
+      }
+    },
+    {
+      "name": "Direct Classification Service",
+      "endpoint": "python_import",
+      "success": true,
+      "data": {
+        "test_results": {
+          "netflix": {
+            "expense_type": "FIXED",
+            "confidence": 0.99,
+            "response_time_ms": 0.4
+          },
+          "courses": {
+            "expense_type": "VARIABLE",
+            "confidence": 0.984,
+            "response_time_ms": 0.8
+          },
+          "loyer": {
+            "expense_type": "FIXED",
+            "confidence": 0.9840000000000001,
+            "response_time_ms": 0.0
+          },
+          "restaurant": {
+            "expense_type": "VARIABLE",
+            "confidence": 0.99,
+            "response_time_ms": 0.1
+          }
+        },
+        "avg_confidence": 0.99,
+        "avg_response_time_ms": 0.3
+      }
+    }
+  ]
+}
