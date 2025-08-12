@@ -134,10 +134,10 @@ class CORSSettings(BaseSettings):
         return v
     
     @field_validator('allow_credentials')
-    def validate_credentials_with_origins(cls, v, info):
+    def validate_credentials_with_origins(cls, v, values, **kwargs):
         """Validate CORS credentials configuration"""
-        if v and info.data.get('allowed_origins'):
-            for origin in info.data['allowed_origins']:
+        if v and values.get('allowed_origins'):
+            for origin in values['allowed_origins']:
                 if origin == "*":
                     raise ValueError("Cannot use allow_credentials=True with wildcard origins")
         return v
