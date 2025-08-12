@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { api, CustomProvision, CustomProvisionCreate } from '../lib/api';
+import { api, CustomProvision, CustomProvisionCreate, provisionsApi } from '../lib/api';
 
 interface UseCustomProvisionsReturn {
   provisions: CustomProvision[];
@@ -51,23 +51,13 @@ export function useCustomProvisions(onDataChange?: () => void): UseCustomProvisi
         url: '/custom-provisions'
       });
       
-      const response = await api.get<CustomProvision[]>('/custom-provisions');
+      const provisions = await provisionsApi.getAll();
       console.log('✅ Provisions chargées:', {
-        status: response.status,
-        hasData: !!response.data,
-        dataType: typeof response.data,
-        isArray: Array.isArray(response.data),
-        count: Array.isArray(response.data) ? response.data.length : 0,
-        data: response.data
+        count: provisions.length,
+        data: provisions
       });
       
-      // Vérification robuste de la réponse
-      const provisions = Array.isArray(response.data) ? response.data : [];
       setProvisions(provisions);
-      
-      if (!Array.isArray(response.data)) {
-        console.warn('⚠️ La réponse n\'est pas un tableau:', response.data);
-      }
     } catch (err: any) {
       const errorDetails = {
         status: err.response?.status,
@@ -108,14 +98,13 @@ export function useCustomProvisions(onDataChange?: () => void): UseCustomProvisi
         hasToken: !!localStorage.getItem('auth_token')
       });
       
-      const response = await api.post<CustomProvision>('/custom-provisions', provisionData);
+      const newProvision = await provisionsApi.create(provisionData);
       
       console.log('✅ Provision créée:', {
-        status: response.status,
-        data: response.data
+        data: newProvision
       });
       
-      setProvisions(prev => [...prev, response.data]);
+      setProvisions(prev => [...prev, newProvision]);
       onDataChange?.();
     } catch (err: any) {
       const errorDetails = {
@@ -147,12 +136,9 @@ export function useCustomProvisions(onDataChange?: () => void): UseCustomProvisi
 
   const handleUpdateProvision = async (provisionData: CustomProvisionCreate, editingProvision: CustomProvision) => {
     try {
-      const response = await api.put<CustomProvision>(
-        `/custom-provisions/${editingProvision.id}`,
-        provisionData
-      );
+      const updatedProvision = await provisionsApi.update(editingProvision.id, provisionData);
       setProvisions(prev =>
-        prev.map(p => (p.id === editingProvision.id ? response.data : p))
+        prev.map(p => (p.id === editingProvision.id ? updatedProvision : p))
       );
       onDataChange?.();
     } catch (err: any) {
@@ -163,12 +149,11 @@ export function useCustomProvisions(onDataChange?: () => void): UseCustomProvisi
   const toggleProvisionStatus = async (provision: CustomProvision) => {
     try {
       setActionLoading(provision.id);
-      const response = await api.patch<CustomProvision>(
-        `/custom-provisions/${provision.id}`,
-        { is_active: !provision.is_active }
-      );
+      const updatedProvision = await provisionsApi.patch(provision.id, { 
+        is_active: !provision.is_active 
+      });
       setProvisions(prev =>
-        prev.map(p => (p.id === provision.id ? response.data : p))
+        prev.map(p => (p.id === provision.id ? updatedProvision : p))
       );
       onDataChange?.();
     } catch (err: any) {
@@ -185,7 +170,7 @@ export function useCustomProvisions(onDataChange?: () => void): UseCustomProvisi
 
     try {
       setActionLoading(provision.id);
-      await api.delete(`/custom-provisions/${provision.id}`);
+      await provisionsApi.delete(provision.id);
       setProvisions(prev => prev.filter(p => p.id !== provision.id));
       onDataChange?.();
     } catch (err: any) {

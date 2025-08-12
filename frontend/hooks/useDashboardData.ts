@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { api, Summary, ConfigOut, CustomProvision, FixedLine } from '../lib/api';
+import { api, Summary, ConfigOut, CustomProvision, FixedLine, provisionsApi, fixedExpensesApi } from '../lib/api';
 
 export interface DashboardData {
   summary: Summary | null;
@@ -28,19 +28,19 @@ export function useDashboardData(month: string, isAuthenticated: boolean) {
       setLoading(true);
       setError("");
       
-      const [configResponse, summaryResponse, provisionsResponse, fixedExpensesResponse] = await Promise.all([
+      const [configResponse, summaryResponse, provisions, fixedExpenses] = await Promise.all([
         api.get<ConfigOut>("/config"),
         api.get<Summary>("/summary", { params: { month } }),
-        api.get<CustomProvision[]>("/custom-provisions"),
-        api.get<FixedLine[]>("/fixed-lines")
+        provisionsApi.getAll(),
+        fixedExpensesApi.getAll()
       ]);
       
       console.log('✅ Dashboard - Data loaded for month:', month);
       setData({
         summary: summaryResponse.data,
         config: configResponse.data,
-        provisions: provisionsResponse.data || [],
-        fixedExpenses: fixedExpensesResponse.data || []
+        provisions: provisions,
+        fixedExpenses: fixedExpenses
       });
     } catch (err: any) {
       setError("Erreur lors du chargement des données");

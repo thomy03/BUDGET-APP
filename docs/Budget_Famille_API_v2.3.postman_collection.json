@@ -1,0 +1,1186 @@
+{
+	"info": {
+		"_postman_id": "budget-famille-api-v23",
+		"name": "Budget Famille API v2.3 - Collection Complète",
+		"description": "Collection Postman complète pour l'API Budget Famille v2.3\n\n## 🎯 Utilisation\n\n### 1. Configuration Initiale\n- Importer cette collection dans Postman\n- Configurer les variables d'environnement\n- Lancer d'abord la requête d'authentification\n\n### 2. Variables d'Environnement\n- `base_url`: http://localhost:8000\n- `token`: (sera défini automatiquement après login)\n- `current_month`: 2024-01\n- `test_user`: admin\n- `test_password`: secret\n\n### 3. Flux de Test\n1. **Auth** → Login pour obtenir le token\n2. **Config** → Configurer les paramètres utilisateur\n3. **Import** → Importer des données de test\n4. **Transactions** → Tester les opérations CRUD\n5. **Analytics** → Vérifier les calculs financiers\n\n### 4. Tests Automatisés\nChaque requête inclut des tests automatiques pour valider :\n- Status codes attendus\n- Structure des réponses JSON\n- Données métier cohérentes\n\n## 🔧 Fonctionnalités Testées\n- Authentification JWT complète\n- Import CSV avec validation\n- CRUD transactions avec filtrage\n- Provisions et charges fixes personnalisables\n- Analytics et KPIs financiers\n- Export multi-formats\n- Cache et performance\n- Gestion d'erreurs complète",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "budget-famille"
+	},
+	"item": [
+		{
+			"name": "🔐 Authentification",
+			"item": [
+				{
+					"name": "Login - Obtenir Token JWT",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response has access_token\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('access_token');",
+									"    pm.expect(jsonData).to.have.property('token_type');",
+									"    pm.expect(jsonData.token_type).to.eql('bearer');",
+									"    ",
+									"    // Store token for other requests",
+									"    pm.environment.set('token', jsonData.access_token);",
+									"});",
+									"",
+									"pm.test(\"Token format is valid\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.access_token).to.match(/^[A-Za-z0-9-_]+\\.[A-Za-z0-9-_]+\\.[A-Za-z0-9-_]*$/);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/x-www-form-urlencoded",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "urlencoded",
+							"urlencoded": [
+								{
+									"key": "username",
+									"value": "{{test_user}}",
+									"type": "text"
+								},
+								{
+									"key": "password",
+									"value": "{{test_password}}",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/token",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"token"
+							]
+						},
+						"description": "Authentification OAuth2 pour obtenir un token JWT.\nLe token est automatiquement sauvé dans les variables d'environnement."
+					}
+				},
+				{
+					"name": "Valider Token Actuel",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Token is valid\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('valid');",
+									"    pm.expect(jsonData.valid).to.be.true;",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/debug/jwt",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"debug",
+								"jwt"
+							]
+						},
+						"description": "Valide le token JWT actuel et retourne les informations utilisateur."
+					}
+				}
+			],
+			"description": "Endpoints d'authentification JWT avec tests de validation automatiques."
+		},
+		{
+			"name": "⚙️ Configuration",
+			"item": [
+				{
+					"name": "Récupérer Configuration",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Configuration has required fields\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('member1');",
+									"    pm.expect(jsonData).to.have.property('member2');",
+									"    pm.expect(jsonData).to.have.property('rev1');",
+									"    pm.expect(jsonData).to.have.property('rev2');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/config",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"config"
+							]
+						}
+					}
+				},
+				{
+					"name": "Mettre à Jour Configuration",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Configuration updated successfully\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.member1).to.eql('Diana');",
+									"    pm.expect(jsonData.member2).to.eql('Thomas');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"member1\": \"Diana\",\n  \"member2\": \"Thomas\",\n  \"rev1\": 3200.00,\n  \"rev2\": 2800.00,\n  \"split_mode\": \"revenus\",\n  \"split1\": 0.53,\n  \"split2\": 0.47,\n  \"other_split_mode\": \"clé\",\n  \"var_percent\": 30.0,\n  \"max_var\": 1500.0,\n  \"min_fixed\": 800.0\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/config",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"config"
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "📄 Import & Export",
+			"item": [
+				{
+					"name": "Import CSV - Fichier Test",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Import response is valid\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('importId');",
+									"    pm.expect(jsonData).to.have.property('months');",
+									"    pm.expect(jsonData).to.have.property('processing');",
+									"    pm.expect(jsonData.processing).to.eql('done');",
+									"    ",
+									"    // Store import ID for reference",
+									"    pm.environment.set('last_import_id', jsonData.importId);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "file",
+									"type": "file",
+									"src": "test-data/sample_transactions.csv",
+									"description": "Fichier CSV de test avec transactions d'exemple"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/import",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"import"
+							]
+						},
+						"description": "Import d'un fichier CSV de test avec validation complète."
+					}
+				},
+				{
+					"name": "Récupérer Détails Import",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Import details are complete\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('importId');",
+									"    pm.expect(jsonData).to.have.property('fileName');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/imports/{{last_import_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"imports",
+								"{{last_import_id}}"
+							]
+						}
+					}
+				},
+				{
+					"name": "Export Transactions CSV",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Export job created\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('job_id');",
+									"    pm.expect(jsonData).to.have.property('status');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"format\": \"csv\",\n  \"scope\": \"month\",\n  \"filters\": {\n    \"month\": \"{{current_month}}\",\n    \"exclude_excluded\": true,\n    \"categories\": []\n  },\n  \"options\": {\n    \"include_metadata\": true,\n    \"group_by_category\": false\n  }\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/export",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"export"
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "💰 Transactions",
+			"item": [
+				{
+					"name": "Lister Transactions du Mois",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response is array of transactions\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.be.an('array');",
+									"    ",
+									"    if (jsonData.length > 0) {",
+									"        pm.expect(jsonData[0]).to.have.property('id');",
+									"        pm.expect(jsonData[0]).to.have.property('date_op');",
+									"        pm.expect(jsonData[0]).to.have.property('amount');",
+									"        pm.expect(jsonData[0]).to.have.property('label');",
+									"        ",
+									"        // Store first transaction ID for update tests",
+									"        pm.environment.set('test_transaction_id', jsonData[0].id);",
+									"    }",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/transactions?month={{current_month}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"transactions"
+							],
+							"query": [
+								{
+									"key": "month",
+									"value": "{{current_month}}"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Modifier Exclusion Transaction",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Transaction updated successfully\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('exclude');",
+									"    pm.expect(jsonData.exclude).to.be.true;",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"exclude\": true\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/transactions/{{test_transaction_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"transactions",
+								"{{test_transaction_id}}"
+							]
+						}
+					}
+				},
+				{
+					"name": "Modifier Tags Transaction",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Tags updated successfully\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('tags');",
+									"    pm.expect(jsonData.tags).to.include('test');",
+									"    pm.expect(jsonData.tags).to.include('postman');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"tags\": \"test,postman,automation\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/transactions/{{test_transaction_id}}/tags",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"transactions",
+								"{{test_transaction_id}}",
+								"tags"
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "🏠 Provisions & Charges Fixes",
+			"item": [
+				{
+					"name": "Lister Provisions",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response is array of provisions\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.be.an('array');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/provisions",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"provisions"
+							]
+						}
+					}
+				},
+				{
+					"name": "Créer Provision Personnalisée",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Provision created successfully\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('id');",
+									"    pm.expect(jsonData).to.have.property('name');",
+									"    pm.expect(jsonData.name).to.eql('Voyage Été 2024');",
+									"    ",
+									"    // Store provision ID for other tests",
+									"    pm.environment.set('test_provision_id', jsonData.id);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Voyage Été 2024\",\n  \"description\": \"Provision pour les vacances d'été\",\n  \"percentage\": 5.0,\n  \"base_calculation\": \"total\",\n  \"fixed_amount\": 0,\n  \"split_mode\": \"key\",\n  \"split_member1\": 50,\n  \"split_member2\": 50\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/provisions",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"provisions"
+							]
+						}
+					}
+				},
+				{
+					"name": "Lister Charges Fixes",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response is array of fixed lines\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.be.an('array');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/fixed-lines?active_only=true",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"fixed-lines"
+							],
+							"query": [
+								{
+									"key": "active_only",
+									"value": "true"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Créer Charge Fixe",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Fixed line created successfully\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('id');",
+									"    pm.expect(jsonData).to.have.property('label');",
+									"    pm.expect(jsonData.label).to.eql('Netflix Famille');",
+									"    ",
+									"    // Store fixed line ID for other tests",
+									"    pm.environment.set('test_fixed_line_id', jsonData.id);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"label\": \"Netflix Famille\",\n  \"amount\": 15.99,\n  \"freq\": \"mensuelle\",\n  \"split_mode\": \"50/50\",\n  \"split1\": 0.5,\n  \"split2\": 0.5,\n  \"category\": \"loisirs\",\n  \"active\": true\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/fixed-lines",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"fixed-lines"
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "📊 Analytics & Reporting",
+			"item": [
+				{
+					"name": "Résumé Financier du Mois",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Financial summary is complete\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('total_revenus');",
+									"    pm.expect(jsonData).to.have.property('total_depenses');",
+									"    pm.expect(jsonData).to.have.property('solde');",
+									"    pm.expect(jsonData).to.have.property('repartition');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/summary?month={{current_month}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"summary"
+							],
+							"query": [
+								{
+									"key": "month",
+									"value": "{{current_month}}"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "KPIs Analytics",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"KPIs are complete\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('total_income');",
+									"    pm.expect(jsonData).to.have.property('total_expenses');",
+									"    pm.expect(jsonData).to.have.property('savings_rate');",
+									"    pm.expect(jsonData).to.have.property('transaction_count');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/analytics/kpis?month={{current_month}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"analytics",
+								"kpis"
+							],
+							"query": [
+								{
+									"key": "month",
+									"value": "{{current_month}}"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Tendances Mensuelles",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Trends data is array\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.be.an('array');",
+									"    ",
+									"    if (jsonData.length > 0) {",
+									"        pm.expect(jsonData[0]).to.have.property('month');",
+									"        pm.expect(jsonData[0]).to.have.property('total_income');",
+									"        pm.expect(jsonData[0]).to.have.property('total_expenses');",
+									"    }",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/analytics/trends?months=6",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"analytics",
+								"trends"
+							],
+							"query": [
+								{
+									"key": "months",
+									"value": "6"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Répartition par Catégories",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Categories breakdown is array\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.be.an('array');",
+									"    ",
+									"    if (jsonData.length > 0) {",
+									"        pm.expect(jsonData[0]).to.have.property('category');",
+									"        pm.expect(jsonData[0]).to.have.property('total_amount');",
+									"        pm.expect(jsonData[0]).to.have.property('transaction_count');",
+									"    }",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/analytics/categories?month={{current_month}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"analytics",
+								"categories"
+							],
+							"query": [
+								{
+									"key": "month",
+									"value": "{{current_month}}"
+								}
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "🏷️ Tags",
+			"item": [
+				{
+					"name": "Lister Tous les Tags",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Tags is array of strings\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.be.an('array');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/tags",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"tags"
+							]
+						}
+					}
+				},
+				{
+					"name": "Résumé Tags par Mois",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Tags summary has structure\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('month');",
+									"    pm.expect(jsonData).to.have.property('tags_count');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/tags-summary?month={{current_month}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"tags-summary"
+							],
+							"query": [
+								{
+									"key": "month",
+									"value": "{{current_month}}"
+								}
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "⚕️ Système",
+			"item": [
+				{
+					"name": "Health Check",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Service is healthy\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('status');",
+									"    pm.expect(jsonData.status).to.eql('ok');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/health",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"health"
+							]
+						},
+						"description": "Vérification de l'état de santé de l'API - ne nécessite pas d'authentification."
+					}
+				}
+			]
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"// Pre-request script global",
+					"console.log('🚀 Exécution requête:', pm.info.requestName);",
+					"",
+					"// Vérifier si un token est nécessaire",
+					"const needsAuth = !pm.info.requestName.includes('Health') && !pm.info.requestName.includes('Login');",
+					"",
+					"if (needsAuth && !pm.environment.get('token')) {",
+					"    console.warn('⚠️ Token manquant - exécutez d\\'abord la requête de login');",
+					"}"
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"// Test script global",
+					"pm.test('Response time is reasonable', function () {",
+					"    pm.expect(pm.response.responseTime).to.be.below(5000); // 5 secondes max",
+					"});",
+					"",
+					"pm.test('Response has valid JSON format', function () {",
+					"    pm.expect(function() {",
+					"        pm.response.json();",
+					"    }).to.not.throw();",
+					"});",
+					"",
+					"// Logging pour debug",
+					"console.log('📊 Réponse:', pm.response.status, pm.response.responseTime + 'ms');",
+					"",
+					"if (pm.response.status >= 400) {",
+					"    console.error('❌ Erreur détectée:', pm.response.json());",
+					"}"
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:8000",
+			"type": "string",
+			"description": "URL de base de l'API Budget Famille"
+		},
+		{
+			"key": "current_month",
+			"value": "2024-01",
+			"type": "string",
+			"description": "Mois courant pour les tests (format YYYY-MM)"
+		},
+		{
+			"key": "test_user",
+			"value": "admin",
+			"type": "string",
+			"description": "Nom d'utilisateur par défaut pour les tests"
+		},
+		{
+			"key": "test_password",
+			"value": "secret",
+			"type": "string",
+			"description": "Mot de passe par défaut pour les tests"
+		}
+	]
+}

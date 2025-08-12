@@ -86,8 +86,25 @@ export type FixedLine = {
   split_mode: "clé" | "50/50" | "m1" | "m2" | "manuel";
   split1: number;
   split2: number;
+  category: "logement" | "transport" | "services" | "loisirs" | "santé" | "autres";
   active: boolean;
+  // Computed properties for UI compatibility
+  name?: string; // Alias for label
+  is_active?: boolean; // Alias for active
 };
+
+export type FixedLineCreate = {
+  label: string;
+  amount: number;
+  freq: "mensuelle" | "trimestrielle" | "annuelle";
+  split_mode: "clé" | "50/50" | "m1" | "m2" | "manuel";
+  split1: number;
+  split2: number;
+  category?: "logement" | "transport" | "services" | "loisirs" | "santé" | "autres";
+  active?: boolean;
+};
+
+export type FixedLineUpdate = Partial<FixedLineCreate>;
 
 // Types pour le nouveau système d'import optimisé
 export type ImportMonth = {
@@ -452,4 +469,80 @@ export const apiUtils = {
     
     throw lastError;
   },
+};
+
+// =============================================================================
+// FONCTIONS API POUR PROVISIONS PERSONNALISABLES
+// =============================================================================
+
+export const provisionsApi = {
+  // Récupérer toutes les provisions
+  async getAll(): Promise<CustomProvision[]> {
+    const response = await api.get<CustomProvision[]>('/custom-provisions');
+    return response.data || [];
+  },
+
+  // Créer une nouvelle provision
+  async create(provision: CustomProvisionCreate): Promise<CustomProvision> {
+    const response = await api.post<CustomProvision>('/custom-provisions', provision);
+    return response.data;
+  },
+
+  // Mettre à jour une provision existante
+  async update(id: number, provision: CustomProvisionUpdate): Promise<CustomProvision> {
+    const response = await api.put<CustomProvision>(`/custom-provisions/${id}`, provision);
+    return response.data;
+  },
+
+  // Mettre à jour partiellement une provision (ex: statut actif/inactif)
+  async patch(id: number, updates: Partial<CustomProvision>): Promise<CustomProvision> {
+    const response = await api.patch<CustomProvision>(`/custom-provisions/${id}`, updates);
+    return response.data;
+  },
+
+  // Supprimer une provision
+  async delete(id: number): Promise<void> {
+    await api.delete(`/custom-provisions/${id}`);
+  },
+
+  // Récupérer le résumé des provisions
+  async getSummary(): Promise<CustomProvisionSummary> {
+    const response = await api.get<CustomProvisionSummary>('/custom-provisions/summary');
+    return response.data;
+  }
+};
+
+// =============================================================================
+// FONCTIONS API POUR DÉPENSES FIXES
+// =============================================================================
+
+export const fixedExpensesApi = {
+  // Récupérer toutes les dépenses fixes
+  async getAll(): Promise<FixedLine[]> {
+    const response = await api.get<FixedLine[]>('/fixed-lines');
+    return response.data || [];
+  },
+
+  // Créer une nouvelle dépense fixe
+  async create(expense: FixedLineCreate): Promise<FixedLine> {
+    const response = await api.post<FixedLine>('/fixed-lines', expense);
+    return response.data;
+  },
+
+  // Mettre à jour une dépense fixe existante
+  async update(id: number, expense: FixedLineUpdate): Promise<FixedLine> {
+    const response = await api.put<FixedLine>(`/fixed-lines/${id}`, expense);
+    return response.data;
+  },
+
+  // Mettre à jour partiellement une dépense fixe (ex: statut actif/inactif)
+  async patch(id: number, updates: Partial<FixedLine>): Promise<FixedLine> {
+    const response = await api.patch<FixedLine>(`/fixed-lines/${id}`, updates);
+    return response.data;
+  },
+
+  // Supprimer une dépense fixe
+  async delete(id: number): Promise<void> {
+    await api.delete(`/fixed-lines/${id}`);
+  }
 };

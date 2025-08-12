@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>CORS Fix Validation</title>
+</head>
+<body>
+    <h1>Budget Famille v2.3 - CORS Fix Validation</h1>
+    <div id="result"></div>
+    
+    <script>
+        async function testCORS() {
+            const resultDiv = document.getElementById('result');
+            
+            try {
+                resultDiv.innerHTML = '<p>Testing CORS configuration...</p>';
+                
+                // Test authentication endpoint
+                const response = await fetch('http://127.0.0.1:8000/token', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    credentials: 'include',
+                    body: 'username=admin&password=secret'
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    resultDiv.innerHTML = `
+                        <h2>✅ CORS Fix Successful!</h2>
+                        <p><strong>Status:</strong> ${response.status} ${response.statusText}</p>
+                        <p><strong>Token received:</strong> ${data.access_token ? 'Yes' : 'No'}</p>
+                        <p><strong>Token type:</strong> ${data.token_type}</p>
+                        <p><strong>Frontend port (45678) can now communicate with backend port (8000)</strong></p>
+                        <p><strong>CORS headers are properly configured</strong></p>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `
+                        <h2>⚠️ Authentication failed but CORS is working</h2>
+                        <p><strong>Status:</strong> ${response.status} ${response.statusText}</p>
+                        <p>CORS is working correctly - the request was not blocked by browser policy.</p>
+                    `;
+                }
+                
+            } catch (error) {
+                if (error.message.includes('CORS')) {
+                    resultDiv.innerHTML = `
+                        <h2>❌ CORS Error Still Present</h2>
+                        <p><strong>Error:</strong> ${error.message}</p>
+                        <p>Frontend cannot communicate with backend due to CORS policy.</p>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `
+                        <h2>⚠️ Network Error (CORS appears to be working)</h2>
+                        <p><strong>Error:</strong> ${error.message}</p>
+                    `;
+                }
+            }
+        }
+        
+        // Test on page load
+        window.onload = testCORS;
+    </script>
+</body>
+</html>

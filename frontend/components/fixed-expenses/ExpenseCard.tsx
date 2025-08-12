@@ -25,7 +25,7 @@ export function ExpenseCard({
     calculateMonthlyAmount,
     calculateMemberSplit,
     formatAmount,
-    getBaseCalculationLabel,
+    getFrequencyLabel,
     getSplitModeLabel,
     getCategoryIcon
   } = useFixedExpenseCalculations(config);
@@ -43,18 +43,15 @@ export function ExpenseCard({
       <div className="flex items-start justify-between">
         <div className="flex items-center space-x-3">
           <span className="text-2xl" role="img" aria-label="icon">
-            {expense.icon || getCategoryIcon(expense.category)}
+            {getCategoryIcon(expense.category || 'autres')}
           </span>
           <div>
             <h4 
               id={`expense-${expense.id}-name`}
               className="font-semibold text-gray-900"
             >
-              {expense.name}
+              {expense.label}
             </h4>
-            {expense.description && (
-              <p className="text-sm text-gray-600">{expense.description}</p>
-            )}
           </div>
         </div>
         <div className="flex items-center space-x-2">
@@ -62,7 +59,7 @@ export function ExpenseCard({
             onClick={() => onEdit(expense)}
             disabled={isLoading}
             className="icon-hover text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 px-2 py-1 rounded transition-all"
-            aria-label={`Modifier la dépense ${expense.name}`}
+            aria-label={`Modifier la dépense ${expense.label}`}
           >
             ✏️
           </Button>
@@ -70,19 +67,19 @@ export function ExpenseCard({
             onClick={() => onToggleStatus(expense)}
             disabled={isLoading}
             className={`icon-hover text-xs px-2 py-1 rounded transition-all ${
-              expense.is_active
+              expense.active
                 ? 'bg-orange-100 hover:bg-orange-200 text-orange-700'
                 : 'bg-green-100 hover:bg-green-200 text-green-700'
             }`}
-            aria-label={`${expense.is_active ? 'Désactiver' : 'Activer'} la dépense ${expense.name}`}
+            aria-label={`${expense.active ? 'Désactiver' : 'Activer'} la dépense ${expense.label}`}
           >
-            {isLoading ? '...' : expense.is_active ? '⏸️' : '▶️'}
+            {isLoading ? '...' : expense.active ? '⏸️' : '▶️'}
           </Button>
           <Button
             onClick={() => onDelete(expense)}
             disabled={isLoading}
             className="icon-hover text-xs bg-red-100 hover:bg-red-200 text-red-700 px-2 py-1 rounded transition-all"
-            aria-label={`Supprimer la dépense ${expense.name}`}
+            aria-label={`Supprimer la dépense ${expense.label}`}
           >
             🗑️
           </Button>
@@ -91,12 +88,9 @@ export function ExpenseCard({
 
       <div className="mt-4 grid grid-cols-2 gap-4 text-sm">
         <div>
-          <p className="text-gray-600">Base de calcul</p>
+          <p className="text-gray-600">Fréquence</p>
           <p className="font-medium">
-            {getBaseCalculationLabel(expense.base_calculation)}
-            {expense.base_calculation !== 'fixed' && ` (${expense.percentage}%)`}
-            {expense.base_calculation === 'fixed' && 
-              ` (${formatAmount(expense.fixed_amount || 0)})`}
+            {getFrequencyLabel(expense.freq)} - {formatAmount(expense.amount)}
           </p>
         </div>
         <div>

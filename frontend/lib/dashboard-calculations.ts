@@ -48,7 +48,10 @@ export function calculateMemberSplit(expense: FixedLine, monthlyAmount: number, 
     case 'm2':
       return { member1: 0, member2: monthlyAmount };
     case 'manuel':
-      return { member1: monthlyAmount * expense.split1, member2: monthlyAmount * expense.split2 };
+      return { 
+        member1: monthlyAmount * (expense.split1 / 100), 
+        member2: monthlyAmount * (expense.split2 / 100) 
+      };
     default:
       return { member1: monthlyAmount * 0.5, member2: monthlyAmount * 0.5 };
   }

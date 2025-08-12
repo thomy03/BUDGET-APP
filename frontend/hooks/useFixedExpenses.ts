@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { api, FixedLine, FixedLineCreate } from '../lib/api';
+import { api, FixedLine, FixedLineCreate, fixedExpensesApi } from '../lib/api';
 
 interface UseFixedExpensesReturn {
   expenses: FixedLine[];
@@ -49,22 +49,13 @@ export function useFixedExpenses(onDataChange?: () => void): UseFixedExpensesRet
         url: '/fixed-lines'
       });
       
-      const response = await api.get<FixedLine[]>('/fixed-lines');
+      const expenses = await fixedExpensesApi.getAll();
       console.log('✅ Dépenses fixes chargées:', {
-        status: response.status,
-        hasData: !!response.data,
-        dataType: typeof response.data,
-        isArray: Array.isArray(response.data),
-        count: Array.isArray(response.data) ? response.data.length : 0,
-        data: response.data
+        count: expenses.length,
+        data: expenses
       });
       
-      const expenses = Array.isArray(response.data) ? response.data : [];
       setExpenses(expenses);
-      
-      if (!Array.isArray(response.data)) {
-        console.warn('⚠️ La réponse n\'est pas un tableau:', response.data);
-      }
     } catch (err: any) {
       const errorDetails = {
         status: err.response?.status,
@@ -104,14 +95,13 @@ export function useFixedExpenses(onDataChange?: () => void): UseFixedExpensesRet
         hasToken: !!localStorage.getItem('auth_token')
       });
       
-      const response = await api.post<FixedLine>('/fixed-lines', expenseData);
+      const newExpense = await fixedExpensesApi.create(expenseData);
       
       console.log('✅ Dépense fixe créée:', {
-        status: response.status,
-        data: response.data
+        data: newExpense
       });
       
-      setExpenses(prev => [...prev, response.data]);
+      setExpenses(prev => [...prev, newExpense]);
       onDataChange?.();
     } catch (err: any) {
       console.error('❌ Erreur création dépense fixe:', err);
@@ -133,12 +123,9 @@ export function useFixedExpenses(onDataChange?: () => void): UseFixedExpensesRet
 
   const handleUpdateExpense = async (expenseData: FixedLineCreate, editingExpense: FixedLine) => {
     try {
-      const response = await api.put<FixedLine>(
-        `/fixed-lines/${editingExpense.id}`,
-        expenseData
-      );
+      const updatedExpense = await fixedExpensesApi.update(editingExpense.id, expenseData);
       setExpenses(prev =>
-        prev.map(e => (e.id === editingExpense.id ? response.data : e))
+        prev.map(e => (e.id === editingExpense.id ? updatedExpense : e))
       );
       onDataChange?.();
     } catch (err: any) {
@@ -149,12 +136,11 @@ export function useFixedExpenses(onDataChange?: () => void): UseFixedExpensesRet
   const toggleExpenseStatus = async (expense: FixedLine) => {
     try {
       setActionLoading(expense.id);
-      const response = await api.patch<FixedLine>(
-        `/fixed-lines/${expense.id}`,
-        { is_active: !expense.is_active }
-      );
+      const updatedExpense = await fixedExpensesApi.patch(expense.id, { 
+        active: !expense.active 
+      });
       setExpenses(prev =>
-        prev.map(e => (e.id === expense.id ? response.data : e))
+        prev.map(e => (e.id === expense.id ? updatedExpense : e))
       );
       onDataChange?.();
     } catch (err: any) {
@@ -165,13 +151,13 @@ export function useFixedExpenses(onDataChange?: () => void): UseFixedExpensesRet
   };
 
   const deleteExpense = async (expense: FixedLine) => {
-    if (!confirm(`Êtes-vous sûr de vouloir supprimer la dépense "${expense.name}" ?`)) {
+    if (!confirm(`Êtes-vous sûr de vouloir supprimer la dépense "${expense.label}" ?`)) {
       return;
     }
 
     try {
       setActionLoading(expense.id);
-      await api.delete(`/fixed-lines/${expense.id}`);
+      await fixedExpensesApi.delete(expense.id);
       setExpenses(prev => prev.filter(e => e.id !== expense.id));
       onDataChange?.();
     } catch (err: any) {

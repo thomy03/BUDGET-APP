@@ -1,0 +1,69 @@
+{
+  "timestamp": "2025-08-11T13:53:19.544046",
+  "summary": {
+    "total_tests": 10,
+    "passed": 6,
+    "failed": 4,
+    "warnings": 0,
+    "success_rate": 60.0,
+    "status": "ACCEPTABLE - MINOR FIXES NEEDED"
+  },
+  "test_results": [
+    {
+      "test": "Server Health Check",
+      "status": "PASS",
+      "details": "Database: connected"
+    },
+    {
+      "test": "Login Authentication",
+      "status": "PASS",
+      "details": "Token obtained successfully"
+    },
+    {
+      "test": "Token Validation",
+      "status": "PASS",
+      "details": "Token validated successfully"
+    },
+    {
+      "test": "GET Configuration",
+      "status": "FAIL",
+      "details": "HTTP 500"
+    },
+    {
+      "test": "CORS Headers Test",
+      "status": "FAIL",
+      "details": "('Connection aborted.', ConnectionResetError(104, 'Connection reset by peer'))"
+    },
+    {
+      "test": "404 Error Handling",
+      "status": "PASS",
+      "details": "Proper 404 response"
+    },
+    {
+      "test": "Unauthorized Access Handling",
+      "status": "PASS",
+      "details": "Proper 403 response"
+    },
+    {
+      "test": "Response Time Performance",
+      "status": "PASS",
+      "details": "Avg: 4.02ms, Max: 4.19ms"
+    },
+    {
+      "test": "Complete Config Journey",
+      "status": "FAIL",
+      "details": "Config read failed: HTTP 500"
+    },
+    {
+      "test": "Health + Auth Journey",
+      "status": "FAIL",
+      "details": "('Connection aborted.', ConnectionResetError(104, 'Connection reset by peer'))"
+    }
+  ],
+  "recommendations": [
+    "\u26a0\ufe0f Some non-critical issues identified",
+    "\ud83d\udd27 Fix failed tests before release",
+    "\ud83d\udccb Create monitoring plan for warnings",
+    "\u23f0 Release after fixes are applied"
+  ]
+}

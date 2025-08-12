@@ -9,8 +9,8 @@ const ICON_OPTIONS = [
 
 const COLOR_OPTIONS = [
   '#6366f1', '#8b5cf6', '#ec4899', '#ef4444', '#f59e0b', '#10b981',
-  '#059669', '#0891b2', '#0284c7', '#3b82f6', '#6366f1', '#7c3aed',
-  '#a855f7', '#c2410c', '#dc2626', '#ea580c', '#ca8a04', '#65a30d'
+  '#059669', '#0891b2', '#0284c7', '#3b82f6', '#7c3aed', '#a855f7',
+  '#c2410c', '#dc2626', '#ea580c', '#ca8a04', '#65a30d', '#84cc16'
 ];
 
 interface IconColorPickerProps {

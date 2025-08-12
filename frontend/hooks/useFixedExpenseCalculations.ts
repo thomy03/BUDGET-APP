@@ -4,31 +4,26 @@ import { FixedLine, ConfigOut } from '../lib/api';
 
 export function useFixedExpenseCalculations(config?: ConfigOut) {
   const calculateMonthlyAmount = (expense: FixedLine): number => {
-    if (!config) return 0;
+    if (!expense?.amount) return 0;
 
-    let base = 0;
-    switch (expense.base_calculation) {
-      case 'total':
-        base = (config.rev1 || 0) + (config.rev2 || 0);
-        break;
-      case 'member1':
-        base = config.rev1 || 0;
-        break;
-      case 'member2':
-        base = config.rev2 || 0;
-        break;
-      case 'fixed':
-        return expense.fixed_amount || 0;
+    // Convert to monthly based on frequency
+    switch (expense.freq) {
+      case 'mensuelle':
+        return expense.amount;
+      case 'trimestrielle':
+        return expense.amount / 3;
+      case 'annuelle':
+        return expense.amount / 12;
+      default:
+        return expense.amount;
     }
-
-    return (base * expense.percentage / 100) / 12;
   };
 
   const calculateMemberSplit = (expense: FixedLine, monthlyAmount: number) => {
     if (!config) return { member1: 0, member2: 0 };
 
     switch (expense.split_mode) {
-      case 'key':
+      case 'clé':
         const totalRev = (config.rev1 || 0) + (config.rev2 || 0);
         if (totalRev > 0) {
           const r1 = (config.rev1 || 0) / totalRev;
@@ -41,14 +36,14 @@ export function useFixedExpenseCalculations(config?: ConfigOut) {
         return { member1: monthlyAmount * 0.5, member2: monthlyAmount * 0.5 };
       case '50/50':
         return { member1: monthlyAmount * 0.5, member2: monthlyAmount * 0.5 };
-      case '100/0':
+      case 'm1':
         return { member1: monthlyAmount, member2: 0 };
-      case '0/100':
+      case 'm2':
         return { member1: 0, member2: monthlyAmount };
-      case 'custom':
+      case 'manuel':
         return {
-          member1: monthlyAmount * (expense.split_member1 / 100),
-          member2: monthlyAmount * (expense.split_member2 / 100),
+          member1: monthlyAmount * (expense.split1 / 100),
+          member2: monthlyAmount * (expense.split2 / 100),
         };
       default:
         return { member1: monthlyAmount * 0.5, member2: monthlyAmount * 0.5 };
@@ -56,40 +51,48 @@ export function useFixedExpenseCalculations(config?: ConfigOut) {
   };
 
   const formatAmount = (amount: number) => {
-    return new Intl.NumberFormat('fr-FR', {
-      style: 'currency',
-      currency: 'EUR',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(amount);
+    // Handle NaN, undefined, null values
+    if (!amount || isNaN(amount) || !isFinite(amount)) {
+      return '0 €';
+    }
+    
+    try {
+      return new Intl.NumberFormat('fr-FR', {
+        style: 'currency',
+        currency: 'EUR',
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0,
+      }).format(amount);
+    } catch (error) {
+      // Fallback formatting
+      return `${amount.toFixed(0).replace('.', ',')} €`;
+    }
   };
 
-  const getBaseCalculationLabel = (baseCalc: string) => {
-    switch (baseCalc) {
-      case 'total':
-        return 'Revenus totaux';
-      case 'member1':
-        return config?.member1 || 'Membre 1';
-      case 'member2':
-        return config?.member2 || 'Membre 2';
-      case 'fixed':
-        return 'Montant fixe';
+  const getFrequencyLabel = (freq: string) => {
+    switch (freq) {
+      case 'mensuelle':
+        return 'Mensuelle';
+      case 'trimestrielle':
+        return 'Trimestrielle';
+      case 'annuelle':
+        return 'Annuelle';
       default:
-        return baseCalc;
+        return freq;
     }
   };
 
   const getSplitModeLabel = (splitMode: string) => {
     switch (splitMode) {
-      case 'key':
+      case 'clé':
         return 'Clé globale';
       case '50/50':
         return '50/50';
-      case '100/0':
+      case 'm1':
         return `100% ${config?.member1 || 'Membre 1'}`;
-      case '0/100':
+      case 'm2':
         return `100% ${config?.member2 || 'Membre 2'}`;
-      case 'custom':
+      case 'manuel':
         return 'Personnalisé';
       default:
         return splitMode;
@@ -98,24 +101,17 @@ export function useFixedExpenseCalculations(config?: ConfigOut) {
 
   const getCategoryIcon = (category: string) => {
     switch (category) {
-      case 'housing':
+      case 'logement':
         return '🏠';
       case 'transport':
         return '🚗';
-      case 'utilities':
+      case 'services':
         return '⚡';
-      case 'insurance':
-        return '🛡️';
-      case 'subscriptions':
-        return '📱';
-      case 'food':
-        return '🍽️';
-      case 'health':
-        return '🏥';
-      case 'education':
-        return '🎓';
-      case 'entertainment':
+      case 'loisirs':
         return '🎬';
+      case 'santé':
+        return '🏥';
+      case 'autres':
       default:
         return '💳';
     }
@@ -125,7 +121,7 @@ export function useFixedExpenseCalculations(config?: ConfigOut) {
     calculateMonthlyAmount,
     calculateMemberSplit,
     formatAmount,
-    getBaseCalculationLabel,
+    getFrequencyLabel,
     getSplitModeLabel,
     getCategoryIcon
   };

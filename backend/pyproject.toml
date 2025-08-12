@@ -1,0 +1,216 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "budget-famille-backend"
+version = "2.3.0"
+description = "Budget Famille v2.3 - Backend API with advanced financial management features"
+readme = "README.md"
+authors = [
+    { name = "Budget Famille Team", email = "dev@budget-famille.fr" }
+]
+license = { text = "MIT" }
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: End Users/Desktop",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Topic :: Office/Business :: Financial :: Accounting",
+]
+requires-python = ">=3.8"
+dependencies = [
+    "fastapi>=0.100.0,<0.112.0",
+    "uvicorn[standard]>=0.20.0,<0.31.0",
+    "pandas>=1.5.0,<2.1.0",
+    "numpy>=1.21.0,<1.26.0",
+    "SQLAlchemy>=1.4.0,<2.1.0",
+    "alembic>=1.8.0",
+    "python-jose[cryptography]>=3.3.0",
+    "passlib[bcrypt]>=1.7.4",
+    "cryptography>=40.0.0",
+    "python-multipart>=0.0.5",
+    "pydantic>=1.10.0,<2.6.0",
+    "email-validator>=1.3.0",
+    "python-magic>=0.4.20",
+    "openpyxl>=3.0.0",
+    "xlsxwriter>=3.0.0",
+    "reportlab>=4.0.0",
+    "python-dotenv>=0.19.0",
+    "structlog>=22.0.0",
+    "redis>=4.0.0,<5.1.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+    "pytest-asyncio>=0.21.0",
+    "httpx>=0.24.0",
+    "factory-boy>=3.3.0",
+    "psutil>=5.9.0",
+    "locust>=2.15.0",
+    "black>=23.0.0",
+    "flake8>=6.0.0",
+    "mypy>=1.0.0",
+    "bandit>=1.7.0",
+    "safety>=2.3.0",
+]
+test = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+    "pytest-asyncio>=0.21.0",
+    "httpx>=0.24.0",
+    "factory-boy>=3.3.0",
+    "psutil>=5.9.0",
+]
+encryption = [
+    "pysqlcipher3>=1.2.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/budget-famille/budget-app-starter-v2.3"
+Repository = "https://github.com/budget-famille/budget-app-starter-v2.3"
+Issues = "https://github.com/budget-famille/budget-app-starter-v2.3/issues"
+Documentation = "https://budget-famille.github.io/budget-app-starter-v2.3"
+
+[project.scripts]
+budget-api = "app:main"
+
+[tool.setuptools]
+packages = ["backend"]
+
+[tool.pytest.ini_options]
+minversion = "7.0"
+addopts = [
+    "-ra",
+    "-q",
+    "--strict-markers",
+    "--strict-config",
+    "--cov=.",
+    "--cov-report=term-missing",
+    "--cov-report=html:htmlcov",
+    "--cov-report=xml",
+    "--cov-fail-under=85",
+]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+asyncio_mode = "auto"
+filterwarnings = [
+    "ignore::DeprecationWarning",
+    "ignore::PendingDeprecationWarning",
+    "error::UserWarning",
+]
+markers = [
+    "unit: Unit tests",
+    "integration: Integration tests", 
+    "performance: Performance tests",
+    "slow: Slow running tests",
+    "security: Security tests",
+]
+
+[tool.coverage.run]
+source = ["."]
+omit = [
+    "tests/*",
+    "venv/*",
+    ".venv/*",
+    "*/__pycache__/*",
+    "*/migrations/*",
+    "conftest.py",
+    "setup.py",
+]
+branch = true
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "if self.debug:",
+    "if settings.DEBUG",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if 0:",
+    "if __name__ == .__main__.:",
+    "class .*\\bProtocol\\):",
+    "@(abc\\.)?abstractmethod",
+]
+show_missing = true
+skip_covered = false
+precision = 2
+
+[tool.coverage.html]
+directory = "htmlcov"
+
+[tool.black]
+line-length = 88
+target-version = ['py38']
+include = '\.pyi?$'
+extend-exclude = '''
+/(
+  # directories
+  \.eggs
+  | \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | build
+  | dist
+)/
+'''
+
+[tool.flake8]
+max-line-length = 88
+extend-ignore = ['E203', 'W503']
+exclude = ['.git', '__pycache__', '.venv', 'venv', 'migrations']
+per-file-ignores = [
+    '__init__.py:F401',
+    'tests/*:S101,S106',
+]
+
+[tool.mypy]
+python_version = "3.8"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = false
+disallow_incomplete_defs = false
+check_untyped_defs = true
+disallow_untyped_decorators = false
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_no_return = true
+warn_unreachable = true
+strict_equality = true
+show_error_codes = true
+
+[[tool.mypy.overrides]]
+module = [
+    "pandas.*",
+    "numpy.*",
+    "sqlalchemy.*", 
+    "alembic.*",
+    "passlib.*",
+    "jose.*",
+    "magic.*",
+    "openpyxl.*",
+    "xlsxwriter.*",
+    "reportlab.*",
+    "redis.*",
+]
+ignore_missing_imports = true
+
+[tool.bandit]
+exclude_dirs = ["tests", "venv", ".venv"]
+skips = ["B101", "B601"]  # Skip assert_used_in_tests, shell_injection_check
+
+[tool.bandit.assert_used]
+exclude = ["*_test.py", "*test_*.py"]

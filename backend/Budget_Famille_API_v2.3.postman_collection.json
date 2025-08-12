@@ -1,0 +1,1179 @@
+{
+  "info": {
+    "name": "Budget Famille API v2.3",
+    "description": "Collection complète pour tester l'API Budget Famille v2.3\n\n**Pré-requis:**\n1. Serveur démarré sur http://localhost:8000\n2. Variables d'environnement configurées\n3. Utilisateur admin/password configuré\n\n**Variables nécessaires:**\n- `base_url`: http://localhost:8000\n- `auth_token`: (sera défini automatiquement après login)\n- `username`: admin\n- `password`: password\n\n**Ordre d'exécution recommandé:**\n1. Health Check\n2. Authentication - Login\n3. Configuration - Get/Update\n4. Transactions - CRUD operations\n5. Analytics - KPI et rapports\n6. Provisions - Gestion épargne\n7. Fixed Lines - Charges fixes\n8. Import/Export - Gestion données",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "version": {
+      "major": 2,
+      "minor": 3,
+      "patch": 0
+    }
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8000",
+      "type": "string",
+      "description": "URL de base de l'API"
+    },
+    {
+      "key": "auth_token",
+      "value": "",
+      "type": "string",
+      "description": "JWT token d'authentification (défini automatiquement)"
+    },
+    {
+      "key": "username",
+      "value": "admin",
+      "type": "string"
+    },
+    {
+      "key": "password", 
+      "value": "password",
+      "type": "string"
+    }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{auth_token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "item": [
+    {
+      "name": "🏥 Health & Status",
+      "item": [
+        {
+          "name": "API Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/health",
+              "host": ["{{base_url}}"],
+              "path": ["health"]
+            },
+            "description": "Vérification de l'état général de l'API"
+          },
+          "response": []
+        },
+        {
+          "name": "API Root Info",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/",
+              "host": ["{{base_url}}"],
+              "path": [""]
+            },
+            "description": "Informations générales sur l'API et ses modules"
+          },
+          "response": []
+        },
+        {
+          "name": "Auth Service Health",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/auth/health",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "auth", "health"]
+            },
+            "description": "Health check spécifique du service d'authentification"
+          },
+          "response": []
+        }
+      ],
+      "description": "Endpoints de vérification de l'état de l'API"
+    },
+    {
+      "name": "🔐 Authentication",
+      "item": [
+        {
+          "name": "Login OAuth2 (Form)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    pm.collectionVariables.set('auth_token', response.access_token);",
+                  "    pm.test('Token saved successfully', function () {",
+                  "        pm.expect(response.access_token).to.not.be.empty;",
+                  "    });",
+                  "} else {",
+                  "    pm.test('Login failed', function () {",
+                  "        pm.response.to.have.status(401);",
+                  "    });",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "username",
+                  "value": "{{username}}",
+                  "type": "text"
+                },
+                {
+                  "key": "password",
+                  "value": "{{password}}",
+                  "type": "text"
+                },
+                {
+                  "key": "grant_type",
+                  "value": "password",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/auth/token",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "auth", "token"]
+            },
+            "description": "Authentification OAuth2 standard avec form-data"
+          },
+          "response": []
+        },
+        {
+          "name": "Login JSON",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    pm.collectionVariables.set('auth_token', response.access_token);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{username}}\",\n  \"password\": \"{{password}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/auth/login",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "auth", "login"]
+            },
+            "description": "Authentification alternative avec payload JSON"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Current User Info",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{auth_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/auth/me",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "auth", "me"]
+            },
+            "description": "Récupération des informations de l'utilisateur connecté"
+          },
+          "response": []
+        },
+        {
+          "name": "Validate Token",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{auth_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/auth/validate",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "auth", "validate"]
+            },
+            "description": "Validation de la validité du token JWT"
+          },
+          "response": []
+        },
+        {
+          "name": "Refresh Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    pm.collectionVariables.set('auth_token', response.access_token);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{auth_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/auth/refresh",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "auth", "refresh"]
+            },
+            "description": "Renouvellement du token JWT"
+          },
+          "response": []
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{auth_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/auth/logout",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "auth", "logout"]
+            },
+            "description": "Déconnexion (conceptuelle pour JWT)"
+          },
+          "response": []
+        }
+      ],
+      "description": "Endpoints d'authentification JWT"
+    },
+    {
+      "name": "⚙️ Configuration",
+      "item": [
+        {
+          "name": "Get Configuration",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{auth_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/config",
+              "host": ["{{base_url}}"],
+              "path": ["config"]
+            },
+            "description": "Récupération de la configuration budgétaire actuelle"
+          },
+          "response": []
+        },
+        {
+          "name": "Update Configuration",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{auth_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"salaire1\": 2800.0,\n  \"salaire2\": 2400.0,\n  \"charges_fixes\": 1350.0,\n  \"provision_vacances\": 250.0,\n  \"provision_voiture\": 180.0,\n  \"provision_travaux\": 120.0,\n  \"r1\": 65.0,\n  \"r2\": 35.0,\n  \"s1\": 1.3,\n  \"s2\": 0.7,\n  \"mode\": \"proportionnel\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/config",
+              "host": ["{{base_url}}"],
+              "path": ["config"]
+            },
+            "description": "Mise à jour de la configuration budgétaire"
+          },
+          "response": []
+        }
+      ],
+      "description": "Configuration des paramètres budgétaires"
+    },
+    {
+      "name": "💰 Transactions",
+      "item": [
+        {
+          "name": "List Transactions",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{auth_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/transactions?month=2024-01",
+              "host": ["{{base_url}}"],
+              "path": ["transactions"],
+              "query": [
+                {
+                  "key": "month",
+                  "value": "2024-01",
+                  "description": "Mois au format YYYY-MM"
+                }
+              ]
+            },
+            "description": "Liste des transactions pour un mois donné"
+          },
+          "response": []
+        },
+        {
+          "name": "Toggle Transaction Exclude",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{auth_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"exclude\": true\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/transactions/1",
+              "host": ["{{base_url}}"],
+              "path": ["transactions", "1"]
+            },
+            "description": "Exclusion/inclusion d'une transaction dans les calculs"
+          },
+          "response": []
+        },
+        {
+          "name": "Update Transaction Tags",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{auth_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tags\": \"urgent,personnel,alimentation\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/transactions/1/tags",
+              "host": ["{{base_url}}"],
+              "path": ["transactions", "1", "tags"]
+            },
+            "description": "Mise à jour des tags d'une transaction"
+          },
+          "response": []
+        },
+        {
+          "name": "List All Tags",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{auth_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/transactions/tags",
+              "host": ["{{base_url}}"],
+              "path": ["transactions", "tags"]
+            },
+            "description": "Liste de tous les tags utilisés"
+          },
+          "response": []
+        },
+        {
+          "name": "Tags Summary by Month",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{auth_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/transactions/tags-summary?month=2024-01",
+              "host": ["{{base_url}}"],
+              "path": ["transactions", "tags-summary"],
+              "query": [
+                {
+                  "key": "month",
+                  "value": "2024-01"
+                }
+              ]
+            },
+            "description": "Statistiques des tags pour un mois"
+          },
+          "response": []
+        }
+      ],
+      "description": "Gestion des transactions financières"
+    },
+    {
+      "name": "📊 Analytics",
+      "item": [
+        {
+          "name": "KPI Summary",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{auth_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/analytics/kpis?months=last3",
+              "host": ["{{base_url}}"],
+              "path": ["analytics", "kpis"],
+              "query": [
+                {
+                  "key": "months",
+                  "value": "last3",
+                  "description": "Période: last3, last6, last12 ou mois spécifiques"
+                }
+              ]
+            },
+            "description": "Indicateurs clés de performance financière"
+          },
+          "response": []
+        },
+        {
+          "name": "Monthly Trends",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{auth_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/analytics/trends?months=last6",
+              "host": ["{{base_url}}"],
+              "path": ["analytics", "trends"],
+              "query": [
+                {
+                  "key": "months",
+                  "value": "last6"
+                }
+              ]
+            },
+            "description": "Analyse des tendances mensuelles"
+          },
+          "response": []
+        },
+        {
+          "name": "Category Breakdown",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{auth_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/analytics/categories?month=2024-01",
+              "host": ["{{base_url}}"],
+              "path": ["analytics", "categories"],
+              "query": [
+                {
+                  "key": "month",
+                  "value": "2024-01"
+                }
+              ]
+            },
+            "description": "Répartition des dépenses par catégorie"
+          },
+          "response": []
+        },
+        {
+          "name": "Anomaly Detection",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{auth_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/analytics/anomalies?month=2024-01",
+              "host": ["{{base_url}}"],
+              "path": ["analytics", "anomalies"],
+              "query": [
+                {
+                  "key": "month",
+                  "value": "2024-01"
+                }
+              ]
+            },
+            "description": "Détection d'anomalies dans les dépenses"
+          },
+          "response": []
+        },
+        {
+          "name": "Spending Patterns",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{auth_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/analytics/patterns?months=last3",
+              "host": ["{{base_url}}"],
+              "path": ["analytics", "patterns"],
+              "query": [
+                {
+                  "key": "months",
+                  "value": "last3"
+                }
+              ]
+            },
+            "description": "Patterns de dépenses par jour de semaine"
+          },
+          "response": []
+        },
+        {
+          "name": "Available Months",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{auth_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/analytics/available-months",
+              "host": ["{{base_url}}"],
+              "path": ["analytics", "available-months"]
+            },
+            "description": "Liste des mois disponibles pour l'analyse"
+          },
+          "response": []
+        }
+      ],
+      "description": "Analytics et tableaux de bord"
+    },
+    {
+      "name": "🏦 Provisions",
+      "item": [
+        {
+          "name": "List Provisions",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{auth_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/provisions?active_only=true",
+              "host": ["{{base_url}}"],
+              "path": ["provisions"],
+              "query": [
+                {
+                  "key": "active_only",
+                  "value": "true"
+                },
+                {
+                  "key": "category",
+                  "value": "épargne",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Liste des provisions personnalisées"
+          },
+          "response": []
+        },
+        {
+          "name": "Create Provision",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{auth_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Provision Urgences\",\n  \"description\": \"Fonds d'urgence pour imprévus médicaux et familiaux\",\n  \"percentage\": 5.0,\n  \"base_calculation\": \"net_income\",\n  \"split_mode\": \"proportionnel\",\n  \"split_member1\": 60.0,\n  \"split_member2\": 40.0,\n  \"icon\": \"🚨\",\n  \"color\": \"#FF6B6B\",\n  \"display_order\": 1,\n  \"is_active\": true,\n  \"is_temporary\": false,\n  \"target_amount\": 3000.0,\n  \"category\": \"urgence\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/provisions",
+              "host": ["{{base_url}}"],
+              "path": ["provisions"]
+            },
+            "description": "Création d'une nouvelle provision personnalisée"
+          },
+          "response": []
+        },
+        {
+          "name": "Provisions Summary",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{auth_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/provisions/summary",
+              "host": ["{{base_url}}"],
+              "path": ["provisions", "summary"]
+            },
+            "description": "Résumé statistique des provisions"
+          },
+          "response": []
+        }
+      ],
+      "description": "Gestion des provisions et épargne"
+    },
+    {
+      "name": "🏠 Fixed Expenses",
+      "item": [
+        {
+          "name": "List Fixed Lines",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{auth_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/fixed-lines?active_only=true",
+              "host": ["{{base_url}}"],
+              "path": ["fixed-lines"],
+              "query": [
+                {
+                  "key": "active_only",
+                  "value": "true"
+                },
+                {
+                  "key": "category",
+                  "value": "logement",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Liste des charges fixes"
+          },
+          "response": []
+        },
+        {
+          "name": "Create Fixed Line",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{auth_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"label\": \"Assurance Habitation\",\n  \"amount\": 45.0,\n  \"freq\": \"mensuelle\",\n  \"split_mode\": \"égalitaire\",\n  \"split1\": 50.0,\n  \"split2\": 50.0,\n  \"category\": \"logement\",\n  \"active\": true\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/fixed-lines",
+              "host": ["{{base_url}}"],
+              "path": ["fixed-lines"]
+            },
+            "description": "Création d'une nouvelle charge fixe"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Fixed Line",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{auth_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/fixed-lines/1",
+              "host": ["{{base_url}}"],
+              "path": ["fixed-lines", "1"]
+            },
+            "description": "Détails d'une charge fixe spécifique"
+          },
+          "response": []
+        },
+        {
+          "name": "Update Fixed Line",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{auth_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": 50.0,\n  \"active\": true\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/fixed-lines/1",
+              "host": ["{{base_url}}"],
+              "path": ["fixed-lines", "1"]
+            },
+            "description": "Mise à jour d'une charge fixe"
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Fixed Line",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{auth_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/fixed-lines/1",
+              "host": ["{{base_url}}"],
+              "path": ["fixed-lines", "1"]
+            },
+            "description": "Suppression d'une charge fixe"
+          },
+          "response": []
+        },
+        {
+          "name": "Fixed Lines Stats by Category",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{auth_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/fixed-lines/stats/by-category",
+              "host": ["{{base_url}}"],
+              "path": ["fixed-lines", "stats", "by-category"]
+            },
+            "description": "Statistiques des charges fixes par catégorie"
+          },
+          "response": []
+        }
+      ],
+      "description": "Gestion des charges fixes récurrentes"
+    },
+    {
+      "name": "📄 Import/Export",
+      "item": [
+        {
+          "name": "Import CSV File",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{auth_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "description": "Fichier CSV contenant les transactions",
+                  "type": "file",
+                  "src": []
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/import",
+              "host": ["{{base_url}}"],
+              "path": ["import"]
+            },
+            "description": "Import d'un fichier CSV de transactions"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Import Details",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{auth_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/imports/{{import_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["imports", "{{import_id}}"]
+            },
+            "description": "Détails d'un import spécifique"
+          },
+          "response": []
+        },
+        {
+          "name": "Export Data",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{auth_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"export_format\": \"csv\",\n  \"export_scope\": \"transactions\",\n  \"filters\": {\n    \"start_date\": \"2024-01-01\",\n    \"end_date\": \"2024-03-31\",\n    \"categories\": [\"Alimentation\", \"Transport\"],\n    \"exclude_filtered\": false\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/export",
+              "host": ["{{base_url}}"],
+              "path": ["export"]
+            },
+            "description": "Export de données avec filtres"
+          },
+          "response": []
+        },
+        {
+          "name": "Export History",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{auth_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/export/history",
+              "host": ["{{base_url}}"],
+              "path": ["export", "history"]
+            },
+            "description": "Historique des exports réalisés"
+          },
+          "response": []
+        }
+      ],
+      "description": "Import et export de données"
+    },
+    {
+      "name": "🗂️ Legacy Endpoints",
+      "item": [
+        {
+          "name": "Legacy Token Endpoint",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "username",
+                  "value": "{{username}}",
+                  "type": "text"
+                },
+                {
+                  "key": "password",
+                  "value": "{{password}}",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/token",
+              "host": ["{{base_url}}"],
+              "path": ["token"]
+            },
+            "description": "Endpoint legacy pour compatibilité"
+          },
+          "response": []
+        },
+        {
+          "name": "Legacy Summary",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{auth_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/summary?month=2024-01",
+              "host": ["{{base_url}}"],
+              "path": ["summary"],
+              "query": [
+                {
+                  "key": "month",
+                  "value": "2024-01"
+                }
+              ]
+            },
+            "description": "Endpoint legacy de résumé (redirection vers analytics)"
+          },
+          "response": []
+        }
+      ],
+      "description": "Endpoints legacy pour compatibilité descendante"
+    }
+  ]
+}

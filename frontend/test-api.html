@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test API Provisions & Dépenses Fixes</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .container { max-width: 800px; margin: 0 auto; }
+        .test-section { margin-bottom: 30px; padding: 20px; border: 1px solid #ddd; border-radius: 8px; }
+        .success { color: green; }
+        .error { color: red; }
+        .loading { color: orange; }
+        button { margin: 10px; padding: 8px 16px; cursor: pointer; }
+        pre { background: #f5f5f5; padding: 10px; border-radius: 4px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 Test API Provisions & Dépenses Fixes</h1>
+        
+        <div class="test-section">
+            <h3>🔑 Authentification</h3>
+            <p>Token: <span id="token-status">Vérification...</span></p>
+            <p>API Base: <span id="api-base">http://127.0.0.1:8000</span></p>
+        </div>
+
+        <div class="test-section">
+            <h3>🎯 Test Provisions</h3>
+            <button onclick="testProvisions()">Test GET /custom-provisions</button>
+            <button onclick="createTestProvision()">Test CREATE provision</button>
+            <div id="provisions-result"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>💳 Test Dépenses Fixes</h3>
+            <button onclick="testFixedExpenses()">Test GET /fixed-lines</button>
+            <button onclick="createTestFixedExpense()">Test CREATE dépense</button>
+            <div id="fixed-expenses-result"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>📊 Test Dashboard</h3>
+            <button onclick="testDashboard()">Test Dashboard API calls</button>
+            <div id="dashboard-result"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://127.0.0.1:8000';
+        
+        // Check authentication status
+        function checkAuth() {
+            const token = localStorage.getItem('auth_token');
+            const tokenType = localStorage.getItem('token_type') || 'Bearer';
+            
+            document.getElementById('token-status').innerHTML = token ? 
+                `<span class="success">✅ Token présent (${tokenType})</span>` : 
+                `<span class="error">❌ Pas de token - Connectez-vous d'abord</span>`;
+                
+            document.getElementById('api-base').textContent = API_BASE;
+            
+            return !!token;
+        }
+
+        // Helper function to make authenticated API calls
+        async function apiCall(endpoint, method = 'GET', data = null) {
+            const token = localStorage.getItem('auth_token');
+            const tokenType = localStorage.getItem('token_type') || 'Bearer';
+            
+            if (!token) {
+                throw new Error('Pas de token d\'authentification');
+            }
+
+            const config = {
+                method,
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `${tokenType} ${token}`
+                }
+            };
+
+            if (data && method !== 'GET') {
+                config.body = JSON.stringify(data);
+            }
+
+            const response = await fetch(`${API_BASE}${endpoint}`, config);
+            
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(`HTTP ${response.status}: ${errorText}`);
+            }
+            
+            return response.json();
+        }
+
+        // Test provisions
+        async function testProvisions() {
+            const resultDiv = document.getElementById('provisions-result');
+            resultDiv.innerHTML = '<p class="loading">🔄 Test en cours...</p>';
+            
+            try {
+                const provisions = await apiCall('/custom-provisions');
+                resultDiv.innerHTML = `
+                    <p class="success">✅ Succès! ${provisions.length} provision(s) trouvée(s)</p>
+                    <pre>${JSON.stringify(provisions, null, 2)}</pre>
+                `;
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <p class="error">❌ Erreur: ${error.message}</p>
+                `;
+            }
+        }
+
+        // Create test provision
+        async function createTestProvision() {
+            const resultDiv = document.getElementById('provisions-result');
+            resultDiv.innerHTML = '<p class="loading">🔄 Création provision test...</p>';
+            
+            const testProvision = {
+                name: "Test Épargne",
+                description: "Provision de test créée par l'interface",
+                percentage: 10,
+                base_calculation: "total",
+                fixed_amount: null,
+                split_mode: "50/50",
+                split_member1: 50,
+                split_member2: 50,
+                icon: "💰",
+                color: "#6366f1",
+                display_order: 1,
+                is_active: true,
+                is_temporary: false,
+                category: "savings"
+            };
+            
+            try {
+                const newProvision = await apiCall('/custom-provisions', 'POST', testProvision);
+                resultDiv.innerHTML = `
+                    <p class="success">✅ Provision créée avec succès!</p>
+                    <pre>${JSON.stringify(newProvision, null, 2)}</pre>
+                `;
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <p class="error">❌ Erreur création: ${error.message}</p>
+                `;
+            }
+        }
+
+        // Test fixed expenses
+        async function testFixedExpenses() {
+            const resultDiv = document.getElementById('fixed-expenses-result');
+            resultDiv.innerHTML = '<p class="loading">🔄 Test en cours...</p>';
+            
+            try {
+                const expenses = await apiCall('/fixed-lines');
+                resultDiv.innerHTML = `
+                    <p class="success">✅ Succès! ${expenses.length} dépense(s) fixe(s) trouvée(s)</p>
+                    <pre>${JSON.stringify(expenses, null, 2)}</pre>
+                `;
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <p class="error">❌ Erreur: ${error.message}</p>
+                `;
+            }
+        }
+
+        // Create test fixed expense
+        async function createTestFixedExpense() {
+            const resultDiv = document.getElementById('fixed-expenses-result');
+            resultDiv.innerHTML = '<p class="loading">🔄 Création dépense test...</p>';
+            
+            const testExpense = {
+                label: "Test Crédit",
+                amount: 800.0,
+                freq: "mensuelle",
+                split_mode: "clé",
+                split1: 60,
+                split2: 40,
+                active: true
+            };
+            
+            try {
+                const newExpense = await apiCall('/fixed-lines', 'POST', testExpense);
+                resultDiv.innerHTML = `
+                    <p class="success">✅ Dépense créée avec succès!</p>
+                    <pre>${JSON.stringify(newExpense, null, 2)}</pre>
+                `;
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <p class="error">❌ Erreur création: ${error.message}</p>
+                `;
+            }
+        }
+
+        // Test dashboard data loading
+        async function testDashboard() {
+            const resultDiv = document.getElementById('dashboard-result');
+            resultDiv.innerHTML = '<p class="loading">🔄 Test dashboard en cours...</p>';
+            
+            try {
+                const [config, summary, provisions, fixedExpenses] = await Promise.all([
+                    apiCall('/config'),
+                    apiCall('/summary?month=2024-08'),
+                    apiCall('/custom-provisions'),
+                    apiCall('/fixed-lines')
+                ]);
+
+                const results = {
+                    config: config,
+                    summary: summary,
+                    provisions: provisions.length,
+                    fixedExpenses: fixedExpenses.length
+                };
+
+                resultDiv.innerHTML = `
+                    <p class="success">✅ Données dashboard chargées avec succès!</p>
+                    <p>Configuration: ✅</p>
+                    <p>Résumé: ✅</p>
+                    <p>Provisions: ${provisions.length}</p>
+                    <p>Dépenses fixes: ${fixedExpenses.length}</p>
+                    <pre>${JSON.stringify(results, null, 2)}</pre>
+                `;
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <p class="error">❌ Erreur dashboard: ${error.message}</p>
+                `;
+            }
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', checkAuth);
+    </script>
+</body>
+</html>

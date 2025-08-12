@@ -51,8 +51,8 @@ export default function FixedExpenses({ config, onDataChange }: FixedExpensesPro
     );
   }
 
-  const activeExpenses = expenses.filter(e => e.is_active);
-  const inactiveExpenses = expenses.filter(e => !e.is_active);
+  const activeExpenses = expenses.filter(e => e.active);
+  const inactiveExpenses = expenses.filter(e => !e.active);
 
   return (
     <div className="space-y-6">

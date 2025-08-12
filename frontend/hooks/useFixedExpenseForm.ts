@@ -1,22 +1,20 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { FixedLine } from '../lib/api';
+import { FixedLine, FixedLineCreate } from '../lib/api';
 
-const DEFAULT_FORM_DATA: Omit<FixedLine, 'id'> = {
+const DEFAULT_FORM_DATA: FixedLineCreate = {
   label: '',
   amount: 0,
   freq: 'mensuelle',
   split_mode: 'clé',
-  split1: 0.5,
-  split2: 0.5,
-  icon: '💳',
-  category: 'autre',
+  split1: 50,
+  split2: 50,
   active: true
 };
 
 export function useFixedExpenseForm(expense?: FixedLine) {
-  const [formData, setFormData] = useState<Omit<FixedLine, 'id'>>(DEFAULT_FORM_DATA);
+  const [formData, setFormData] = useState<FixedLineCreate>(DEFAULT_FORM_DATA);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [showAdvanced, setShowAdvanced] = useState(false);
@@ -31,8 +29,6 @@ export function useFixedExpenseForm(expense?: FixedLine) {
         split_mode: expense.split_mode,
         split1: expense.split1,
         split2: expense.split2,
-        icon: expense.icon,
-        category: expense.category,
         active: expense.active
       });
       setShowAdvanced(Boolean(expense.split_mode === 'manuel'));
@@ -42,23 +38,23 @@ export function useFixedExpenseForm(expense?: FixedLine) {
     }
   }, [expense]);
 
-  const updateFormData = (field: keyof Omit<FixedLine, 'id'>, value: any) => {
+  const updateFormData = (field: keyof FixedLineCreate, value: any) => {
     setFormData(prev => {
       const newData = { ...prev, [field]: value };
       
       // Auto-adjust split2 when split1 changes in manual mode
       if (field === 'split1' && prev.split_mode === 'manuel') {
-        newData.split2 = 1 - Number(value);
+        newData.split2 = 100 - Number(value);
       }
       // Auto-adjust split1 when split2 changes in manual mode
       else if (field === 'split2' && prev.split_mode === 'manuel') {
-        newData.split1 = 1 - Number(value);
+        newData.split1 = 100 - Number(value);
       }
       // Reset splits when changing split mode
       else if (field === 'split_mode') {
         if (value !== 'manuel') {
-          newData.split1 = 0.5;
-          newData.split2 = 0.5;
+          newData.split1 = 50;
+          newData.split2 = 50;
         }
         setShowAdvanced(value === 'manuel');
       }
@@ -68,7 +64,7 @@ export function useFixedExpenseForm(expense?: FixedLine) {
     setError(''); // Clear error when user makes changes
   };
 
-  const applyPreset = (preset: Partial<Omit<FixedLine, 'id'>>) => {
+  const applyPreset = (preset: Partial<FixedLineCreate>) => {
     setFormData(prev => ({ ...prev, ...preset }));
     setError('');
   };
@@ -86,8 +82,8 @@ export function useFixedExpenseForm(expense?: FixedLine) {
 
     if (formData.split_mode === 'manuel') {
       const total = formData.split1 + formData.split2;
-      if (Math.abs(total - 1) > 0.01) {
-        setError('La somme des parts doit être égale à 1');
+      if (Math.abs(total - 100) > 0.01) {
+        setError('La somme des pourcentages doit être égale à 100');
         return false;
       }
     }
@@ -95,7 +91,7 @@ export function useFixedExpenseForm(expense?: FixedLine) {
     return true;
   };
 
-  const handleSubmit = async (onSave: (expense: Omit<FixedLine, 'id'>) => Promise<void>) => {
+  const handleSubmit = async (onSave: (expense: FixedLineCreate) => Promise<void>) => {
     if (!validateForm()) return false;
 
     try {

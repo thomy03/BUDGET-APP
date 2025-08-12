@@ -1,10 +1,9 @@
 'use client';
 
 import React from 'react';
-import { FixedLine, ConfigOut } from '../lib/api';
+import { FixedLine, FixedLineCreate, ConfigOut } from '../lib/api';
 import { Card, Button, Input, Alert } from './ui';
 import FixedExpensePresets from './forms/FixedExpensePresets';
-import FixedExpenseIconCategory from './forms/FixedExpenseIconCategory';
 import FixedExpenseCalculationSettings from './forms/FixedExpenseCalculationSettings';
 import { useFixedExpenseForm } from '../hooks/useFixedExpenseForm';
 
@@ -12,7 +11,7 @@ interface AddFixedExpenseModalProps {
   config?: ConfigOut;
   expense?: FixedLine;
   onClose: () => void;
-  onSave: (expense: Omit<FixedLine, 'id'>) => Promise<void>;
+  onSave: (expense: FixedLineCreate) => Promise<void>;
 }
 
 const AddFixedExpenseModal = React.memo<AddFixedExpenseModalProps>(({ 
@@ -79,13 +78,7 @@ const AddFixedExpenseModal = React.memo<AddFixedExpenseModalProps>(({
               />
             </div>
 
-            {/* Icon and Category */}
-            <FixedExpenseIconCategory
-              selectedIcon={formData.icon}
-              selectedCategory={formData.category}
-              onIconChange={(icon) => updateFormData('icon', icon)}
-              onCategoryChange={(category) => updateFormData('category', category)}
-            />
+            {/* Note: Icône et catégorie seront ajoutées dans une version future */}
 
             {/* Calculation Settings */}
             <FixedExpenseCalculationSettings
@@ -144,8 +137,8 @@ AddFixedExpenseModal.displayName = 'AddFixedExpenseModal';
 
 // Advanced Options Component
 const AdvancedOptions = React.memo<{
-  formData: Omit<FixedLine, 'id'>;
-  onChange: (field: keyof Omit<FixedLine, 'id'>, value: any) => void;
+  formData: FixedLineCreate;
+  onChange: (field: keyof FixedLineCreate, value: any) => void;
 }>(({ formData, onChange }) => {
   return (
     <div className="space-y-4 p-4 bg-zinc-50 rounded-lg">

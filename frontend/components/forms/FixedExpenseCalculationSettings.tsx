@@ -2,12 +2,12 @@
 
 import React from 'react';
 import { Input } from '../ui';
-import { FixedLine, ConfigOut } from '../../lib/api';
+import { FixedLine, FixedLineCreate, ConfigOut } from '../../lib/api';
 
 interface FixedExpenseCalculationSettingsProps {
-  formData: Omit<FixedLine, 'id'>;
+  formData: FixedLineCreate;
   config?: ConfigOut;
-  onChange: (field: keyof Omit<FixedLine, 'id'>, value: any) => void;
+  onChange: (field: keyof FixedLineCreate, value: any) => void;
 }
 
 const FixedExpenseCalculationSettings = React.memo<FixedExpenseCalculationSettingsProps>(({
@@ -48,8 +48,8 @@ const FixedExpenseCalculationSettings = React.memo<FixedExpenseCalculationSettin
         return { member1: 0, member2: monthlyAmount };
       case 'manuel':
         return { 
-          member1: monthlyAmount * formData.split1, 
-          member2: monthlyAmount * formData.split2 
+          member1: monthlyAmount * (formData.split1 / 100), 
+          member2: monthlyAmount * (formData.split2 / 100) 
         };
       default:
         return { member1: monthlyAmount * 0.5, member2: monthlyAmount * 0.5 };
@@ -110,21 +110,21 @@ const FixedExpenseCalculationSettings = React.memo<FixedExpenseCalculationSettin
       {formData.split_mode === 'manuel' && (
         <div className="grid grid-cols-2 gap-4">
           <Input
-            label={`Part ${config?.member1 || 'Membre 1'}`}
+            label={`Part ${config?.member1 || 'Membre 1'} (%)`}
             type="number"
             value={formData.split1}
             onChange={(e) => onChange('split1', Number(e.target.value))}
             min="0"
-            max="1"
+            max="100"
             step="0.01"
           />
           <Input
-            label={`Part ${config?.member2 || 'Membre 2'}`}
+            label={`Part ${config?.member2 || 'Membre 2'} (%)`}
             type="number"
             value={formData.split2}
             onChange={(e) => onChange('split2', Number(e.target.value))}
             min="0"
-            max="1"
+            max="100"
             step="0.01"
           />
         </div>

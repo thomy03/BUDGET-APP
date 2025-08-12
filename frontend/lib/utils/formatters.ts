@@ -20,9 +20,15 @@ export function formatCurrency(
     showSymbol = true
   } = options;
 
+  // Handle all falsy/invalid values
+  if (amount === null || amount === undefined || amount === '' || 
+      (typeof amount === 'number' && (!isFinite(amount) || isNaN(amount)))) {
+    return showSymbol ? `0,00 €` : '0,00';
+  }
+  
   const numAmount = typeof amount === 'string' ? parseFloat(amount) : amount;
   
-  if (isNaN(numAmount)) {
+  if (isNaN(numAmount) || !isFinite(numAmount)) {
     return showSymbol ? `0,00 €` : '0,00';
   }
 
@@ -52,9 +58,15 @@ export function formatPercentage(
   value: number | string,
   decimals = 1
 ): string {
+  // Handle all falsy/invalid values
+  if (value === null || value === undefined || value === '' || 
+      (typeof value === 'number' && (!isFinite(value) || isNaN(value)))) {
+    return '0,0 %';
+  }
+  
   const numValue = typeof value === 'string' ? parseFloat(value) : value;
   
-  if (isNaN(numValue)) {
+  if (isNaN(numValue) || !isFinite(numValue)) {
     return '0,0 %';
   }
 
@@ -147,9 +159,15 @@ export function formatNumber(
   decimals = 0,
   compact = false
 ): string {
+  // Handle all falsy/invalid values
+  if (value === null || value === undefined || value === '' || 
+      (typeof value === 'number' && (!isFinite(value) || isNaN(value)))) {
+    return '0';
+  }
+  
   const numValue = typeof value === 'string' ? parseFloat(value) : value;
   
-  if (isNaN(numValue)) {
+  if (isNaN(numValue) || !isFinite(numValue)) {
     return '0';
   }
 

@@ -1,0 +1,281 @@
+{
+  "migration_timestamp": "2025-08-11T12:19:23.059218",
+  "database_path": "./budget.db",
+  "backup_path": "./budget.db.backup_20250811_121922",
+  "migration_log": [
+    {
+      "timestamp": "2025-08-11T12:19:22.873550",
+      "action": "create_index",
+      "index_name": "idx_transactions_month_exclude_expense",
+      "table": "transactions",
+      "priority": "critical",
+      "record_count": 267,
+      "creation_time": 0.04915118217468262,
+      "sql": "CREATE INDEX idx_transactions_month_exclude_expense ON transactions (month, exclude, is_expense)",
+      "status": "success"
+    },
+    {
+      "timestamp": "2025-08-11T12:19:22.882259",
+      "action": "create_index",
+      "index_name": "idx_transactions_month_category",
+      "table": "transactions",
+      "priority": "critical",
+      "record_count": 267,
+      "creation_time": 0.007661104202270508,
+      "sql": "CREATE INDEX idx_transactions_month_category ON transactions (month, category)",
+      "status": "success"
+    },
+    {
+      "timestamp": "2025-08-11T12:19:22.890371",
+      "action": "create_index",
+      "index_name": "idx_transactions_date_exclude",
+      "table": "transactions",
+      "priority": "critical",
+      "record_count": 267,
+      "creation_time": 0.006803035736083984,
+      "sql": "CREATE INDEX idx_transactions_date_exclude ON transactions (date_op, exclude)",
+      "status": "success"
+    },
+    {
+      "timestamp": "2025-08-11T12:19:22.897329",
+      "action": "create_index",
+      "index_name": "idx_transactions_category_amount",
+      "table": "transactions",
+      "priority": "high",
+      "record_count": 267,
+      "creation_time": 0.005818367004394531,
+      "sql": "CREATE INDEX idx_transactions_category_amount ON transactions (category, amount)",
+      "status": "success"
+    },
+    {
+      "timestamp": "2025-08-11T12:19:22.905151",
+      "action": "create_index",
+      "index_name": "idx_transactions_month_date_exclude",
+      "table": "transactions",
+      "priority": "high",
+      "record_count": 267,
+      "creation_time": 0.005990266799926758,
+      "sql": "CREATE INDEX idx_transactions_month_date_exclude ON transactions (month, date_op, exclude)",
+      "status": "success"
+    },
+    {
+      "timestamp": "2025-08-11T12:19:22.913564",
+      "action": "create_index",
+      "index_name": "idx_transactions_expense_category_month",
+      "table": "transactions",
+      "priority": "high",
+      "record_count": 267,
+      "creation_time": 0.006783008575439453,
+      "sql": "CREATE INDEX idx_transactions_expense_category_month ON transactions (is_expense, category, month)",
+      "status": "success"
+    },
+    {
+      "timestamp": "2025-08-11T12:19:22.923077",
+      "action": "create_index",
+      "index_name": "idx_fixed_lines_active_freq",
+      "table": "fixed_lines",
+      "priority": "high",
+      "record_count": 12,
+      "creation_time": 0.007573127746582031,
+      "sql": "CREATE INDEX idx_fixed_lines_active_freq ON fixed_lines (active, freq)",
+      "status": "success"
+    },
+    {
+      "timestamp": "2025-08-11T12:19:22.929391",
+      "action": "create_index",
+      "index_name": "idx_custom_provisions_active_created_by",
+      "table": "custom_provisions",
+      "priority": "high",
+      "record_count": 4,
+      "creation_time": 0.004699230194091797,
+      "sql": "CREATE INDEX idx_custom_provisions_active_created_by ON custom_provisions (is_active, created_by)",
+      "status": "success"
+    },
+    {
+      "timestamp": "2025-08-11T12:19:22.935232",
+      "action": "create_index",
+      "index_name": "idx_custom_provisions_active_dates",
+      "table": "custom_provisions",
+      "priority": "high",
+      "record_count": 4,
+      "creation_time": 0.00438690185546875,
+      "sql": "CREATE INDEX idx_custom_provisions_active_dates ON custom_provisions (is_active, start_date, end_date)",
+      "status": "success"
+    },
+    {
+      "timestamp": "2025-08-11T12:19:22.942866",
+      "action": "create_index",
+      "index_name": "idx_transactions_import_month",
+      "table": "transactions",
+      "priority": "medium",
+      "record_count": 267,
+      "creation_time": 0.006020545959472656,
+      "sql": "CREATE INDEX idx_transactions_import_month ON transactions (import_id, month)",
+      "status": "success"
+    },
+    {
+      "timestamp": "2025-08-11T12:19:22.950479",
+      "action": "create_index",
+      "index_name": "idx_transactions_row_id_unique",
+      "table": "transactions",
+      "priority": "medium",
+      "record_count": 267,
+      "creation_time": 0.005706310272216797,
+      "sql": "CREATE INDEX idx_transactions_row_id_unique ON transactions (row_id)",
+      "status": "success"
+    },
+    {
+      "timestamp": "2025-08-11T12:19:22.958282",
+      "action": "create_index",
+      "index_name": "idx_transactions_tags_month",
+      "table": "transactions",
+      "priority": "medium",
+      "record_count": 267,
+      "creation_time": 0.0063855648040771484,
+      "sql": "CREATE INDEX idx_transactions_tags_month ON transactions (tags, month)",
+      "status": "success"
+    },
+    {
+      "timestamp": "2025-08-11T12:19:22.963493",
+      "action": "create_index",
+      "index_name": "idx_fixed_lines_category_active",
+      "table": "fixed_lines",
+      "priority": "medium",
+      "record_count": 12,
+      "creation_time": 0.004136085510253906,
+      "sql": "CREATE INDEX idx_fixed_lines_category_active ON fixed_lines (category, active)",
+      "status": "success"
+    },
+    {
+      "timestamp": "2025-08-11T12:19:22.969643",
+      "action": "create_index",
+      "index_name": "idx_custom_provisions_display_order_active",
+      "table": "custom_provisions",
+      "priority": "medium",
+      "record_count": 4,
+      "creation_time": 0.004648447036743164,
+      "sql": "CREATE INDEX idx_custom_provisions_display_order_active ON custom_provisions (display_order, is_active, name)",
+      "status": "success"
+    },
+    {
+      "timestamp": "2025-08-11T12:19:22.975135",
+      "action": "create_index",
+      "index_name": "idx_custom_provisions_category_active",
+      "table": "custom_provisions",
+      "priority": "medium",
+      "record_count": 4,
+      "creation_time": 0.004307270050048828,
+      "sql": "CREATE INDEX idx_custom_provisions_category_active ON custom_provisions (category, is_active)",
+      "status": "success"
+    },
+    {
+      "timestamp": "2025-08-11T12:19:22.982023",
+      "action": "create_index",
+      "index_name": "idx_import_metadata_created_user",
+      "table": "import_metadata",
+      "priority": "medium",
+      "record_count": 43,
+      "creation_time": 0.005463600158691406,
+      "sql": "CREATE INDEX idx_import_metadata_created_user ON import_metadata (created_at, user_id)",
+      "status": "success"
+    },
+    {
+      "timestamp": "2025-08-11T12:19:22.988166",
+      "action": "create_index",
+      "index_name": "idx_export_history_user_date_status",
+      "table": "export_history",
+      "priority": "medium",
+      "record_count": 0,
+      "creation_time": 0.004792928695678711,
+      "sql": "CREATE INDEX idx_export_history_user_date_status ON export_history (user_id, created_at, status)",
+      "status": "success"
+    },
+    {
+      "timestamp": "2025-08-11T12:19:22.995077",
+      "action": "create_index",
+      "index_name": "idx_transactions_account_month",
+      "table": "transactions",
+      "priority": "low",
+      "record_count": 267,
+      "creation_time": 0.005714893341064453,
+      "sql": "CREATE INDEX idx_transactions_account_month ON transactions (account_label, month)",
+      "status": "success"
+    },
+    {
+      "timestamp": "2025-08-11T12:19:23.001342",
+      "action": "create_index",
+      "index_name": "idx_fixed_lines_amount_active",
+      "table": "fixed_lines",
+      "priority": "low",
+      "record_count": 12,
+      "creation_time": 0.004915714263916016,
+      "sql": "CREATE INDEX idx_fixed_lines_amount_active ON fixed_lines (amount, active)",
+      "status": "success"
+    },
+    {
+      "timestamp": "2025-08-11T12:19:23.007687",
+      "action": "create_index",
+      "index_name": "idx_custom_provisions_target_current",
+      "table": "custom_provisions",
+      "priority": "low",
+      "record_count": 4,
+      "creation_time": 0.0051462650299072266,
+      "sql": "CREATE INDEX idx_custom_provisions_target_current ON custom_provisions (target_amount, current_amount)",
+      "status": "success"
+    }
+  ],
+  "performance_validation": {
+    "validation_timestamp": "2025-08-11T12:19:23.094081",
+    "performance_results": [
+      {
+        "query_name": "dashboard_monthly_filter",
+        "execution_time": 0.02776169776916504,
+        "result_count": 1,
+        "indexes_used": [
+          "idx_transactions_month_exclude_expense"
+        ],
+        "query_plan": [
+          [
+            3,
+            0,
+            0,
+            "SEARCH TABLE transactions USING COVERING INDEX idx_transactions_month_exclude_expense (month=? AND exclude=? AND is_expense=?)"
+          ]
+        ]
+      },
+      {
+        "query_name": "category_breakdown",
+        "execution_time": 0.0015485286712646484,
+        "result_count": 2,
+        "indexes_used": [
+          "idx_transactions_month_category"
+        ],
+        "query_plan": [
+          [
+            7,
+            0,
+            0,
+            "SEARCH TABLE transactions USING INDEX idx_transactions_month_category (month=?)"
+          ]
+        ]
+      },
+      {
+        "query_name": "active_fixed_lines",
+        "execution_time": 0.001308441162109375,
+        "result_count": 6,
+        "indexes_used": [
+          "idx_fixed_lines_active_freq"
+        ],
+        "query_plan": [
+          [
+            3,
+            0,
+            0,
+            "SEARCH TABLE fixed_lines USING INDEX idx_fixed_lines_active_freq (active=? AND freq=?)"
+          ]
+        ]
+      }
+    ],
+    "status": "completed"
+  }
+}

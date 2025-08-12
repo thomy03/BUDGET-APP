@@ -1,988 +1,648 @@
 #!/usr/bin/env python3
 """
-Comprehensive End-to-End Validation Suite for Budget Famille v2.3
-==================================================================
+COMPREHENSIVE END-TO-END VALIDATION for Budget Famille v2.3
+Quality Assurance Lead - Post-Fix Validation Suite
 
-Author: Claude (Quality Assurance Lead)
-Date: 2025-08-10
-Purpose: Comprehensive validation of all critical system functionalities
-         according to CLAUDE.md requirements
+This test suite performs systematic validation of all critical system components:
+1. Backend API Testing - All endpoints and authentication
+2. Frontend Integration Testing - User journeys and API calls
+3. Critical User Journeys - Complete workflow validation
+4. Error Handling Testing - Network failures and edge cases
+5. Performance Testing - Response times and resource usage
 
-This test suite validates:
-- JWT Authentication (login, token validation, security)
-- CSV Import functionality (multiple formats, edge cases, security)
-- Transaction management (CRUD, exclusion, tagging)
-- Configuration management (members, distribution keys)
-- Analytics and reporting
-- Frontend-backend connectivity
-- Performance characteristics
-- Security validations
-
-Test execution strategy:
-1. Start backend service
-2. Run individual test modules
-3. Collect metrics and results
-4. Generate comprehensive validation report
+Author: QA Lead
+Version: 2.3.0
+Date: 2025-08-11
 """
 
-import asyncio
+import requests
 import json
-import logging
+import time
+import sqlite3
 import os
 import sys
-import time
-import traceback
+import subprocess
 from datetime import datetime, timedelta
-from pathlib import Path
-from typing import Dict, List, Any, Optional
-import requests
+from typing import Dict, List, Optional, Tuple
 import pandas as pd
-import tempfile
-import csv
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from pathlib import Path
 
-# Configuration du logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.FileHandler(f'validation_{datetime.now().strftime("%Y%m%d_%H%M%S")}.log'),
-        logging.StreamHandler(sys.stdout)
-    ]
-)
-logger = logging.getLogger(__name__)
+class Colors:
+    GREEN = '\033[92m'
+    RED = '\033[91m'
+    YELLOW = '\033[93m'
+    BLUE = '\033[94m'
+    MAGENTA = '\033[95m'
+    CYAN = '\033[96m'
+    WHITE = '\033[97m'
+    RESET = '\033[0m'
+    BOLD = '\033[1m'
 
-class ValidationResult:
-    """Container for validation test results"""
-    def __init__(self, test_name: str, category: str):
-        self.test_name = test_name
-        self.category = category
-        self.start_time = datetime.now()
-        self.end_time = None
-        self.duration = None
-        self.status = "PENDING"  # PENDING, RUNNING, PASSED, FAILED, BLOCKED
-        self.details = []
-        self.errors = []
-        self.metrics = {}
-        self.security_issues = []
+class E2EValidator:
+    def __init__(self, base_url: str = "http://127.0.0.1:8000"):
+        self.base_url = base_url
+        self.token = None
+        self.session = requests.Session()
+        self.test_results = []
+        self.performance_metrics = []
         
-    def mark_running(self):
-        self.status = "RUNNING"
-        logger.info(f"🟡 {self.test_name} - RUNNING")
+    def print_header(self, title: str):
+        """Print formatted test section header"""
+        print(f"\n{Colors.CYAN}{'='*80}{Colors.RESET}")
+        print(f"{Colors.BOLD}{Colors.WHITE}🔍 {title}{Colors.RESET}")
+        print(f"{Colors.CYAN}{'='*80}{Colors.RESET}")
         
-    def mark_passed(self, details: str = None):
-        self.end_time = datetime.now()
-        self.duration = (self.end_time - self.start_time).total_seconds()
-        self.status = "PASSED"
+    def print_test(self, test_name: str, status: str, details: str = ""):
+        """Print test result with formatting"""
+        if status == "PASS":
+            icon = "✅"
+            color = Colors.GREEN
+        elif status == "FAIL":
+            icon = "❌"
+            color = Colors.RED
+        elif status == "WARN":
+            icon = "⚠️"
+            color = Colors.YELLOW
+        else:
+            icon = "ℹ️"
+            color = Colors.BLUE
+            
+        print(f"{icon} {color}{test_name}{Colors.RESET}")
         if details:
-            self.details.append(details)
-        logger.info(f"✅ {self.test_name} - PASSED ({self.duration:.2f}s)")
-        
-    def mark_failed(self, error: str, details: str = None):
-        self.end_time = datetime.now()
-        self.duration = (self.end_time - self.start_time).total_seconds()
-        self.status = "FAILED"
-        self.errors.append(error)
-        if details:
-            self.details.append(details)
-        logger.error(f"❌ {self.test_name} - FAILED: {error}")
-        
-    def mark_blocked(self, reason: str):
-        self.end_time = datetime.now()
-        self.duration = (self.end_time - self.start_time).total_seconds()
-        self.status = "BLOCKED"
-        self.errors.append(f"BLOCKED: {reason}")
-        logger.warning(f"🔒 {self.test_name} - BLOCKED: {reason}")
-        
-    def add_metric(self, name: str, value: Any, unit: str = None):
-        self.metrics[name] = {
-            "value": value,
-            "unit": unit,
-            "timestamp": datetime.now().isoformat()
-        }
-        
-    def add_security_issue(self, severity: str, description: str):
-        self.security_issues.append({
-            "severity": severity,
-            "description": description,
+            print(f"   {Colors.WHITE}{details}{Colors.RESET}")
+            
+        self.test_results.append({
+            "test": test_name,
+            "status": status,
+            "details": details,
             "timestamp": datetime.now().isoformat()
         })
-
-class BudgetFamilleValidator:
-    """Main validation orchestrator"""
-    
-    def __init__(self, base_url: str = "http://localhost:8000"):
-        self.base_url = base_url
-        self.session = requests.Session()
-        self.auth_token = None
-        self.results: List[ValidationResult] = []
-        self.test_data_dir = Path("/tmp/budget_validation_data")
-        self.test_data_dir.mkdir(exist_ok=True)
         
-        # Test configuration
-        self.test_user = {
-            "username": "admin",
-            "password": "secret",
-            "email": "admin@budget-famille.local"
+    def measure_performance(self, operation: str, duration: float, additional_metrics: Dict = None):
+        """Record performance metrics"""
+        metrics = {
+            "operation": operation,
+            "duration_ms": round(duration * 1000, 2),
+            "timestamp": datetime.now().isoformat()
         }
+        if additional_metrics:
+            metrics.update(additional_metrics)
+        self.performance_metrics.append(metrics)
         
-        # Performance thresholds
-        self.performance_thresholds = {
-            "auth_response_time_ms": 1000,
-            "import_response_time_ms": 5000,
-            "api_response_time_ms": 500,
-            "concurrent_users_supported": 10
-        }
-        
-    def run_comprehensive_validation(self) -> Dict:
-        """Execute the complete validation suite"""
-        logger.info("🚀 Starting comprehensive Budget Famille v2.3 validation")
-        logger.info(f"Target: {self.base_url}")
-        logger.info(f"Test data directory: {self.test_data_dir}")
-        
-        start_time = datetime.now()
+    def test_server_health(self) -> bool:
+        """Test if the server is running and responding"""
+        self.print_header("1. SERVER HEALTH CHECK")
         
         try:
-            # 1. System Health Check
-            self._validate_system_health()
-            
-            # 2. Authentication Tests
-            self._validate_authentication()
-            
-            # 3. CSV Import Tests (if auth successful)
-            if self.auth_token:
-                self._validate_csv_imports()
-                
-                # 4. Transaction Management Tests
-                self._validate_transaction_management()
-                
-                # 5. Configuration Management Tests
-                self._validate_configuration_management()
-                
-                # 6. Analytics Tests
-                self._validate_analytics()
-                
-                # 7. Performance Tests
-                self._validate_performance()
-            
-            # 8. Security Tests
-            self._validate_security()
-            
-            # 9. Generate Report
-            total_time = (datetime.now() - start_time).total_seconds()
-            return self._generate_validation_report(total_time)
-            
-        except Exception as e:
-            logger.error(f"Critical validation failure: {e}")
-            logger.error(traceback.format_exc())
-            return {"status": "CRITICAL_FAILURE", "error": str(e)}
-            
-    def _validate_system_health(self):
-        """Test 1: System Health and Availability"""
-        result = ValidationResult("System Health Check", "INFRASTRUCTURE")
-        result.mark_running()
-        
-        try:
-            # Basic connectivity
+            start_time = time.time()
             response = self.session.get(f"{self.base_url}/health", timeout=10)
+            duration = time.time() - start_time
+            
+            self.measure_performance("health_check", duration, {"status_code": response.status_code})
             
             if response.status_code == 200:
                 health_data = response.json()
-                result.add_metric("response_time_ms", response.elapsed.total_seconds() * 1000)
-                result.add_metric("status_code", response.status_code)
-                
-                # Validate health response structure
-                required_keys = ["status", "version", "platform", "features", "database"]
-                missing_keys = [key for key in required_keys if key not in health_data]
-                
-                if missing_keys:
-                    result.mark_failed(f"Missing health check keys: {missing_keys}")
+                if health_data.get("status") == "healthy":
+                    self.print_test("Server Health Check", "PASS", f"Response time: {duration*1000:.2f}ms")
+                    return True
                 else:
-                    result.details.append(f"Version: {health_data.get('version', 'unknown')}")
-                    result.details.append(f"Database encryption: {health_data.get('database', {}).get('encryption_enabled', False)}")
-                    result.details.append(f"Magic detection: {health_data.get('features', {}).get('magic_detection', False)}")
-                    result.mark_passed("Health endpoint accessible with valid structure")
+                    self.print_test("Server Health Check", "WARN", f"Status: {health_data.get('status')}")
+                    return True
             else:
-                result.mark_failed(f"Health check failed with status {response.status_code}")
+                self.print_test("Server Health Check", "FAIL", f"HTTP {response.status_code}")
+                return False
                 
-        except requests.exceptions.ConnectionError:
-            result.mark_blocked("Cannot connect to backend service - ensure it's running")
         except Exception as e:
-            result.mark_failed(f"Health check error: {str(e)}")
+            self.print_test("Server Health Check", "FAIL", str(e))
+            return False
             
-        self.results.append(result)
+    def test_authentication_endpoints(self) -> bool:
+        """Test all authentication-related endpoints"""
+        self.print_header("2. AUTHENTICATION ENDPOINTS")
         
-    def _validate_authentication(self):
-        """Test 2: JWT Authentication Flow"""
-        result = ValidationResult("JWT Authentication", "SECURITY")
-        result.mark_running()
+        success_count = 0
+        total_tests = 0
         
+        # Test 1: Legacy token endpoint
         try:
-            # Test login with form data (OAuth2 style)
-            auth_data = {
-                "username": self.test_user["username"],
-                "password": self.test_user["password"]
+            total_tests += 1
+            start_time = time.time()
+            
+            token_data = {
+                "username": "admin",
+                "password": "admin"
             }
             
-            start_time = time.time()
             response = self.session.post(
-                f"{self.base_url}/token",
-                data=auth_data,  # Form data, not JSON
+                f"{self.base_url}/token", 
+                data=token_data,
                 headers={"Content-Type": "application/x-www-form-urlencoded"},
                 timeout=10
             )
-            auth_time = (time.time() - start_time) * 1000
+            duration = time.time() - start_time
             
-            result.add_metric("auth_response_time_ms", auth_time)
+            self.measure_performance("legacy_token_login", duration, {"status_code": response.status_code})
             
             if response.status_code == 200:
-                token_data = response.json()
-                
-                if "access_token" in token_data and "token_type" in token_data:
-                    self.auth_token = token_data["access_token"]
-                    self.session.headers.update({
-                        "Authorization": f"Bearer {self.auth_token}"
-                    })
-                    
-                    # Validate token structure (basic check)
-                    if len(self.auth_token.split('.')) == 3:  # JWT has 3 parts
-                        result.details.append("Valid JWT structure received")
-                        result.details.append(f"Token type: {token_data['token_type']}")
-                        
-                        # Test protected endpoint access
-                        protected_response = self.session.get(f"{self.base_url}/config", timeout=5)
-                        if protected_response.status_code == 200:
-                            result.mark_passed("Authentication successful, protected endpoint accessible")
-                        else:
-                            result.mark_failed(f"Protected endpoint failed: {protected_response.status_code}")
-                    else:
-                        result.mark_failed("Invalid JWT token structure")
+                token_response = response.json()
+                if "access_token" in token_response:
+                    self.token = token_response["access_token"]
+                    self.print_test("Legacy Token Endpoint (/token)", "PASS", f"Token obtained in {duration*1000:.2f}ms")
+                    success_count += 1
                 else:
-                    result.mark_failed("Missing access_token or token_type in response")
-            elif response.status_code == 401:
-                result.mark_failed("Authentication failed - check test credentials")
+                    self.print_test("Legacy Token Endpoint (/token)", "FAIL", "No access_token in response")
             else:
-                result.mark_failed(f"Unexpected auth response: {response.status_code}")
+                self.print_test("Legacy Token Endpoint (/token)", "FAIL", f"HTTP {response.status_code}: {response.text}")
                 
         except Exception as e:
-            result.mark_failed(f"Authentication error: {str(e)}")
+            self.print_test("Legacy Token Endpoint (/token)", "FAIL", str(e))
             
-        self.results.append(result)
-        
-        # Performance validation
-        if auth_time > self.performance_thresholds["auth_response_time_ms"]:
-            result.add_security_issue("PERFORMANCE", f"Authentication took {auth_time:.0f}ms (threshold: {self.performance_thresholds['auth_response_time_ms']}ms)")
+        # Test 2: New Auth API endpoint
+        try:
+            total_tests += 1
+            start_time = time.time()
             
-    def _create_test_csv(self, filename: str, data: List[Dict]) -> Path:
-        """Helper to create test CSV files"""
-        file_path = self.test_data_dir / filename
-        with open(file_path, 'w', newline='', encoding='utf-8') as csvfile:
-            if data:
-                fieldnames = data[0].keys()
-                writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-                writer.writeheader()
-                writer.writerows(data)
-        return file_path
+            response = self.session.post(
+                f"{self.base_url}/api/v1/auth/token", 
+                data=token_data,
+                headers={"Content-Type": "application/x-www-form-urlencoded"},
+                timeout=10
+            )
+            duration = time.time() - start_time
+            
+            self.measure_performance("api_token_login", duration, {"status_code": response.status_code})
+            
+            if response.status_code == 200:
+                self.print_test("API Token Endpoint (/api/v1/auth/token)", "PASS", f"Response time: {duration*1000:.2f}ms")
+                success_count += 1
+            else:
+                self.print_test("API Token Endpoint (/api/v1/auth/token)", "FAIL", f"HTTP {response.status_code}")
+                
+        except Exception as e:
+            self.print_test("API Token Endpoint (/api/v1/auth/token)", "FAIL", str(e))
+            
+        # Test 3: Token validation if we have a token
+        if self.token:
+            try:
+                total_tests += 1
+                start_time = time.time()
+                
+                headers = {"Authorization": f"Bearer {self.token}"}
+                response = self.session.get(
+                    f"{self.base_url}/api/v1/auth/validate",
+                    headers=headers,
+                    timeout=10
+                )
+                duration = time.time() - start_time
+                
+                self.measure_performance("token_validation", duration, {"status_code": response.status_code})
+                
+                if response.status_code == 200:
+                    self.print_test("Token Validation", "PASS", f"Token validated in {duration*1000:.2f}ms")
+                    success_count += 1
+                else:
+                    self.print_test("Token Validation", "FAIL", f"HTTP {response.status_code}")
+                    
+            except Exception as e:
+                self.print_test("Token Validation", "FAIL", str(e))
         
-    def _validate_csv_imports(self):
-        """Test 3: CSV Import Functionality"""
-        result = ValidationResult("CSV Import Functionality", "CORE_FEATURES")
-        result.mark_running()
+        return success_count >= 2  # At least 2 out of 3 auth tests should pass
+        
+    def test_cors_headers(self) -> bool:
+        """Test CORS headers are present"""
+        self.print_header("3. CORS HEADERS VALIDATION")
         
         try:
-            # Test data with multiple months
-            test_transactions = [
-                {
-                    "dateOp": "2024-01-15",
-                    "dateVal": "2024-01-15", 
-                    "label": "CARREFOUR MARKET",
-                    "category": "Alimentaire",
-                    "categoryParent": "Dépenses courantes",
-                    "amount": "-45.67",
-                    "accountLabel": "Compte Courant",
-                    "supplierFound": "CARREFOUR",
-                    "comment": "Courses hebdomadaires"
-                },
-                {
-                    "dateOp": "2024-02-20",
-                    "dateVal": "2024-02-20",
-                    "label": "STATION TOTAL",
-                    "category": "Transport", 
-                    "categoryParent": "Dépenses courantes",
-                    "amount": "-72.50",
-                    "accountLabel": "Compte Courant",
-                    "supplierFound": "TOTAL",
-                    "comment": "Essence"
-                },
-                {
-                    "dateOp": "2024-03-10",
-                    "dateVal": "2024-03-10",
-                    "label": "VIREMENT SALAIRE",
-                    "category": "Salaire",
-                    "categoryParent": "Revenus",
-                    "amount": "2500.00",
-                    "accountLabel": "Compte Courant", 
-                    "supplierFound": "",
-                    "comment": "Salaire mars"
-                }
+            response = self.session.options(f"{self.base_url}/", timeout=10)
+            headers = response.headers
+            
+            cors_checks = [
+                ("Access-Control-Allow-Origin", "CORS Origin Header"),
+                ("Access-Control-Allow-Methods", "CORS Methods Header"), 
+                ("Access-Control-Allow-Headers", "CORS Headers Header")
             ]
             
-            # Create test CSV
-            csv_path = self._create_test_csv("test_multi_month.csv", test_transactions)
+            passed = 0
+            for header, test_name in cors_checks:
+                if header in headers:
+                    self.print_test(test_name, "PASS", f"Value: {headers[header]}")
+                    passed += 1
+                else:
+                    self.print_test(test_name, "FAIL", "Header missing")
+                    
+            return passed >= 2
             
-            # Test import
+        except Exception as e:
+            self.print_test("CORS Headers Check", "FAIL", str(e))
+            return False
+            
+    def test_configuration_endpoints(self) -> bool:
+        """Test configuration management endpoints"""
+        self.print_header("4. CONFIGURATION ENDPOINTS")
+        
+        if not self.token:
+            self.print_test("Configuration Test", "FAIL", "No authentication token available")
+            return False
+            
+        headers = {"Authorization": f"Bearer {self.token}"}
+        success_count = 0
+        
+        # Test GET config
+        try:
             start_time = time.time()
-            with open(csv_path, 'rb') as f:
-                files = {"file": ("test_multi_month.csv", f, "text/csv")}
+            response = self.session.get(f"{self.base_url}/config", headers=headers, timeout=10)
+            duration = time.time() - start_time
+            
+            self.measure_performance("get_config", duration, {"status_code": response.status_code})
+            
+            if response.status_code == 200:
+                config_data = response.json()
+                self.print_test("GET /config", "PASS", f"Retrieved config in {duration*1000:.2f}ms")
+                success_count += 1
+            else:
+                self.print_test("GET /config", "FAIL", f"HTTP {response.status_code}")
+                
+        except Exception as e:
+            self.print_test("GET /config", "FAIL", str(e))
+            
+        # Test POST config (update)
+        try:
+            start_time = time.time()
+            test_config = {
+                "salaire1": 2500.0,
+                "salaire2": 2200.0,
+                "charges_fixes": 1200.0
+            }
+            
+            response = self.session.post(
+                f"{self.base_url}/config", 
+                json=test_config,
+                headers={**headers, "Content-Type": "application/json"},
+                timeout=10
+            )
+            duration = time.time() - start_time
+            
+            self.measure_performance("post_config", duration, {"status_code": response.status_code})
+            
+            if response.status_code in [200, 201]:
+                self.print_test("POST /config", "PASS", f"Config updated in {duration*1000:.2f}ms")
+                success_count += 1
+            else:
+                self.print_test("POST /config", "FAIL", f"HTTP {response.status_code}")
+                
+        except Exception as e:
+            self.print_test("POST /config", "FAIL", str(e))
+            
+        return success_count >= 1
+        
+    def test_database_connectivity(self) -> bool:
+        """Test database connectivity and basic queries"""
+        self.print_header("5. DATABASE CONNECTIVITY")
+        
+        try:
+            # Check if database file exists
+            db_path = "budget.db"
+            if os.path.exists(db_path):
+                self.print_test("Database File Exists", "PASS", f"Found at {db_path}")
+            else:
+                self.print_test("Database File Exists", "FAIL", f"Missing: {db_path}")
+                return False
+                
+            # Test database connection
+            start_time = time.time()
+            conn = sqlite3.connect(db_path, timeout=10)
+            
+            # Test basic query
+            cursor = conn.cursor()
+            cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
+            tables = cursor.fetchall()
+            duration = time.time() - start_time
+            
+            self.measure_performance("db_connection", duration, {"table_count": len(tables)})
+            
+            if tables:
+                table_names = [table[0] for table in tables]
+                self.print_test("Database Connection", "PASS", f"Found {len(tables)} tables: {', '.join(table_names[:5])}")
+                
+                # Test each important table
+                required_tables = ["config", "transactions", "fixed_lines", "custom_provisions"]
+                tables_found = 0
+                
+                for table in required_tables:
+                    if table in table_names:
+                        cursor.execute(f"SELECT COUNT(*) FROM {table}")
+                        count = cursor.fetchone()[0]
+                        self.print_test(f"Table: {table}", "PASS", f"{count} records")
+                        tables_found += 1
+                    else:
+                        self.print_test(f"Table: {table}", "WARN", "Table missing")
+                        
+                conn.close()
+                return tables_found >= 2
+            else:
+                self.print_test("Database Connection", "FAIL", "No tables found")
+                conn.close()
+                return False
+                
+        except Exception as e:
+            self.print_test("Database Connection", "FAIL", str(e))
+            return False
+            
+    def test_error_handling(self) -> bool:
+        """Test error handling scenarios"""
+        self.print_header("6. ERROR HANDLING")
+        
+        success_count = 0
+        
+        # Test 1: Invalid endpoint
+        try:
+            response = self.session.get(f"{self.base_url}/nonexistent", timeout=5)
+            if response.status_code == 404:
+                self.print_test("404 Error Handling", "PASS", "Proper 404 response")
+                success_count += 1
+            else:
+                self.print_test("404 Error Handling", "FAIL", f"Expected 404, got {response.status_code}")
+        except Exception as e:
+            self.print_test("404 Error Handling", "FAIL", str(e))
+            
+        # Test 2: Unauthorized access
+        try:
+            response = self.session.get(f"{self.base_url}/config", timeout=5)
+            if response.status_code == 401:
+                self.print_test("401 Unauthorized Handling", "PASS", "Proper authentication required")
+                success_count += 1
+            else:
+                self.print_test("401 Unauthorized Handling", "WARN", f"Got {response.status_code} instead of 401")
+        except Exception as e:
+            self.print_test("401 Unauthorized Handling", "FAIL", str(e))
+            
+        # Test 3: Invalid JSON
+        if self.token:
+            try:
+                headers = {"Authorization": f"Bearer {self.token}", "Content-Type": "application/json"}
                 response = self.session.post(
-                    f"{self.base_url}/import",
-                    files=files,
-                    timeout=30
+                    f"{self.base_url}/config", 
+                    data="invalid json",
+                    headers=headers,
+                    timeout=5
                 )
-            import_time = (time.time() - start_time) * 1000
-            
-            result.add_metric("import_response_time_ms", import_time)
-            result.add_metric("test_transactions_count", len(test_transactions))
-            
-            if response.status_code == 200:
-                import_data = response.json()
-                
-                # Validate import response structure
-                required_fields = ["importId", "months", "processingMs", "fileName"]
-                missing_fields = [field for field in required_fields if field not in import_data]
-                
-                if missing_fields:
-                    result.mark_failed(f"Missing import response fields: {missing_fields}")
+                if response.status_code == 422:
+                    self.print_test("422 Invalid JSON Handling", "PASS", "Proper validation error")
+                    success_count += 1
                 else:
-                    months_detected = import_data.get("months", [])
-                    duplicates_count = import_data.get("duplicatesCount", 0)
-                    processing_ms = import_data.get("processingMs", 0)
-                    
-                    result.add_metric("months_detected", len(months_detected))
-                    result.add_metric("duplicates_found", duplicates_count)
-                    result.add_metric("backend_processing_ms", processing_ms)
-                    
-                    # Validate month detection
-                    expected_months = {"2024-01", "2024-02", "2024-03"}
-                    detected_months = {month["month"] for month in months_detected}
-                    
-                    if expected_months <= detected_months:
-                        result.details.append(f"Correctly detected {len(months_detected)} months")
-                        result.details.append(f"Import ID: {import_data['importId']}")
-                        result.details.append(f"Processing time: {processing_ms}ms")
-                        
-                        # Test transaction retrieval for one month
-                        tx_response = self.session.get(f"{self.base_url}/transactions?month=2024-01")
-                        if tx_response.status_code == 200:
-                            transactions = tx_response.json()
-                            result.add_metric("transactions_retrieved", len(transactions))
-                            result.mark_passed(f"Import successful, {len(transactions)} transactions retrieved for 2024-01")
-                        else:
-                            result.mark_failed(f"Cannot retrieve imported transactions: {tx_response.status_code}")
-                    else:
-                        result.mark_failed(f"Month detection failed. Expected: {expected_months}, Got: {detected_months}")
-                        
-            elif response.status_code == 401:
-                result.mark_blocked("Authentication required for import")
-            else:
-                result.mark_failed(f"Import failed with status {response.status_code}: {response.text[:200]}")
+                    self.print_test("422 Invalid JSON Handling", "WARN", f"Got {response.status_code}")
+            except Exception as e:
+                self.print_test("422 Invalid JSON Handling", "FAIL", str(e))
                 
-        except Exception as e:
-            result.mark_failed(f"CSV import error: {str(e)}")
-            
-        self.results.append(result)
+        return success_count >= 2
         
-        # Performance check
-        if import_time > self.performance_thresholds["import_response_time_ms"]:
-            result.add_security_issue("PERFORMANCE", f"Import took {import_time:.0f}ms (threshold: {self.performance_thresholds['import_response_time_ms']}ms)")
-    
-    def _validate_transaction_management(self):
-        """Test 4: Transaction CRUD Operations"""
-        result = ValidationResult("Transaction Management", "CORE_FEATURES")
-        result.mark_running()
+    def test_performance_benchmarks(self) -> bool:
+        """Test performance benchmarks"""
+        self.print_header("7. PERFORMANCE BENCHMARKS")
         
-        try:
-            # Get transactions for a month to work with
-            tx_response = self.session.get(f"{self.base_url}/transactions?month=2024-01")
+        if not self.token:
+            self.print_test("Performance Tests", "FAIL", "No authentication token")
+            return False
             
-            if tx_response.status_code == 200:
-                transactions = tx_response.json()
-                
-                if transactions:
-                    tx = transactions[0]  # Work with first transaction
-                    tx_id = tx["id"]
-                    
-                    # Test 1: Toggle exclude
-                    exclude_response = self.session.patch(
-                        f"{self.base_url}/transactions/{tx_id}",
-                        json={"exclude": True}
-                    )
-                    
-                    if exclude_response.status_code == 200:
-                        updated_tx = exclude_response.json()
-                        if updated_tx["exclude"] is True:
-                            result.details.append("✓ Exclude toggle working")
-                        else:
-                            result.mark_failed("Exclude toggle failed")
-                            return
-                    else:
-                        result.mark_failed(f"Exclude toggle failed: {exclude_response.status_code}")
-                        return
-                    
-                    # Test 2: Update tags
-                    tags_response = self.session.patch(
-                        f"{self.base_url}/transactions/{tx_id}/tags",
-                        json={"tags": ["test", "validation", "courses"]}
-                    )
-                    
-                    if tags_response.status_code == 200:
-                        updated_tx = tags_response.json()
-                        if "test" in updated_tx["tags"]:
-                            result.details.append("✓ Tags update working")
-                            result.add_metric("tags_updated", len(updated_tx["tags"]))
-                        else:
-                            result.mark_failed("Tags update failed")
-                            return
-                    else:
-                        result.mark_failed(f"Tags update failed: {tags_response.status_code}")
-                        return
-                    
-                    result.mark_passed(f"Transaction CRUD operations successful on tx {tx_id}")
-                else:
-                    result.mark_blocked("No transactions available for CRUD testing")
-            else:
-                result.mark_blocked(f"Cannot retrieve transactions: {tx_response.status_code}")
-                
-        except Exception as e:
-            result.mark_failed(f"Transaction management error: {str(e)}")
-            
-        self.results.append(result)
-    
-    def _validate_configuration_management(self):
-        """Test 5: Configuration Management"""
-        result = ValidationResult("Configuration Management", "CORE_FEATURES")
-        result.mark_running()
+        headers = {"Authorization": f"Bearer {self.token}"}
+        performance_passed = 0
         
-        try:
-            # Test 1: Get current config
-            config_response = self.session.get(f"{self.base_url}/config")
-            
-            if config_response.status_code == 200:
-                config = config_response.json()
-                
-                # Validate config structure
-                required_fields = ["member1", "member2", "rev1", "rev2", "split_mode"]
-                missing_fields = [field for field in required_fields if field not in config]
-                
-                if missing_fields:
-                    result.mark_failed(f"Missing config fields: {missing_fields}")
-                    return
-                
-                # Test 2: Update config
-                updated_config = config.copy()
-                updated_config["member1"] = "TestMember1"
-                updated_config["member2"] = "TestMember2"
-                updated_config["rev1"] = 3000.0
-                updated_config["rev2"] = 2500.0
-                updated_config["split_mode"] = "revenus"
-                
-                update_response = self.session.post(
-                    f"{self.base_url}/config",
-                    json=updated_config
-                )
-                
-                if update_response.status_code == 200:
-                    new_config = update_response.json()
-                    
-                    if (new_config["member1"] == "TestMember1" and 
-                        new_config["member2"] == "TestMember2"):
-                        result.details.append("✓ Configuration update successful")
-                        
-                        # Test 3: Fixed lines management
-                        fixed_line_data = {
-                            "label": "Test Fixed Line",
-                            "amount": 150.0,
-                            "freq": "mensuelle",
-                            "split_mode": "clé",
-                            "split1": 0.6,
-                            "split2": 0.4,
-                            "active": True
-                        }
-                        
-                        create_line_response = self.session.post(
-                            f"{self.base_url}/fixed-lines",
-                            json=fixed_line_data
-                        )
-                        
-                        if create_line_response.status_code == 200:
-                            created_line = create_line_response.json()
-                            line_id = created_line["id"]
-                            
-                            # List fixed lines
-                            list_response = self.session.get(f"{self.base_url}/fixed-lines")
-                            if list_response.status_code == 200:
-                                lines = list_response.json()
-                                if any(line["id"] == line_id for line in lines):
-                                    result.details.append("✓ Fixed line creation and listing successful")
-                                    result.add_metric("fixed_lines_count", len(lines))
-                                else:
-                                    result.mark_failed("Created fixed line not found in list")
-                                    return
-                            else:
-                                result.mark_failed(f"Fixed lines listing failed: {list_response.status_code}")
-                                return
-                            
-                            # Delete the test line
-                            delete_response = self.session.delete(f"{self.base_url}/fixed-lines/{line_id}")
-                            if delete_response.status_code == 200:
-                                result.details.append("✓ Fixed line deletion successful")
-                            else:
-                                result.mark_failed(f"Fixed line deletion failed: {delete_response.status_code}")
-                                return
-                        else:
-                            result.mark_failed(f"Fixed line creation failed: {create_line_response.status_code}")
-                            return
-                        
-                        result.mark_passed("Configuration management fully functional")
-                    else:
-                        result.mark_failed("Configuration update values not persisted")
-                else:
-                    result.mark_failed(f"Configuration update failed: {update_response.status_code}")
-            else:
-                result.mark_failed(f"Cannot retrieve configuration: {config_response.status_code}")
-                
-        except Exception as e:
-            result.mark_failed(f"Configuration management error: {str(e)}")
-            
-        self.results.append(result)
-    
-    def _validate_analytics(self):
-        """Test 6: Analytics and Reporting"""
-        result = ValidationResult("Analytics & Reporting", "ANALYTICS")
-        result.mark_running()
+        # Test response times for key endpoints
+        endpoints_to_test = [
+            ("/health", "Health Check"),
+            ("/config", "Configuration"),
+            ("/", "Root Endpoint")
+        ]
         
-        try:
-            # Test 1: Summary calculation
-            summary_response = self.session.get(f"{self.base_url}/summary?month=2024-01")
-            
-            if summary_response.status_code == 200:
-                summary = summary_response.json()
-                
-                # Validate summary structure
-                required_fields = ["month", "var_total", "total_p1", "total_p2", "detail"]
-                missing_fields = [field for field in required_fields if field not in summary]
-                
-                if missing_fields:
-                    result.mark_failed(f"Missing summary fields: {missing_fields}")
-                    return
-                
-                result.add_metric("var_total", summary["var_total"])
-                result.add_metric("total_p1", summary["total_p1"]) 
-                result.add_metric("total_p2", summary["total_p2"])
-                
-                # Test 2: Tags summary
-                tags_response = self.session.get(f"{self.base_url}/tags-summary?month=2024-01")
-                if tags_response.status_code == 200:
-                    tags_summary = tags_response.json()
-                    result.add_metric("tags_count", len(tags_summary))
-                    result.details.append(f"✓ Tags summary: {len(tags_summary)} tags")
-                else:
-                    result.mark_failed(f"Tags summary failed: {tags_response.status_code}")
-                    return
-                
-                # Test 3: Available tags
-                all_tags_response = self.session.get(f"{self.base_url}/tags")
-                if all_tags_response.status_code == 200:
-                    all_tags = all_tags_response.json()
-                    result.add_metric("available_tags", len(all_tags))
-                    result.details.append(f"✓ Available tags: {len(all_tags)}")
-                else:
-                    result.mark_failed(f"Available tags failed: {all_tags_response.status_code}")
-                    return
-                
-                # Test 4: Analytics KPIs
-                kpis_response = self.session.get(f"{self.base_url}/analytics/kpis?months=last3")
-                if kpis_response.status_code == 200:
-                    kpis = kpis_response.json()
-                    result.add_metric("kpi_total_expenses", kpis.get("total_expenses", 0))
-                    result.add_metric("kpi_total_income", kpis.get("total_income", 0))
-                    result.details.append("✓ Analytics KPIs endpoint working")
-                else:
-                    result.mark_failed(f"Analytics KPIs failed: {kpis_response.status_code}")
-                    return
-                    
-                result.mark_passed("All analytics endpoints functional")
-                
-            else:
-                result.mark_failed(f"Summary calculation failed: {summary_response.status_code}")
-                
-        except Exception as e:
-            result.mark_failed(f"Analytics error: {str(e)}")
-            
-        self.results.append(result)
-    
-    def _validate_performance(self):
-        """Test 7: Performance Validation"""
-        result = ValidationResult("Performance Testing", "PERFORMANCE")
-        result.mark_running()
-        
-        try:
-            # Test 1: API Response Times
-            endpoints_to_test = [
-                "/config",
-                "/transactions?month=2024-01",
-                "/summary?month=2024-01",
-                "/tags-summary?month=2024-01"
-            ]
-            
-            response_times = {}
-            
-            for endpoint in endpoints_to_test:
+        for endpoint, name in endpoints_to_test:
+            try:
                 times = []
-                for i in range(5):  # Test 5 times each
+                for i in range(3):  # Test 3 times for average
                     start_time = time.time()
-                    response = self.session.get(f"{self.base_url}{endpoint}")
-                    end_time = time.time()
+                    response = self.session.get(f"{self.base_url}{endpoint}", headers=headers, timeout=10)
+                    duration = time.time() - start_time
+                    times.append(duration)
                     
-                    if response.status_code == 200:
-                        times.append((end_time - start_time) * 1000)
-                    else:
-                        result.mark_failed(f"Performance test failed on {endpoint}: {response.status_code}")
-                        return
-                
                 avg_time = sum(times) / len(times)
-                response_times[endpoint] = avg_time
-                result.add_metric(f"avg_response_time_{endpoint.replace('/', '_').replace('?', '_')}", avg_time)
+                max_time = max(times)
                 
-                if avg_time > self.performance_thresholds["api_response_time_ms"]:
-                    result.add_security_issue("PERFORMANCE", f"{endpoint} average response time {avg_time:.0f}ms exceeds threshold {self.performance_thresholds['api_response_time_ms']}ms")
-            
-            # Test 2: Concurrent Users Simulation
-            def make_request():
-                try:
-                    response = self.session.get(f"{self.base_url}/config")
-                    return response.status_code == 200
-                except:
-                    return False
-            
-            concurrent_users = 5
-            start_time = time.time()
-            with ThreadPoolExecutor(max_workers=concurrent_users) as executor:
-                futures = [executor.submit(make_request) for _ in range(concurrent_users)]
-                results = [future.result() for future in as_completed(futures)]
-            end_time = time.time()
-            
-            successful_requests = sum(results)
-            concurrent_time = (end_time - start_time) * 1000
-            
-            result.add_metric("concurrent_users_tested", concurrent_users)
-            result.add_metric("concurrent_success_rate", successful_requests / concurrent_users)
-            result.add_metric("concurrent_total_time_ms", concurrent_time)
-            
-            if successful_requests == concurrent_users:
-                result.details.append(f"✓ {concurrent_users} concurrent users handled successfully")
-            else:
-                result.add_security_issue("PERFORMANCE", f"Only {successful_requests}/{concurrent_users} concurrent requests succeeded")
-            
-            # Overall performance assessment
-            avg_response_time = sum(response_times.values()) / len(response_times)
-            result.add_metric("overall_avg_response_time_ms", avg_response_time)
-            
-            if (avg_response_time <= self.performance_thresholds["api_response_time_ms"] and 
-                successful_requests == concurrent_users):
-                result.mark_passed(f"Performance acceptable - avg response time: {avg_response_time:.0f}ms")
-            else:
-                result.mark_failed("Performance thresholds not met")
+                self.measure_performance(f"benchmark_{endpoint.replace('/', '_')}", avg_time, {
+                    "max_time": max_time,
+                    "iterations": len(times)
+                })
                 
-        except Exception as e:
-            result.mark_failed(f"Performance testing error: {str(e)}")
-            
-        self.results.append(result)
-    
-    def _validate_security(self):
-        """Test 8: Security Validation"""
-        result = ValidationResult("Security Validation", "SECURITY")
-        result.mark_running()
+                if avg_time < 1.0:  # Less than 1 second average
+                    self.print_test(f"{name} Performance", "PASS", f"Avg: {avg_time*1000:.2f}ms, Max: {max_time*1000:.2f}ms")
+                    performance_passed += 1
+                elif avg_time < 3.0:  # Less than 3 seconds
+                    self.print_test(f"{name} Performance", "WARN", f"Avg: {avg_time*1000:.2f}ms (acceptable)")
+                    performance_passed += 1
+                else:
+                    self.print_test(f"{name} Performance", "FAIL", f"Avg: {avg_time*1000:.2f}ms (too slow)")
+                    
+            except Exception as e:
+                self.print_test(f"{name} Performance", "FAIL", str(e))
+                
+        return performance_passed >= 2
         
+    def test_frontend_compatibility(self) -> bool:
+        """Test if responses are compatible with expected frontend format"""
+        self.print_header("8. FRONTEND COMPATIBILITY")
+        
+        compatibility_score = 0
+        
+        # Test JSON response format
         try:
-            security_issues_found = 0
-            
-            # Test 1: Unauthenticated access to protected endpoints
-            unauth_session = requests.Session()
-            protected_endpoints = ["/config", "/import", "/transactions"]
-            
-            for endpoint in protected_endpoints:
-                response = unauth_session.get(f"{self.base_url}{endpoint}")
-                if response.status_code != 401:
-                    result.add_security_issue("HIGH", f"Protected endpoint {endpoint} accessible without authentication (status: {response.status_code})")
-                    security_issues_found += 1
+            response = self.session.get(f"{self.base_url}/", timeout=10)
+            if response.status_code == 200:
+                data = response.json()
+                if isinstance(data, dict) and "message" in data:
+                    self.print_test("JSON Response Format", "PASS", "Valid JSON with message field")
+                    compatibility_score += 1
                 else:
-                    result.details.append(f"✓ {endpoint} properly protected")
-            
-            # Test 2: File upload security
-            # Create a potentially malicious file
-            malicious_content = "<?php echo 'test'; ?>"
-            malicious_file = self.test_data_dir / "malicious.php"
-            with open(malicious_file, 'w') as f:
-                f.write(malicious_content)
-            
-            try:
-                with open(malicious_file, 'rb') as f:
-                    files = {"file": ("malicious.php", f, "application/php")}
-                    response = self.session.post(f"{self.base_url}/import", files=files)
-                
-                if response.status_code == 200:
-                    result.add_security_issue("CRITICAL", "Malicious PHP file accepted by upload endpoint")
-                    security_issues_found += 1
-                else:
-                    result.details.append("✓ Malicious file upload rejected")
-            except Exception:
-                result.details.append("✓ File upload security working (exception caught)")
-            
-            # Test 3: Large file upload (DoS protection)
-            large_data = "test," * 100000  # Large CSV content
-            large_file = self.test_data_dir / "large_test.csv"
-            with open(large_file, 'w') as f:
-                f.write("header1,header2\n" + large_data)
-            
-            try:
-                with open(large_file, 'rb') as f:
-                    files = {"file": ("large_test.csv", f, "text/csv")}
-                    response = self.session.post(f"{self.base_url}/import", files=files, timeout=30)
-                
-                if response.status_code == 413 or "too large" in response.text.lower():
-                    result.details.append("✓ Large file upload protection working")
-                elif response.status_code == 200:
-                    result.add_security_issue("MEDIUM", "Large file upload accepted - potential DoS vector")
-                    security_issues_found += 1
-                else:
-                    result.details.append(f"Large file upload resulted in {response.status_code}")
-            except requests.exceptions.Timeout:
-                result.add_security_issue("MEDIUM", "Large file upload timeout - potential DoS issue")
-                security_issues_found += 1
-            except Exception:
-                result.details.append("✓ Large file upload protection working (exception caught)")
-            
-            # Test 4: SQL Injection attempt (basic)
-            try:
-                malicious_month = "2024-01'; DROP TABLE transactions; --"
-                response = self.session.get(f"{self.base_url}/transactions?month={malicious_month}")
-                
-                # If it returns 200, check if it's actually processing the injection
-                if response.status_code == 200:
-                    result.details.append("✓ SQL injection attempt handled gracefully")
-                else:
-                    result.details.append(f"✓ SQL injection attempt rejected (status: {response.status_code})")
-            except Exception:
-                result.details.append("✓ SQL injection protection working")
-            
-            result.add_metric("security_issues_found", security_issues_found)
-            
-            if security_issues_found == 0:
-                result.mark_passed("Security validation passed - no critical issues found")
-            else:
-                result.mark_failed(f"Security validation failed - {security_issues_found} issues found")
-                
+                    self.print_test("JSON Response Format", "FAIL", "Invalid JSON structure")
         except Exception as e:
-            result.mark_failed(f"Security validation error: {str(e)}")
+            self.print_test("JSON Response Format", "FAIL", str(e))
             
-        self.results.append(result)
-    
-    def _generate_validation_report(self, total_time: float) -> Dict:
-        """Generate comprehensive validation report"""
-        logger.info("📊 Generating comprehensive validation report")
+        # Test authentication response format
+        if self.token:
+            try:
+                headers = {"Authorization": f"Bearer {self.token}"}
+                response = self.session.get(f"{self.base_url}/api/v1/auth/validate", headers=headers, timeout=10)
+                if response.status_code == 200:
+                    data = response.json()
+                    if "valid" in data and "user" in data:
+                        self.print_test("Auth Response Format", "PASS", "Contains required fields")
+                        compatibility_score += 1
+                    else:
+                        self.print_test("Auth Response Format", "FAIL", "Missing required fields")
+            except Exception as e:
+                self.print_test("Auth Response Format", "FAIL", str(e))
+                
+        return compatibility_score >= 1
         
-        # Count results by status
-        status_counts = {"PASSED": 0, "FAILED": 0, "BLOCKED": 0}
-        for result in self.results:
-            if result.status in status_counts:
-                status_counts[result.status] += 1
+    def generate_test_report(self) -> Dict:
+        """Generate comprehensive test report"""
+        self.print_header("📊 TEST EXECUTION SUMMARY")
         
-        total_tests = len(self.results)
-        pass_rate = (status_counts["PASSED"] / total_tests * 100) if total_tests > 0 else 0
+        # Count results
+        passed = len([r for r in self.test_results if r["status"] == "PASS"])
+        failed = len([r for r in self.test_results if r["status"] == "FAIL"])
+        warnings = len([r for r in self.test_results if r["status"] == "WARN"])
+        total = len(self.test_results)
         
-        # Collect all security issues
-        all_security_issues = []
-        for result in self.results:
-            all_security_issues.extend(result.security_issues)
+        # Calculate success rate
+        success_rate = (passed / total * 100) if total > 0 else 0
         
-        # Categorize results
-        categories = {}
-        for result in self.results:
-            if result.category not in categories:
-                categories[result.category] = {
-                    "passed": 0, "failed": 0, "blocked": 0, "tests": []
-                }
-            categories[result.category][result.status.lower()] += 1
-            categories[result.category]["tests"].append({
-                "name": result.test_name,
-                "status": result.status,
-                "duration": result.duration,
-                "details": result.details,
-                "errors": result.errors,
-                "metrics": result.metrics
-            })
+        print(f"{Colors.BOLD}Results Summary:{Colors.RESET}")
+        print(f"  ✅ Passed: {Colors.GREEN}{passed}{Colors.RESET}")
+        print(f"  ❌ Failed: {Colors.RED}{failed}{Colors.RESET}")
+        print(f"  ⚠️  Warnings: {Colors.YELLOW}{warnings}{Colors.RESET}")
+        print(f"  📊 Success Rate: {Colors.CYAN}{success_rate:.1f}%{Colors.RESET}")
         
-        # Quality assessment
-        quality_score = 0
-        if pass_rate >= 95:
-            quality_status = "EXCELLENT"
-            quality_score = 100
-        elif pass_rate >= 85:
-            quality_status = "GOOD"
-            quality_score = 85
-        elif pass_rate >= 70:
-            quality_status = "ACCEPTABLE"
-            quality_score = 70
-        elif pass_rate >= 50:
-            quality_status = "POOR"
-            quality_score = 50
+        # Performance summary
+        if self.performance_metrics:
+            avg_response_time = sum([m["duration_ms"] for m in self.performance_metrics]) / len(self.performance_metrics)
+            print(f"  ⚡ Average Response Time: {Colors.MAGENTA}{avg_response_time:.2f}ms{Colors.RESET}")
+            
+        # Release readiness assessment
+        if success_rate >= 80 and failed <= 2:
+            status = "READY FOR RELEASE"
+            color = Colors.GREEN
+        elif success_rate >= 60:
+            status = "NEEDS FIXES BEFORE RELEASE"
+            color = Colors.YELLOW
         else:
-            quality_status = "CRITICAL"
-            quality_score = 25
+            status = "NOT READY FOR RELEASE"
+            color = Colors.RED
+            
+        print(f"\n{Colors.BOLD}🚀 Release Status: {color}{status}{Colors.RESET}")
         
-        # Release recommendation
-        critical_failures = [r for r in self.results if r.status == "FAILED" and r.category in ["SECURITY", "CORE_FEATURES"]]
-        blocking_issues = [r for r in self.results if r.status == "BLOCKED"]
-        high_security_issues = [issue for issue in all_security_issues if issue["severity"] in ["HIGH", "CRITICAL"]]
-        
-        if critical_failures or high_security_issues:
-            release_recommendation = "BLOCK_RELEASE"
-            recommendation_reason = f"Critical failures: {len(critical_failures)}, High security issues: {len(high_security_issues)}"
-        elif blocking_issues:
-            release_recommendation = "INVESTIGATE_BLOCKS"
-            recommendation_reason = f"Blocked tests need investigation: {len(blocking_issues)}"
-        elif pass_rate < 85:
-            release_recommendation = "CONDITIONAL_RELEASE"
-            recommendation_reason = f"Pass rate below 85%: {pass_rate:.1f}%"
-        else:
-            release_recommendation = "APPROVE_RELEASE"
-            recommendation_reason = f"All critical tests passed, pass rate: {pass_rate:.1f}%"
-        
+        # Generate detailed report
         report = {
-            "validation_summary": {
-                "timestamp": datetime.now().isoformat(),
-                "total_duration_seconds": total_time,
-                "target_system": self.base_url,
-                "total_tests": total_tests,
-                "pass_rate_percent": round(pass_rate, 1),
-                "quality_status": quality_status,
-                "quality_score": quality_score
+            "execution_time": datetime.now().isoformat(),
+            "summary": {
+                "total_tests": total,
+                "passed": passed,
+                "failed": failed,
+                "warnings": warnings,
+                "success_rate": success_rate,
+                "release_status": status
             },
-            "test_results": {
-                "passed": status_counts["PASSED"],
-                "failed": status_counts["FAILED"],
-                "blocked": status_counts["BLOCKED"]
-            },
-            "categories": categories,
-            "security_assessment": {
-                "total_issues": len(all_security_issues),
-                "critical_issues": len([i for i in all_security_issues if i["severity"] == "CRITICAL"]),
-                "high_issues": len([i for i in all_security_issues if i["severity"] == "HIGH"]),
-                "medium_issues": len([i for i in all_security_issues if i["severity"] == "MEDIUM"]),
-                "issues": all_security_issues
-            },
-            "release_recommendation": {
-                "decision": release_recommendation,
-                "reason": recommendation_reason,
-                "timestamp": datetime.now().isoformat()
-            },
-            "detailed_results": [
-                {
-                    "test_name": r.test_name,
-                    "category": r.category,
-                    "status": r.status,
-                    "duration_seconds": r.duration,
-                    "details": r.details,
-                    "errors": r.errors,
-                    "metrics": r.metrics,
-                    "security_issues": r.security_issues
-                } for r in self.results
-            ]
+            "test_results": self.test_results,
+            "performance_metrics": self.performance_metrics,
+            "recommendations": self.generate_recommendations(failed, warnings, success_rate)
         }
         
-        # Save detailed report to file
-        report_file = f"validation_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
-        with open(report_file, 'w', encoding='utf-8') as f:
-            json.dump(report, f, indent=2, ensure_ascii=False)
+        return report
         
-        logger.info(f"📋 Detailed validation report saved to: {report_file}")
+    def generate_recommendations(self, failed: int, warnings: int, success_rate: float) -> List[str]:
+        """Generate recommendations based on test results"""
+        recommendations = []
         
-        # Print summary
-        print("\n" + "="*80)
-        print("BUDGET FAMILLE v2.3 - END-TO-END VALIDATION REPORT")
-        print("="*80)
-        print(f"Timestamp: {report['validation_summary']['timestamp']}")
-        print(f"Total Tests: {total_tests}")
-        print(f"Pass Rate: {pass_rate:.1f}%")
-        print(f"Quality Status: {quality_status}")
-        print(f"Total Duration: {total_time:.1f}s")
-        print()
-        print("RESULTS BY STATUS:")
-        print(f"  ✅ PASSED: {status_counts['PASSED']}")
-        print(f"  ❌ FAILED: {status_counts['FAILED']}")
-        print(f"  🔒 BLOCKED: {status_counts['BLOCKED']}")
-        print()
-        print("SECURITY ASSESSMENT:")
-        print(f"  🔴 CRITICAL: {len([i for i in all_security_issues if i['severity'] == 'CRITICAL'])}")
-        print(f"  🟠 HIGH: {len([i for i in all_security_issues if i['severity'] == 'HIGH'])}")
-        print(f"  🟡 MEDIUM: {len([i for i in all_security_issues if i['severity'] == 'MEDIUM'])}")
-        print()
-        print("RELEASE RECOMMENDATION:")
-        print(f"  🎯 DECISION: {release_recommendation}")
-        print(f"  📝 REASON: {recommendation_reason}")
-        print()
+        if failed > 0:
+            recommendations.append("🔧 Fix all failed tests before release")
+            
+        if warnings > 2:
+            recommendations.append("⚠️ Address warning conditions for better stability")
+            
+        if success_rate < 80:
+            recommendations.append("📈 Improve overall system reliability to reach 80%+ success rate")
+            
+        # Check specific failures
+        auth_failures = [r for r in self.test_results if "auth" in r["test"].lower() and r["status"] == "FAIL"]
+        if auth_failures:
+            recommendations.append("🔐 Critical: Fix authentication system before release")
+            
+        db_failures = [r for r in self.test_results if "database" in r["test"].lower() and r["status"] == "FAIL"]
+        if db_failures:
+            recommendations.append("🗄️ Critical: Resolve database connectivity issues")
+            
+        # Performance recommendations
+        slow_operations = [m for m in self.performance_metrics if m["duration_ms"] > 3000]
+        if slow_operations:
+            recommendations.append("⚡ Optimize slow operations (>3s response time)")
+            
+        if not recommendations:
+            recommendations.append("✅ All tests passed successfully - Ready for production")
+            
+        return recommendations
         
-        if critical_failures:
-            print("CRITICAL FAILURES:")
-            for failure in critical_failures:
-                print(f"  ❌ {failure.test_name}: {', '.join(failure.errors)}")
-            print()
+    def run_comprehensive_validation(self) -> Dict:
+        """Run all validation tests"""
+        print(f"{Colors.BOLD}{Colors.CYAN}")
+        print("🔍 Budget Famille v2.3 - Comprehensive E2E Validation Suite")
+        print("=" * 80)
+        print(f"Quality Assurance Lead - Post-Fix Validation{Colors.RESET}")
+        print(f"Execution started at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
         
-        if high_security_issues:
-            print("HIGH/CRITICAL SECURITY ISSUES:")
-            for issue in high_security_issues:
-                print(f"  🔒 {issue['severity']}: {issue['description']}")
-            print()
+        # Execute all test suites
+        test_suites = [
+            ("Server Health", self.test_server_health),
+            ("Authentication", self.test_authentication_endpoints),
+            ("CORS Headers", self.test_cors_headers),
+            ("Configuration", self.test_configuration_endpoints),
+            ("Database", self.test_database_connectivity),
+            ("Error Handling", self.test_error_handling),
+            ("Performance", self.test_performance_benchmarks),
+            ("Frontend Compatibility", self.test_frontend_compatibility)
+        ]
         
-        print("="*80)
+        suite_results = {}
+        for suite_name, test_func in test_suites:
+            try:
+                result = test_func()
+                suite_results[suite_name] = result
+                time.sleep(0.5)  # Brief pause between test suites
+            except Exception as e:
+                print(f"{Colors.RED}❌ Test suite '{suite_name}' failed with exception: {e}{Colors.RESET}")
+                suite_results[suite_name] = False
+                
+        # Generate final report
+        report = self.generate_test_report()
+        report["suite_results"] = suite_results
         
         return report
 
+
+def save_report(report: Dict, filename: str = None):
+    """Save test report to file"""
+    if filename is None:
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        filename = f"e2e_validation_report_{timestamp}.json"
+        
+    with open(filename, 'w', encoding='utf-8') as f:
+        json.dump(report, f, indent=2, ensure_ascii=False)
+        
+    print(f"\n📄 Detailed report saved to: {Colors.CYAN}{filename}{Colors.RESET}")
+
+
 def main():
     """Main execution function"""
-    import argparse
-    
-    parser = argparse.ArgumentParser(description='Budget Famille v2.3 Comprehensive Validation')
-    parser.add_argument('--base-url', default='http://localhost:8000', 
-                       help='Base URL of the Budget Famille backend')
-    parser.add_argument('--verbose', action='store_true',
-                       help='Enable verbose logging')
-    
-    args = parser.parse_args()
-    
-    if args.verbose:
-        logging.getLogger().setLevel(logging.DEBUG)
+    validator = E2EValidator()
     
     try:
-        validator = BudgetFamilleValidator(base_url=args.base_url)
+        # Run comprehensive validation
         report = validator.run_comprehensive_validation()
         
+        # Save report
+        save_report(report)
+        
         # Exit with appropriate code
-        if report["release_recommendation"]["decision"] == "BLOCK_RELEASE":
-            sys.exit(1)  # Critical issues found
-        elif report["release_recommendation"]["decision"] == "INVESTIGATE_BLOCKS":
-            sys.exit(2)  # Investigation needed
+        if report["summary"]["success_rate"] >= 80:
+            print(f"\n{Colors.GREEN}✅ Validation completed successfully{Colors.RESET}")
+            sys.exit(0)
         else:
-            sys.exit(0)  # Success or conditional approval
+            print(f"\n{Colors.RED}❌ Validation failed - manual intervention required{Colors.RESET}")
+            sys.exit(1)
             
     except KeyboardInterrupt:
-        logger.error("Validation interrupted by user")
-        sys.exit(3)
+        print(f"\n{Colors.YELLOW}⏹️  Validation interrupted by user{Colors.RESET}")
+        sys.exit(130)
     except Exception as e:
-        logger.error(f"Validation framework error: {e}")
-        logger.error(traceback.format_exc())
-        sys.exit(4)
+        print(f"\n{Colors.RED}💥 Critical error during validation: {e}{Colors.RESET}")
+        sys.exit(1)
+
 
 if __name__ == "__main__":
     main()

@@ -248,9 +248,15 @@ def detect_months_with_metadata(df: pd.DataFrame) -> List[Dict]:
             }
             
             try:
-                total_amount = month_df['amount'].sum() if 'amount' in month_df.columns else 0
-            except Exception:
-                total_amount = 0
+                if 'amount' in month_df.columns:
+                    # Parse all amounts to float before summing to avoid string concatenation
+                    amounts = month_df['amount'].apply(parse_number)
+                    total_amount = float(amounts.sum())
+                else:
+                    total_amount = 0.0
+            except Exception as e:
+                logger.warning(f"Error calculating total_amount for month {month}: {str(e)}")
+                total_amount = 0.0
             
             try:
                 categories = month_df['category'].dropna().unique().tolist() if 'category' in month_df.columns else []

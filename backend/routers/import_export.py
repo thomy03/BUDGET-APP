@@ -52,6 +52,7 @@ def import_file(file: UploadFile = File(...), current_user = Depends(get_current
         
         # Détection des mois
         months_data = detect_months_with_metadata(df)
+        logger.info(f"DEBUG: months_data type={type(months_data)}, value={months_data}")
         if not months_data:
             raise HTTPException(status_code=400, detail="Aucun mois détecté dans le fichier")
         
@@ -90,13 +91,15 @@ def import_file(file: UploadFile = File(...), current_user = Depends(get_current
         
         logger.info(f"✅ Import terminé: ID={import_id}")
         
-        # Préparation des données de réponse
+        # Préparation des données de réponse pour correspondre au schéma ImportResponse
+        logger.info(f"DEBUG: Avant traitement months_data type={type(months_data)}, value={months_data}")
         if isinstance(months_data, list):
-            # months_data est une liste de dictionnaires avec métadonnées
-            months_for_response = {month_dict['month']: month_dict for month_dict in months_data if isinstance(month_dict, dict) and 'month' in month_dict}
-        else:
-            # months_data est déjà un dictionnaire
+            # months_data est déjà une liste de dictionnaires avec métadonnées
             months_for_response = months_data
+        else:
+            # Convertir dictionnaire en liste pour compatibilité schéma
+            months_for_response = list(months_data.values()) if months_data else []
+        logger.info(f"DEBUG: months_for_response type={type(months_for_response)}, value={months_for_response}")
         
         return ImportResponse(
             import_id=import_id,
@@ -126,12 +129,31 @@ def get_import_details(import_id: str, db: Session = Depends(get_db)):
     if not import_meta:
         raise HTTPException(status_code=404, detail="Import introuvable")
     
+    # Parse months_detected to match ImportMonth schema
+    months_list = json.loads(import_meta.months_detected) if import_meta.months_detected else []
+    months_formatted = []
+    
+    # If months are stored as simple strings, convert them to ImportMonth format
+    for month_data in months_list:
+        if isinstance(month_data, str):
+            # Simple month string, create minimal ImportMonth structure
+            months_formatted.append({
+                "month": month_data,
+                "transaction_count": 0,
+                "date_range": {"start": None, "end": None},
+                "total_amount": 0.0,
+                "categories": []
+            })
+        elif isinstance(month_data, dict):
+            # Already in correct format
+            months_formatted.append(month_data)
+    
     return ImportResponse(
         import_id=import_meta.id,
         status="completed",  # ImportMetadata doesn't have status field, assume completed
         filename=import_meta.filename,
         rows_processed=0,  # ImportMetadata doesn't have rows_imported field
-        months_detected=json.loads(import_meta.months_detected) if import_meta.months_detected else [],
+        months_detected=months_formatted,
         duplicates_info={"duplicates_count": import_meta.duplicates_count},
         validation_errors=json.loads(import_meta.warnings) if import_meta.warnings else [],
         message="Détails de l'import récupérés"

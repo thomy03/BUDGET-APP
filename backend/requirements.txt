@@ -39,6 +39,11 @@ weasyprint>=59.0  # Alternative pour PDF depuis HTML
 python-dotenv>=0.19.0
 structlog>=22.0.0  # Logging structuré
 
+# === REDIS CACHING ===
+redis>=4.0.0,<5.1.0  # Redis client with async support
+redis[hiredis]>=4.0.0  # High-performance parser
+aioredis>=2.0.0  # Async Redis client
+
 # === OPTIONAL - Database Encryption ===
 # Décommenté si chiffrement DB requis (nécessite libsqlcipher-dev)
 # pysqlcipher3>=1.2.0

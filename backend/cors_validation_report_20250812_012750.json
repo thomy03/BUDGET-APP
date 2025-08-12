@@ -1,0 +1,2464 @@
+{
+  "cors_headers": {
+    "/health": {
+      "endpoint": "/health",
+      "status_code": 200,
+      "headers_present": {
+        "access-control-allow-origin": false,
+        "access-control-allow-methods": false,
+        "access-control-allow-headers": false
+      },
+      "header_values": {
+        "access-control-allow-origin": null,
+        "access-control-allow-methods": null,
+        "access-control-allow-headers": null,
+        "access-control-allow-credentials": null
+      },
+      "valid": false,
+      "issues": [
+        "Missing header: access-control-allow-origin",
+        "Missing header: access-control-allow-methods",
+        "Missing header: access-control-allow-headers"
+      ]
+    },
+    "GET /health_http___localhost_3000": {
+      "endpoint": "GET /health",
+      "status_code": 200,
+      "headers_present": {
+        "access-control-allow-origin": true,
+        "access-control-allow-methods": false,
+        "access-control-allow-headers": false
+      },
+      "header_values": {
+        "access-control-allow-origin": "http://localhost:3000",
+        "access-control-allow-methods": null,
+        "access-control-allow-headers": null,
+        "access-control-allow-credentials": "true"
+      },
+      "valid": false,
+      "issues": [
+        "Missing header: access-control-allow-methods",
+        "Missing header: access-control-allow-headers"
+      ]
+    },
+    "POST /token_http___localhost_3000": {
+      "endpoint": "POST /token",
+      "status_code": 422,
+      "headers_present": {
+        "access-control-allow-origin": true,
+        "access-control-allow-methods": false,
+        "access-control-allow-headers": false
+      },
+      "header_values": {
+        "access-control-allow-origin": "http://localhost:3000",
+        "access-control-allow-methods": null,
+        "access-control-allow-headers": null,
+        "access-control-allow-credentials": "true"
+      },
+      "valid": false,
+      "issues": [
+        "Missing header: access-control-allow-methods",
+        "Missing header: access-control-allow-headers"
+      ]
+    },
+    "GET /custom-provisions_http___localhost_3000": {
+      "endpoint": "GET /custom-provisions",
+      "status_code": 403,
+      "headers_present": {
+        "access-control-allow-origin": true,
+        "access-control-allow-methods": false,
+        "access-control-allow-headers": false
+      },
+      "header_values": {
+        "access-control-allow-origin": "http://localhost:3000",
+        "access-control-allow-methods": null,
+        "access-control-allow-headers": null,
+        "access-control-allow-credentials": "true"
+      },
+      "valid": false,
+      "issues": [
+        "Missing header: access-control-allow-methods",
+        "Missing header: access-control-allow-headers"
+      ]
+    },
+    "POST /custom-provisions_http___localhost_3000": {
+      "endpoint": "POST /custom-provisions",
+      "status_code": 403,
+      "headers_present": {
+        "access-control-allow-origin": true,
+        "access-control-allow-methods": false,
+        "access-control-allow-headers": false
+      },
+      "header_values": {
+        "access-control-allow-origin": "http://localhost:3000",
+        "access-control-allow-methods": null,
+        "access-control-allow-headers": null,
+        "access-control-allow-credentials": "true"
+      },
+      "valid": false,
+      "issues": [
+        "Missing header: access-control-allow-methods",
+        "Missing header: access-control-allow-headers"
+      ]
+    },
+    "GET /fixed-lines_http___localhost_3000": {
+      "endpoint": "GET /fixed-lines",
+      "status_code": 401,
+      "headers_present": {
+        "access-control-allow-origin": true,
+        "access-control-allow-methods": false,
+        "access-control-allow-headers": false
+      },
+      "header_values": {
+        "access-control-allow-origin": "http://localhost:3000",
+        "access-control-allow-methods": null,
+        "access-control-allow-headers": null,
+        "access-control-allow-credentials": "true"
+      },
+      "valid": false,
+      "issues": [
+        "Missing header: access-control-allow-methods",
+        "Missing header: access-control-allow-headers"
+      ]
+    },
+    "PUT /fixed-lines/1_http___localhost_3000": {
+      "endpoint": "PUT /fixed-lines/1",
+      "status_code": 401,
+      "headers_present": {
+        "access-control-allow-origin": true,
+        "access-control-allow-methods": false,
+        "access-control-allow-headers": false
+      },
+      "header_values": {
+        "access-control-allow-origin": "http://localhost:3000",
+        "access-control-allow-methods": null,
+        "access-control-allow-headers": null,
+        "access-control-allow-credentials": "true"
+      },
+      "valid": false,
+      "issues": [
+        "Missing header: access-control-allow-methods",
+        "Missing header: access-control-allow-headers"
+      ]
+    },
+    "GET /summary_http___localhost_3000": {
+      "endpoint": "GET /summary",
+      "status_code": 403,
+      "headers_present": {
+        "access-control-allow-origin": true,
+        "access-control-allow-methods": false,
+        "access-control-allow-headers": false
+      },
+      "header_values": {
+        "access-control-allow-origin": "http://localhost:3000",
+        "access-control-allow-methods": null,
+        "access-control-allow-headers": null,
+        "access-control-allow-credentials": "true"
+      },
+      "valid": false,
+      "issues": [
+        "Missing header: access-control-allow-methods",
+        "Missing header: access-control-allow-headers"
+      ]
+    },
+    "GET /tags-summary_http___localhost_3000": {
+      "endpoint": "GET /tags-summary",
+      "status_code": 200,
+      "headers_present": {
+        "access-control-allow-origin": true,
+        "access-control-allow-methods": false,
+        "access-control-allow-headers": false
+      },
+      "header_values": {
+        "access-control-allow-origin": "http://localhost:3000",
+        "access-control-allow-methods": null,
+        "access-control-allow-headers": null,
+        "access-control-allow-credentials": "true"
+      },
+      "valid": false,
+      "issues": [
+        "Missing header: access-control-allow-methods",
+        "Missing header: access-control-allow-headers"
+      ]
+    },
+    "GET /health_http___127.0.0.1_3000": {
+      "endpoint": "GET /health",
+      "status_code": 200,
+      "headers_present": {
+        "access-control-allow-origin": true,
+        "access-control-allow-methods": false,
+        "access-control-allow-headers": false
+      },
+      "header_values": {
+        "access-control-allow-origin": "http://127.0.0.1:3000",
+        "access-control-allow-methods": null,
+        "access-control-allow-headers": null,
+        "access-control-allow-credentials": "true"
+      },
+      "valid": false,
+      "issues": [
+        "Missing header: access-control-allow-methods",
+        "Missing header: access-control-allow-headers"
+      ]
+    },
+    "POST /token_http___127.0.0.1_3000": {
+      "endpoint": "POST /token",
+      "status_code": 422,
+      "headers_present": {
+        "access-control-allow-origin": true,
+        "access-control-allow-methods": false,
+        "access-control-allow-headers": false
+      },
+      "header_values": {
+        "access-control-allow-origin": "http://127.0.0.1:3000",
+        "access-control-allow-methods": null,
+        "access-control-allow-headers": null,
+        "access-control-allow-credentials": "true"
+      },
+      "valid": false,
+      "issues": [
+        "Missing header: access-control-allow-methods",
+        "Missing header: access-control-allow-headers"
+      ]
+    },
+    "GET /custom-provisions_http___127.0.0.1_3000": {
+      "endpoint": "GET /custom-provisions",
+      "status_code": 403,
+      "headers_present": {
+        "access-control-allow-origin": true,
+        "access-control-allow-methods": false,
+        "access-control-allow-headers": false
+      },
+      "header_values": {
+        "access-control-allow-origin": "http://127.0.0.1:3000",
+        "access-control-allow-methods": null,
+        "access-control-allow-headers": null,
+        "access-control-allow-credentials": "true"
+      },
+      "valid": false,
+      "issues": [
+        "Missing header: access-control-allow-methods",
+        "Missing header: access-control-allow-headers"
+      ]
+    },
+    "POST /custom-provisions_http___127.0.0.1_3000": {
+      "endpoint": "POST /custom-provisions",
+      "status_code": 403,
+      "headers_present": {
+        "access-control-allow-origin": true,
+        "access-control-allow-methods": false,
+        "access-control-allow-headers": false
+      },
+      "header_values": {
+        "access-control-allow-origin": "http://127.0.0.1:3000",
+        "access-control-allow-methods": null,
+        "access-control-allow-headers": null,
+        "access-control-allow-credentials": "true"
+      },
+      "valid": false,
+      "issues": [
+        "Missing header: access-control-allow-methods",
+        "Missing header: access-control-allow-headers"
+      ]
+    },
+    "GET /fixed-lines_http___127.0.0.1_3000": {
+      "endpoint": "GET /fixed-lines",
+      "status_code": 401,
+      "headers_present": {
+        "access-control-allow-origin": true,
+        "access-control-allow-methods": false,
+        "access-control-allow-headers": false
+      },
+      "header_values": {
+        "access-control-allow-origin": "http://127.0.0.1:3000",
+        "access-control-allow-methods": null,
+        "access-control-allow-headers": null,
+        "access-control-allow-credentials": "true"
+      },
+      "valid": false,
+      "issues": [
+        "Missing header: access-control-allow-methods",
+        "Missing header: access-control-allow-headers"
+      ]
+    },
+    "PUT /fixed-lines/1_http___127.0.0.1_3000": {
+      "endpoint": "PUT /fixed-lines/1",
+      "status_code": 401,
+      "headers_present": {
+        "access-control-allow-origin": true,
+        "access-control-allow-methods": false,
+        "access-control-allow-headers": false
+      },
+      "header_values": {
+        "access-control-allow-origin": "http://127.0.0.1:3000",
+        "access-control-allow-methods": null,
+        "access-control-allow-headers": null,
+        "access-control-allow-credentials": "true"
+      },
+      "valid": false,
+      "issues": [
+        "Missing header: access-control-allow-methods",
+        "Missing header: access-control-allow-headers"
+      ]
+    },
+    "GET /summary_http___127.0.0.1_3000": {
+      "endpoint": "GET /summary",
+      "status_code": 403,
+      "headers_present": {
+        "access-control-allow-origin": true,
+        "access-control-allow-methods": false,
+        "access-control-allow-headers": false
+      },
+      "header_values": {
+        "access-control-allow-origin": "http://127.0.0.1:3000",
+        "access-control-allow-methods": null,
+        "access-control-allow-headers": null,
+        "access-control-allow-credentials": "true"
+      },
+      "valid": false,
+      "issues": [
+        "Missing header: access-control-allow-methods",
+        "Missing header: access-control-allow-headers"
+      ]
+    },
+    "GET /tags-summary_http___127.0.0.1_3000": {
+      "endpoint": "GET /tags-summary",
+      "status_code": 200,
+      "headers_present": {
+        "access-control-allow-origin": true,
+        "access-control-allow-methods": false,
+        "access-control-allow-headers": false
+      },
+      "header_values": {
+        "access-control-allow-origin": "http://127.0.0.1:3000",
+        "access-control-allow-methods": null,
+        "access-control-allow-headers": null,
+        "access-control-allow-credentials": "true"
+      },
+      "valid": false,
+      "issues": [
+        "Missing header: access-control-allow-methods",
+        "Missing header: access-control-allow-headers"
+      ]
+    },
+    "GET /health_http___localhost_45678": {
+      "endpoint": "GET /health",
+      "status_code": 200,
+      "headers_present": {
+        "access-control-allow-origin": true,
+        "access-control-allow-methods": false,
+        "access-control-allow-headers": false
+      },
+      "header_values": {
+        "access-control-allow-origin": "http://localhost:45678",
+        "access-control-allow-methods": null,
+        "access-control-allow-headers": null,
+        "access-control-allow-credentials": "true"
+      },
+      "valid": false,
+      "issues": [
+        "Missing header: access-control-allow-methods",
+        "Missing header: access-control-allow-headers"
+      ]
+    },
+    "POST /token_http___localhost_45678": {
+      "endpoint": "POST /token",
+      "status_code": 422,
+      "headers_present": {
+        "access-control-allow-origin": true,
+        "access-control-allow-methods": false,
+        "access-control-allow-headers": false
+      },
+      "header_values": {
+        "access-control-allow-origin": "http://localhost:45678",
+        "access-control-allow-methods": null,
+        "access-control-allow-headers": null,
+        "access-control-allow-credentials": "true"
+      },
+      "valid": false,
+      "issues": [
+        "Missing header: access-control-allow-methods",
+        "Missing header: access-control-allow-headers"
+      ]
+    },
+    "GET /custom-provisions_http___localhost_45678": {
+      "endpoint": "GET /custom-provisions",
+      "status_code": 403,
+      "headers_present": {
+        "access-control-allow-origin": true,
+        "access-control-allow-methods": false,
+        "access-control-allow-headers": false
+      },
+      "header_values": {
+        "access-control-allow-origin": "http://localhost:45678",
+        "access-control-allow-methods": null,
+        "access-control-allow-headers": null,
+        "access-control-allow-credentials": "true"
+      },
+      "valid": false,
+      "issues": [
+        "Missing header: access-control-allow-methods",
+        "Missing header: access-control-allow-headers"
+      ]
+    },
+    "POST /custom-provisions_http___localhost_45678": {
+      "endpoint": "POST /custom-provisions",
+      "status_code": 403,
+      "headers_present": {
+        "access-control-allow-origin": true,
+        "access-control-allow-methods": false,
+        "access-control-allow-headers": false
+      },
+      "header_values": {
+        "access-control-allow-origin": "http://localhost:45678",
+        "access-control-allow-methods": null,
+        "access-control-allow-headers": null,
+        "access-control-allow-credentials": "true"
+      },
+      "valid": false,
+      "issues": [
+        "Missing header: access-control-allow-methods",
+        "Missing header: access-control-allow-headers"
+      ]
+    },
+    "GET /fixed-lines_http___localhost_45678": {
+      "endpoint": "GET /fixed-lines",
+      "status_code": 401,
+      "headers_present": {
+        "access-control-allow-origin": true,
+        "access-control-allow-methods": false,
+        "access-control-allow-headers": false
+      },
+      "header_values": {
+        "access-control-allow-origin": "http://localhost:45678",
+        "access-control-allow-methods": null,
+        "access-control-allow-headers": null,
+        "access-control-allow-credentials": "true"
+      },
+      "valid": false,
+      "issues": [
+        "Missing header: access-control-allow-methods",
+        "Missing header: access-control-allow-headers"
+      ]
+    },
+    "PUT /fixed-lines/1_http___localhost_45678": {
+      "endpoint": "PUT /fixed-lines/1",
+      "status_code": 401,
+      "headers_present": {
+        "access-control-allow-origin": true,
+        "access-control-allow-methods": false,
+        "access-control-allow-headers": false
+      },
+      "header_values": {
+        "access-control-allow-origin": "http://localhost:45678",
+        "access-control-allow-methods": null,
+        "access-control-allow-headers": null,
+        "access-control-allow-credentials": "true"
+      },
+      "valid": false,
+      "issues": [
+        "Missing header: access-control-allow-methods",
+        "Missing header: access-control-allow-headers"
+      ]
+    },
+    "GET /summary_http___localhost_45678": {
+      "endpoint": "GET /summary",
+      "status_code": 403,
+      "headers_present": {
+        "access-control-allow-origin": true,
+        "access-control-allow-methods": false,
+        "access-control-allow-headers": false
+      },
+      "header_values": {
+        "access-control-allow-origin": "http://localhost:45678",
+        "access-control-allow-methods": null,
+        "access-control-allow-headers": null,
+        "access-control-allow-credentials": "true"
+      },
+      "valid": false,
+      "issues": [
+        "Missing header: access-control-allow-methods",
+        "Missing header: access-control-allow-headers"
+      ]
+    },
+    "GET /tags-summary_http___localhost_45678": {
+      "endpoint": "GET /tags-summary",
+      "status_code": 200,
+      "headers_present": {
+        "access-control-allow-origin": true,
+        "access-control-allow-methods": false,
+        "access-control-allow-headers": false
+      },
+      "header_values": {
+        "access-control-allow-origin": "http://localhost:45678",
+        "access-control-allow-methods": null,
+        "access-control-allow-headers": null,
+        "access-control-allow-credentials": "true"
+      },
+      "valid": false,
+      "issues": [
+        "Missing header: access-control-allow-methods",
+        "Missing header: access-control-allow-headers"
+      ]
+    },
+    "GET /health_http___frontend-container_3000": {
+      "endpoint": "GET /health",
+      "status_code": 200,
+      "headers_present": {
+        "access-control-allow-origin": false,
+        "access-control-allow-methods": false,
+        "access-control-allow-headers": false
+      },
+      "header_values": {
+        "access-control-allow-origin": null,
+        "access-control-allow-methods": null,
+        "access-control-allow-headers": null,
+        "access-control-allow-credentials": "true"
+      },
+      "valid": false,
+      "issues": [
+        "Missing header: access-control-allow-origin",
+        "Missing header: access-control-allow-methods",
+        "Missing header: access-control-allow-headers"
+      ]
+    },
+    "POST /token_http___frontend-container_3000": {
+      "endpoint": "POST /token",
+      "status_code": 422,
+      "headers_present": {
+        "access-control-allow-origin": false,
+        "access-control-allow-methods": false,
+        "access-control-allow-headers": false
+      },
+      "header_values": {
+        "access-control-allow-origin": null,
+        "access-control-allow-methods": null,
+        "access-control-allow-headers": null,
+        "access-control-allow-credentials": "true"
+      },
+      "valid": false,
+      "issues": [
+        "Missing header: access-control-allow-origin",
+        "Missing header: access-control-allow-methods",
+        "Missing header: access-control-allow-headers"
+      ]
+    },
+    "GET /custom-provisions_http___frontend-container_3000": {
+      "endpoint": "GET /custom-provisions",
+      "status_code": 403,
+      "headers_present": {
+        "access-control-allow-origin": false,
+        "access-control-allow-methods": false,
+        "access-control-allow-headers": false
+      },
+      "header_values": {
+        "access-control-allow-origin": null,
+        "access-control-allow-methods": null,
+        "access-control-allow-headers": null,
+        "access-control-allow-credentials": "true"
+      },
+      "valid": false,
+      "issues": [
+        "Missing header: access-control-allow-origin",
+        "Missing header: access-control-allow-methods",
+        "Missing header: access-control-allow-headers"
+      ]
+    },
+    "POST /custom-provisions_http___frontend-container_3000": {
+      "endpoint": "POST /custom-provisions",
+      "status_code": 403,
+      "headers_present": {
+        "access-control-allow-origin": false,
+        "access-control-allow-methods": false,
+        "access-control-allow-headers": false
+      },
+      "header_values": {
+        "access-control-allow-origin": null,
+        "access-control-allow-methods": null,
+        "access-control-allow-headers": null,
+        "access-control-allow-credentials": "true"
+      },
+      "valid": false,
+      "issues": [
+        "Missing header: access-control-allow-origin",
+        "Missing header: access-control-allow-methods",
+        "Missing header: access-control-allow-headers"
+      ]
+    },
+    "GET /fixed-lines_http___frontend-container_3000": {
+      "endpoint": "GET /fixed-lines",
+      "status_code": 401,
+      "headers_present": {
+        "access-control-allow-origin": false,
+        "access-control-allow-methods": false,
+        "access-control-allow-headers": false
+      },
+      "header_values": {
+        "access-control-allow-origin": null,
+        "access-control-allow-methods": null,
+        "access-control-allow-headers": null,
+        "access-control-allow-credentials": "true"
+      },
+      "valid": false,
+      "issues": [
+        "Missing header: access-control-allow-origin",
+        "Missing header: access-control-allow-methods",
+        "Missing header: access-control-allow-headers"
+      ]
+    },
+    "PUT /fixed-lines/1_http___frontend-container_3000": {
+      "endpoint": "PUT /fixed-lines/1",
+      "status_code": 401,
+      "headers_present": {
+        "access-control-allow-origin": false,
+        "access-control-allow-methods": false,
+        "access-control-allow-headers": false
+      },
+      "header_values": {
+        "access-control-allow-origin": null,
+        "access-control-allow-methods": null,
+        "access-control-allow-headers": null,
+        "access-control-allow-credentials": "true"
+      },
+      "valid": false,
+      "issues": [
+        "Missing header: access-control-allow-origin",
+        "Missing header: access-control-allow-methods",
+        "Missing header: access-control-allow-headers"
+      ]
+    },
+    "GET /summary_http___frontend-container_3000": {
+      "endpoint": "GET /summary",
+      "status_code": 403,
+      "headers_present": {
+        "access-control-allow-origin": false,
+        "access-control-allow-methods": false,
+        "access-control-allow-headers": false
+      },
+      "header_values": {
+        "access-control-allow-origin": null,
+        "access-control-allow-methods": null,
+        "access-control-allow-headers": null,
+        "access-control-allow-credentials": "true"
+      },
+      "valid": false,
+      "issues": [
+        "Missing header: access-control-allow-origin",
+        "Missing header: access-control-allow-methods",
+        "Missing header: access-control-allow-headers"
+      ]
+    },
+    "GET /tags-summary_http___frontend-container_3000": {
+      "endpoint": "GET /tags-summary",
+      "status_code": 200,
+      "headers_present": {
+        "access-control-allow-origin": false,
+        "access-control-allow-methods": false,
+        "access-control-allow-headers": false
+      },
+      "header_values": {
+        "access-control-allow-origin": null,
+        "access-control-allow-methods": null,
+        "access-control-allow-headers": null,
+        "access-control-allow-credentials": "true"
+      },
+      "valid": false,
+      "issues": [
+        "Missing header: access-control-allow-origin",
+        "Missing header: access-control-allow-methods",
+        "Missing header: access-control-allow-headers"
+      ]
+    }
+  },
+  "preflight_support": {
+    "GET /health_http___localhost_3000": {
+      "endpoint": "GET /health",
+      "origin": "http://localhost:3000",
+      "status_code": 200,
+      "cors_validation": {
+        "endpoint": "OPTIONS GET /health",
+        "status_code": 200,
+        "headers_present": {
+          "access-control-allow-origin": true,
+          "access-control-allow-methods": true,
+          "access-control-allow-headers": true
+        },
+        "header_values": {
+          "access-control-allow-origin": "http://localhost:3000",
+          "access-control-allow-methods": "GET, POST, PATCH, DELETE, PUT",
+          "access-control-allow-headers": "Accept, Accept-Language, Authorization, Content-Language, Content-Type, X-Requested-With",
+          "access-control-allow-credentials": "true"
+        },
+        "valid": true,
+        "issues": []
+      },
+      "success": true
+    },
+    "POST /token_http___localhost_3000": {
+      "endpoint": "POST /token",
+      "origin": "http://localhost:3000",
+      "status_code": 200,
+      "cors_validation": {
+        "endpoint": "OPTIONS POST /token",
+        "status_code": 200,
+        "headers_present": {
+          "access-control-allow-origin": true,
+          "access-control-allow-methods": true,
+          "access-control-allow-headers": true
+        },
+        "header_values": {
+          "access-control-allow-origin": "http://localhost:3000",
+          "access-control-allow-methods": "GET, POST, PATCH, DELETE, PUT",
+          "access-control-allow-headers": "Accept, Accept-Language, Authorization, Content-Language, Content-Type, X-Requested-With",
+          "access-control-allow-credentials": "true"
+        },
+        "valid": true,
+        "issues": []
+      },
+      "success": true
+    },
+    "GET /custom-provisions_http___localhost_3000": {
+      "endpoint": "GET /custom-provisions",
+      "origin": "http://localhost:3000",
+      "status_code": 200,
+      "cors_validation": {
+        "endpoint": "OPTIONS GET /custom-provisions",
+        "status_code": 200,
+        "headers_present": {
+          "access-control-allow-origin": true,
+          "access-control-allow-methods": true,
+          "access-control-allow-headers": true
+        },
+        "header_values": {
+          "access-control-allow-origin": "http://localhost:3000",
+          "access-control-allow-methods": "GET, POST, PATCH, DELETE, PUT",
+          "access-control-allow-headers": "Accept, Accept-Language, Authorization, Content-Language, Content-Type, X-Requested-With",
+          "access-control-allow-credentials": "true"
+        },
+        "valid": true,
+        "issues": []
+      },
+      "success": true
+    },
+    "POST /custom-provisions_http___localhost_3000": {
+      "endpoint": "POST /custom-provisions",
+      "origin": "http://localhost:3000",
+      "status_code": 200,
+      "cors_validation": {
+        "endpoint": "OPTIONS POST /custom-provisions",
+        "status_code": 200,
+        "headers_present": {
+          "access-control-allow-origin": true,
+          "access-control-allow-methods": true,
+          "access-control-allow-headers": true
+        },
+        "header_values": {
+          "access-control-allow-origin": "http://localhost:3000",
+          "access-control-allow-methods": "GET, POST, PATCH, DELETE, PUT",
+          "access-control-allow-headers": "Accept, Accept-Language, Authorization, Content-Language, Content-Type, X-Requested-With",
+          "access-control-allow-credentials": "true"
+        },
+        "valid": true,
+        "issues": []
+      },
+      "success": true
+    },
+    "GET /fixed-lines_http___localhost_3000": {
+      "endpoint": "GET /fixed-lines",
+      "origin": "http://localhost:3000",
+      "status_code": 200,
+      "cors_validation": {
+        "endpoint": "OPTIONS GET /fixed-lines",
+        "status_code": 200,
+        "headers_present": {
+          "access-control-allow-origin": true,
+          "access-control-allow-methods": true,
+          "access-control-allow-headers": true
+        },
+        "header_values": {
+          "access-control-allow-origin": "http://localhost:3000",
+          "access-control-allow-methods": "GET, POST, PATCH, DELETE, PUT",
+          "access-control-allow-headers": "Accept, Accept-Language, Authorization, Content-Language, Content-Type, X-Requested-With",
+          "access-control-allow-credentials": "true"
+        },
+        "valid": true,
+        "issues": []
+      },
+      "success": true
+    },
+    "PUT /fixed-lines/1_http___localhost_3000": {
+      "endpoint": "PUT /fixed-lines/1",
+      "origin": "http://localhost:3000",
+      "status_code": 200,
+      "cors_validation": {
+        "endpoint": "OPTIONS PUT /fixed-lines/1",
+        "status_code": 200,
+        "headers_present": {
+          "access-control-allow-origin": true,
+          "access-control-allow-methods": true,
+          "access-control-allow-headers": true
+        },
+        "header_values": {
+          "access-control-allow-origin": "http://localhost:3000",
+          "access-control-allow-methods": "GET, POST, PATCH, DELETE, PUT",
+          "access-control-allow-headers": "Accept, Accept-Language, Authorization, Content-Language, Content-Type, X-Requested-With",
+          "access-control-allow-credentials": "true"
+        },
+        "valid": true,
+        "issues": []
+      },
+      "success": true
+    },
+    "GET /summary_http___localhost_3000": {
+      "endpoint": "GET /summary",
+      "origin": "http://localhost:3000",
+      "status_code": 200,
+      "cors_validation": {
+        "endpoint": "OPTIONS GET /summary",
+        "status_code": 200,
+        "headers_present": {
+          "access-control-allow-origin": true,
+          "access-control-allow-methods": true,
+          "access-control-allow-headers": true
+        },
+        "header_values": {
+          "access-control-allow-origin": "http://localhost:3000",
+          "access-control-allow-methods": "GET, POST, PATCH, DELETE, PUT",
+          "access-control-allow-headers": "Accept, Accept-Language, Authorization, Content-Language, Content-Type, X-Requested-With",
+          "access-control-allow-credentials": "true"
+        },
+        "valid": true,
+        "issues": []
+      },
+      "success": true
+    },
+    "GET /tags-summary_http___localhost_3000": {
+      "endpoint": "GET /tags-summary",
+      "origin": "http://localhost:3000",
+      "status_code": 200,
+      "cors_validation": {
+        "endpoint": "OPTIONS GET /tags-summary",
+        "status_code": 200,
+        "headers_present": {
+          "access-control-allow-origin": true,
+          "access-control-allow-methods": true,
+          "access-control-allow-headers": true
+        },
+        "header_values": {
+          "access-control-allow-origin": "http://localhost:3000",
+          "access-control-allow-methods": "GET, POST, PATCH, DELETE, PUT",
+          "access-control-allow-headers": "Accept, Accept-Language, Authorization, Content-Language, Content-Type, X-Requested-With",
+          "access-control-allow-credentials": "true"
+        },
+        "valid": true,
+        "issues": []
+      },
+      "success": true
+    },
+    "GET /health_http___127.0.0.1_3000": {
+      "endpoint": "GET /health",
+      "origin": "http://127.0.0.1:3000",
+      "status_code": 200,
+      "cors_validation": {
+        "endpoint": "OPTIONS GET /health",
+        "status_code": 200,
+        "headers_present": {
+          "access-control-allow-origin": true,
+          "access-control-allow-methods": true,
+          "access-control-allow-headers": true
+        },
+        "header_values": {
+          "access-control-allow-origin": "http://127.0.0.1:3000",
+          "access-control-allow-methods": "GET, POST, PATCH, DELETE, PUT",
+          "access-control-allow-headers": "Accept, Accept-Language, Authorization, Content-Language, Content-Type, X-Requested-With",
+          "access-control-allow-credentials": "true"
+        },
+        "valid": true,
+        "issues": []
+      },
+      "success": true
+    },
+    "POST /token_http___127.0.0.1_3000": {
+      "endpoint": "POST /token",
+      "origin": "http://127.0.0.1:3000",
+      "status_code": 200,
+      "cors_validation": {
+        "endpoint": "OPTIONS POST /token",
+        "status_code": 200,
+        "headers_present": {
+          "access-control-allow-origin": true,
+          "access-control-allow-methods": true,
+          "access-control-allow-headers": true
+        },
+        "header_values": {
+          "access-control-allow-origin": "http://127.0.0.1:3000",
+          "access-control-allow-methods": "GET, POST, PATCH, DELETE, PUT",
+          "access-control-allow-headers": "Accept, Accept-Language, Authorization, Content-Language, Content-Type, X-Requested-With",
+          "access-control-allow-credentials": "true"
+        },
+        "valid": true,
+        "issues": []
+      },
+      "success": true
+    },
+    "GET /custom-provisions_http___127.0.0.1_3000": {
+      "endpoint": "GET /custom-provisions",
+      "origin": "http://127.0.0.1:3000",
+      "status_code": 200,
+      "cors_validation": {
+        "endpoint": "OPTIONS GET /custom-provisions",
+        "status_code": 200,
+        "headers_present": {
+          "access-control-allow-origin": true,
+          "access-control-allow-methods": true,
+          "access-control-allow-headers": true
+        },
+        "header_values": {
+          "access-control-allow-origin": "http://127.0.0.1:3000",
+          "access-control-allow-methods": "GET, POST, PATCH, DELETE, PUT",
+          "access-control-allow-headers": "Accept, Accept-Language, Authorization, Content-Language, Content-Type, X-Requested-With",
+          "access-control-allow-credentials": "true"
+        },
+        "valid": true,
+        "issues": []
+      },
+      "success": true
+    },
+    "POST /custom-provisions_http___127.0.0.1_3000": {
+      "endpoint": "POST /custom-provisions",
+      "origin": "http://127.0.0.1:3000",
+      "status_code": 200,
+      "cors_validation": {
+        "endpoint": "OPTIONS POST /custom-provisions",
+        "status_code": 200,
+        "headers_present": {
+          "access-control-allow-origin": true,
+          "access-control-allow-methods": true,
+          "access-control-allow-headers": true
+        },
+        "header_values": {
+          "access-control-allow-origin": "http://127.0.0.1:3000",
+          "access-control-allow-methods": "GET, POST, PATCH, DELETE, PUT",
+          "access-control-allow-headers": "Accept, Accept-Language, Authorization, Content-Language, Content-Type, X-Requested-With",
+          "access-control-allow-credentials": "true"
+        },
+        "valid": true,
+        "issues": []
+      },
+      "success": true
+    },
+    "GET /fixed-lines_http___127.0.0.1_3000": {
+      "endpoint": "GET /fixed-lines",
+      "origin": "http://127.0.0.1:3000",
+      "status_code": 200,
+      "cors_validation": {
+        "endpoint": "OPTIONS GET /fixed-lines",
+        "status_code": 200,
+        "headers_present": {
+          "access-control-allow-origin": true,
+          "access-control-allow-methods": true,
+          "access-control-allow-headers": true
+        },
+        "header_values": {
+          "access-control-allow-origin": "http://127.0.0.1:3000",
+          "access-control-allow-methods": "GET, POST, PATCH, DELETE, PUT",
+          "access-control-allow-headers": "Accept, Accept-Language, Authorization, Content-Language, Content-Type, X-Requested-With",
+          "access-control-allow-credentials": "true"
+        },
+        "valid": true,
+        "issues": []
+      },
+      "success": true
+    },
+    "PUT /fixed-lines/1_http___127.0.0.1_3000": {
+      "endpoint": "PUT /fixed-lines/1",
+      "origin": "http://127.0.0.1:3000",
+      "status_code": 200,
+      "cors_validation": {
+        "endpoint": "OPTIONS PUT /fixed-lines/1",
+        "status_code": 200,
+        "headers_present": {
+          "access-control-allow-origin": true,
+          "access-control-allow-methods": true,
+          "access-control-allow-headers": true
+        },
+        "header_values": {
+          "access-control-allow-origin": "http://127.0.0.1:3000",
+          "access-control-allow-methods": "GET, POST, PATCH, DELETE, PUT",
+          "access-control-allow-headers": "Accept, Accept-Language, Authorization, Content-Language, Content-Type, X-Requested-With",
+          "access-control-allow-credentials": "true"
+        },
+        "valid": true,
+        "issues": []
+      },
+      "success": true
+    },
+    "GET /summary_http___127.0.0.1_3000": {
+      "endpoint": "GET /summary",
+      "origin": "http://127.0.0.1:3000",
+      "status_code": 200,
+      "cors_validation": {
+        "endpoint": "OPTIONS GET /summary",
+        "status_code": 200,
+        "headers_present": {
+          "access-control-allow-origin": true,
+          "access-control-allow-methods": true,
+          "access-control-allow-headers": true
+        },
+        "header_values": {
+          "access-control-allow-origin": "http://127.0.0.1:3000",
+          "access-control-allow-methods": "GET, POST, PATCH, DELETE, PUT",
+          "access-control-allow-headers": "Accept, Accept-Language, Authorization, Content-Language, Content-Type, X-Requested-With",
+          "access-control-allow-credentials": "true"
+        },
+        "valid": true,
+        "issues": []
+      },
+      "success": true
+    },
+    "GET /tags-summary_http___127.0.0.1_3000": {
+      "endpoint": "GET /tags-summary",
+      "origin": "http://127.0.0.1:3000",
+      "status_code": 200,
+      "cors_validation": {
+        "endpoint": "OPTIONS GET /tags-summary",
+        "status_code": 200,
+        "headers_present": {
+          "access-control-allow-origin": true,
+          "access-control-allow-methods": true,
+          "access-control-allow-headers": true
+        },
+        "header_values": {
+          "access-control-allow-origin": "http://127.0.0.1:3000",
+          "access-control-allow-methods": "GET, POST, PATCH, DELETE, PUT",
+          "access-control-allow-headers": "Accept, Accept-Language, Authorization, Content-Language, Content-Type, X-Requested-With",
+          "access-control-allow-credentials": "true"
+        },
+        "valid": true,
+        "issues": []
+      },
+      "success": true
+    },
+    "GET /health_http___localhost_45678": {
+      "endpoint": "GET /health",
+      "origin": "http://localhost:45678",
+      "status_code": 200,
+      "cors_validation": {
+        "endpoint": "OPTIONS GET /health",
+        "status_code": 200,
+        "headers_present": {
+          "access-control-allow-origin": true,
+          "access-control-allow-methods": true,
+          "access-control-allow-headers": true
+        },
+        "header_values": {
+          "access-control-allow-origin": "http://localhost:45678",
+          "access-control-allow-methods": "GET, POST, PATCH, DELETE, PUT",
+          "access-control-allow-headers": "Accept, Accept-Language, Authorization, Content-Language, Content-Type, X-Requested-With",
+          "access-control-allow-credentials": "true"
+        },
+        "valid": true,
+        "issues": []
+      },
+      "success": true
+    },
+    "POST /token_http___localhost_45678": {
+      "endpoint": "POST /token",
+      "origin": "http://localhost:45678",
+      "status_code": 200,
+      "cors_validation": {
+        "endpoint": "OPTIONS POST /token",
+        "status_code": 200,
+        "headers_present": {
+          "access-control-allow-origin": true,
+          "access-control-allow-methods": true,
+          "access-control-allow-headers": true
+        },
+        "header_values": {
+          "access-control-allow-origin": "http://localhost:45678",
+          "access-control-allow-methods": "GET, POST, PATCH, DELETE, PUT",
+          "access-control-allow-headers": "Accept, Accept-Language, Authorization, Content-Language, Content-Type, X-Requested-With",
+          "access-control-allow-credentials": "true"
+        },
+        "valid": true,
+        "issues": []
+      },
+      "success": true
+    },
+    "GET /custom-provisions_http___localhost_45678": {
+      "endpoint": "GET /custom-provisions",
+      "origin": "http://localhost:45678",
+      "status_code": 200,
+      "cors_validation": {
+        "endpoint": "OPTIONS GET /custom-provisions",
+        "status_code": 200,
+        "headers_present": {
+          "access-control-allow-origin": true,
+          "access-control-allow-methods": true,
+          "access-control-allow-headers": true
+        },
+        "header_values": {
+          "access-control-allow-origin": "http://localhost:45678",
+          "access-control-allow-methods": "GET, POST, PATCH, DELETE, PUT",
+          "access-control-allow-headers": "Accept, Accept-Language, Authorization, Content-Language, Content-Type, X-Requested-With",
+          "access-control-allow-credentials": "true"
+        },
+        "valid": true,
+        "issues": []
+      },
+      "success": true
+    },
+    "POST /custom-provisions_http___localhost_45678": {
+      "endpoint": "POST /custom-provisions",
+      "origin": "http://localhost:45678",
+      "status_code": 200,
+      "cors_validation": {
+        "endpoint": "OPTIONS POST /custom-provisions",
+        "status_code": 200,
+        "headers_present": {
+          "access-control-allow-origin": true,
+          "access-control-allow-methods": true,
+          "access-control-allow-headers": true
+        },
+        "header_values": {
+          "access-control-allow-origin": "http://localhost:45678",
+          "access-control-allow-methods": "GET, POST, PATCH, DELETE, PUT",
+          "access-control-allow-headers": "Accept, Accept-Language, Authorization, Content-Language, Content-Type, X-Requested-With",
+          "access-control-allow-credentials": "true"
+        },
+        "valid": true,
+        "issues": []
+      },
+      "success": true
+    },
+    "GET /fixed-lines_http___localhost_45678": {
+      "endpoint": "GET /fixed-lines",
+      "origin": "http://localhost:45678",
+      "status_code": 200,
+      "cors_validation": {
+        "endpoint": "OPTIONS GET /fixed-lines",
+        "status_code": 200,
+        "headers_present": {
+          "access-control-allow-origin": true,
+          "access-control-allow-methods": true,
+          "access-control-allow-headers": true
+        },
+        "header_values": {
+          "access-control-allow-origin": "http://localhost:45678",
+          "access-control-allow-methods": "GET, POST, PATCH, DELETE, PUT",
+          "access-control-allow-headers": "Accept, Accept-Language, Authorization, Content-Language, Content-Type, X-Requested-With",
+          "access-control-allow-credentials": "true"
+        },
+        "valid": true,
+        "issues": []
+      },
+      "success": true
+    },
+    "PUT /fixed-lines/1_http___localhost_45678": {
+      "endpoint": "PUT /fixed-lines/1",
+      "origin": "http://localhost:45678",
+      "status_code": 200,
+      "cors_validation": {
+        "endpoint": "OPTIONS PUT /fixed-lines/1",
+        "status_code": 200,
+        "headers_present": {
+          "access-control-allow-origin": true,
+          "access-control-allow-methods": true,
+          "access-control-allow-headers": true
+        },
+        "header_values": {
+          "access-control-allow-origin": "http://localhost:45678",
+          "access-control-allow-methods": "GET, POST, PATCH, DELETE, PUT",
+          "access-control-allow-headers": "Accept, Accept-Language, Authorization, Content-Language, Content-Type, X-Requested-With",
+          "access-control-allow-credentials": "true"
+        },
+        "valid": true,
+        "issues": []
+      },
+      "success": true
+    },
+    "GET /summary_http___localhost_45678": {
+      "endpoint": "GET /summary",
+      "origin": "http://localhost:45678",
+      "status_code": 200,
+      "cors_validation": {
+        "endpoint": "OPTIONS GET /summary",
+        "status_code": 200,
+        "headers_present": {
+          "access-control-allow-origin": true,
+          "access-control-allow-methods": true,
+          "access-control-allow-headers": true
+        },
+        "header_values": {
+          "access-control-allow-origin": "http://localhost:45678",
+          "access-control-allow-methods": "GET, POST, PATCH, DELETE, PUT",
+          "access-control-allow-headers": "Accept, Accept-Language, Authorization, Content-Language, Content-Type, X-Requested-With",
+          "access-control-allow-credentials": "true"
+        },
+        "valid": true,
+        "issues": []
+      },
+      "success": true
+    },
+    "GET /tags-summary_http___localhost_45678": {
+      "endpoint": "GET /tags-summary",
+      "origin": "http://localhost:45678",
+      "status_code": 200,
+      "cors_validation": {
+        "endpoint": "OPTIONS GET /tags-summary",
+        "status_code": 200,
+        "headers_present": {
+          "access-control-allow-origin": true,
+          "access-control-allow-methods": true,
+          "access-control-allow-headers": true
+        },
+        "header_values": {
+          "access-control-allow-origin": "http://localhost:45678",
+          "access-control-allow-methods": "GET, POST, PATCH, DELETE, PUT",
+          "access-control-allow-headers": "Accept, Accept-Language, Authorization, Content-Language, Content-Type, X-Requested-With",
+          "access-control-allow-credentials": "true"
+        },
+        "valid": true,
+        "issues": []
+      },
+      "success": true
+    },
+    "GET /health_http___frontend-container_3000": {
+      "endpoint": "GET /health",
+      "origin": "http://frontend-container:3000",
+      "status_code": 400,
+      "cors_validation": {
+        "endpoint": "OPTIONS GET /health",
+        "status_code": 400,
+        "headers_present": {
+          "access-control-allow-origin": false,
+          "access-control-allow-methods": true,
+          "access-control-allow-headers": true
+        },
+        "header_values": {
+          "access-control-allow-origin": null,
+          "access-control-allow-methods": "GET, POST, PATCH, DELETE, PUT",
+          "access-control-allow-headers": "Accept, Accept-Language, Authorization, Content-Language, Content-Type, X-Requested-With",
+          "access-control-allow-credentials": "true"
+        },
+        "valid": false,
+        "issues": [
+          "Missing header: access-control-allow-origin"
+        ]
+      },
+      "success": false,
+      "error": "Preflight failed with status 400"
+    },
+    "POST /token_http___frontend-container_3000": {
+      "endpoint": "POST /token",
+      "origin": "http://frontend-container:3000",
+      "status_code": 400,
+      "cors_validation": {
+        "endpoint": "OPTIONS POST /token",
+        "status_code": 400,
+        "headers_present": {
+          "access-control-allow-origin": false,
+          "access-control-allow-methods": true,
+          "access-control-allow-headers": true
+        },
+        "header_values": {
+          "access-control-allow-origin": null,
+          "access-control-allow-methods": "GET, POST, PATCH, DELETE, PUT",
+          "access-control-allow-headers": "Accept, Accept-Language, Authorization, Content-Language, Content-Type, X-Requested-With",
+          "access-control-allow-credentials": "true"
+        },
+        "valid": false,
+        "issues": [
+          "Missing header: access-control-allow-origin"
+        ]
+      },
+      "success": false,
+      "error": "Preflight failed with status 400"
+    },
+    "GET /custom-provisions_http___frontend-container_3000": {
+      "endpoint": "GET /custom-provisions",
+      "origin": "http://frontend-container:3000",
+      "status_code": 400,
+      "cors_validation": {
+        "endpoint": "OPTIONS GET /custom-provisions",
+        "status_code": 400,
+        "headers_present": {
+          "access-control-allow-origin": false,
+          "access-control-allow-methods": true,
+          "access-control-allow-headers": true
+        },
+        "header_values": {
+          "access-control-allow-origin": null,
+          "access-control-allow-methods": "GET, POST, PATCH, DELETE, PUT",
+          "access-control-allow-headers": "Accept, Accept-Language, Authorization, Content-Language, Content-Type, X-Requested-With",
+          "access-control-allow-credentials": "true"
+        },
+        "valid": false,
+        "issues": [
+          "Missing header: access-control-allow-origin"
+        ]
+      },
+      "success": false,
+      "error": "Preflight failed with status 400"
+    },
+    "POST /custom-provisions_http___frontend-container_3000": {
+      "endpoint": "POST /custom-provisions",
+      "origin": "http://frontend-container:3000",
+      "status_code": 400,
+      "cors_validation": {
+        "endpoint": "OPTIONS POST /custom-provisions",
+        "status_code": 400,
+        "headers_present": {
+          "access-control-allow-origin": false,
+          "access-control-allow-methods": true,
+          "access-control-allow-headers": true
+        },
+        "header_values": {
+          "access-control-allow-origin": null,
+          "access-control-allow-methods": "GET, POST, PATCH, DELETE, PUT",
+          "access-control-allow-headers": "Accept, Accept-Language, Authorization, Content-Language, Content-Type, X-Requested-With",
+          "access-control-allow-credentials": "true"
+        },
+        "valid": false,
+        "issues": [
+          "Missing header: access-control-allow-origin"
+        ]
+      },
+      "success": false,
+      "error": "Preflight failed with status 400"
+    },
+    "GET /fixed-lines_http___frontend-container_3000": {
+      "endpoint": "GET /fixed-lines",
+      "origin": "http://frontend-container:3000",
+      "status_code": 400,
+      "cors_validation": {
+        "endpoint": "OPTIONS GET /fixed-lines",
+        "status_code": 400,
+        "headers_present": {
+          "access-control-allow-origin": false,
+          "access-control-allow-methods": true,
+          "access-control-allow-headers": true
+        },
+        "header_values": {
+          "access-control-allow-origin": null,
+          "access-control-allow-methods": "GET, POST, PATCH, DELETE, PUT",
+          "access-control-allow-headers": "Accept, Accept-Language, Authorization, Content-Language, Content-Type, X-Requested-With",
+          "access-control-allow-credentials": "true"
+        },
+        "valid": false,
+        "issues": [
+          "Missing header: access-control-allow-origin"
+        ]
+      },
+      "success": false,
+      "error": "Preflight failed with status 400"
+    },
+    "PUT /fixed-lines/1_http___frontend-container_3000": {
+      "endpoint": "PUT /fixed-lines/1",
+      "origin": "http://frontend-container:3000",
+      "status_code": 400,
+      "cors_validation": {
+        "endpoint": "OPTIONS PUT /fixed-lines/1",
+        "status_code": 400,
+        "headers_present": {
+          "access-control-allow-origin": false,
+          "access-control-allow-methods": true,
+          "access-control-allow-headers": true
+        },
+        "header_values": {
+          "access-control-allow-origin": null,
+          "access-control-allow-methods": "GET, POST, PATCH, DELETE, PUT",
+          "access-control-allow-headers": "Accept, Accept-Language, Authorization, Content-Language, Content-Type, X-Requested-With",
+          "access-control-allow-credentials": "true"
+        },
+        "valid": false,
+        "issues": [
+          "Missing header: access-control-allow-origin"
+        ]
+      },
+      "success": false,
+      "error": "Preflight failed with status 400"
+    },
+    "GET /summary_http___frontend-container_3000": {
+      "endpoint": "GET /summary",
+      "origin": "http://frontend-container:3000",
+      "status_code": 400,
+      "cors_validation": {
+        "endpoint": "OPTIONS GET /summary",
+        "status_code": 400,
+        "headers_present": {
+          "access-control-allow-origin": false,
+          "access-control-allow-methods": true,
+          "access-control-allow-headers": true
+        },
+        "header_values": {
+          "access-control-allow-origin": null,
+          "access-control-allow-methods": "GET, POST, PATCH, DELETE, PUT",
+          "access-control-allow-headers": "Accept, Accept-Language, Authorization, Content-Language, Content-Type, X-Requested-With",
+          "access-control-allow-credentials": "true"
+        },
+        "valid": false,
+        "issues": [
+          "Missing header: access-control-allow-origin"
+        ]
+      },
+      "success": false,
+      "error": "Preflight failed with status 400"
+    },
+    "GET /tags-summary_http___frontend-container_3000": {
+      "endpoint": "GET /tags-summary",
+      "origin": "http://frontend-container:3000",
+      "status_code": 400,
+      "cors_validation": {
+        "endpoint": "OPTIONS GET /tags-summary",
+        "status_code": 400,
+        "headers_present": {
+          "access-control-allow-origin": false,
+          "access-control-allow-methods": true,
+          "access-control-allow-headers": true
+        },
+        "header_values": {
+          "access-control-allow-origin": null,
+          "access-control-allow-methods": "GET, POST, PATCH, DELETE, PUT",
+          "access-control-allow-headers": "Accept, Accept-Language, Authorization, Content-Language, Content-Type, X-Requested-With",
+          "access-control-allow-credentials": "true"
+        },
+        "valid": false,
+        "issues": [
+          "Missing header: access-control-allow-origin"
+        ]
+      },
+      "success": false,
+      "error": "Preflight failed with status 400"
+    }
+  },
+  "endpoint_accessibility": {
+    "GET /health_http___localhost_3000": {
+      "endpoint": "GET /health",
+      "origin": "http://localhost:3000",
+      "method": "GET",
+      "url": "http://localhost:8000/health",
+      "status_code": 200,
+      "cors_validation": {
+        "endpoint": "GET /health",
+        "status_code": 200,
+        "headers_present": {
+          "access-control-allow-origin": true,
+          "access-control-allow-methods": false,
+          "access-control-allow-headers": false
+        },
+        "header_values": {
+          "access-control-allow-origin": "http://localhost:3000",
+          "access-control-allow-methods": null,
+          "access-control-allow-headers": null,
+          "access-control-allow-credentials": "true"
+        },
+        "valid": false,
+        "issues": [
+          "Missing header: access-control-allow-methods",
+          "Missing header: access-control-allow-headers"
+        ]
+      },
+      "success": true,
+      "response_size": 151,
+      "response_time": 0.00405
+    },
+    "POST /token_http___localhost_3000": {
+      "endpoint": "POST /token",
+      "origin": "http://localhost:3000",
+      "method": "POST",
+      "url": "http://localhost:8000/token",
+      "status_code": 422,
+      "cors_validation": {
+        "endpoint": "POST /token",
+        "status_code": 422,
+        "headers_present": {
+          "access-control-allow-origin": true,
+          "access-control-allow-methods": false,
+          "access-control-allow-headers": false
+        },
+        "header_values": {
+          "access-control-allow-origin": "http://localhost:3000",
+          "access-control-allow-methods": null,
+          "access-control-allow-headers": null,
+          "access-control-allow-credentials": "true"
+        },
+        "valid": false,
+        "issues": [
+          "Missing header: access-control-allow-methods",
+          "Missing header: access-control-allow-headers"
+        ]
+      },
+      "success": false,
+      "response_size": 174,
+      "response_time": 0.004487,
+      "error": "Request failed: 422 - {\"detail\":[{\"type\":\"missing\",\"loc\":[\"body\",\"username\"],\"msg\":\"Field required\",\"input\":null},{\"type\":\"missing\",\"loc\":[\"body\",\"password\"],\"msg\":\"Field required\",\"input\":null}]}"
+    },
+    "GET /custom-provisions_http___localhost_3000": {
+      "endpoint": "GET /custom-provisions",
+      "origin": "http://localhost:3000",
+      "method": "GET",
+      "url": "http://localhost:8000/custom-provisions",
+      "status_code": 403,
+      "cors_validation": {
+        "endpoint": "GET /custom-provisions",
+        "status_code": 403,
+        "headers_present": {
+          "access-control-allow-origin": true,
+          "access-control-allow-methods": false,
+          "access-control-allow-headers": false
+        },
+        "header_values": {
+          "access-control-allow-origin": "http://localhost:3000",
+          "access-control-allow-methods": null,
+          "access-control-allow-headers": null,
+          "access-control-allow-credentials": "true"
+        },
+        "valid": false,
+        "issues": [
+          "Missing header: access-control-allow-methods",
+          "Missing header: access-control-allow-headers"
+        ]
+      },
+      "success": false,
+      "response_size": 30,
+      "response_time": 0.002532,
+      "error": "Request failed: 403 - {\"detail\":\"Not authenticated\"}"
+    },
+    "POST /custom-provisions_http___localhost_3000": {
+      "endpoint": "POST /custom-provisions",
+      "origin": "http://localhost:3000",
+      "method": "POST",
+      "url": "http://localhost:8000/custom-provisions",
+      "status_code": 403,
+      "cors_validation": {
+        "endpoint": "POST /custom-provisions",
+        "status_code": 403,
+        "headers_present": {
+          "access-control-allow-origin": true,
+          "access-control-allow-methods": false,
+          "access-control-allow-headers": false
+        },
+        "header_values": {
+          "access-control-allow-origin": "http://localhost:3000",
+          "access-control-allow-methods": null,
+          "access-control-allow-headers": null,
+          "access-control-allow-credentials": "true"
+        },
+        "valid": false,
+        "issues": [
+          "Missing header: access-control-allow-methods",
+          "Missing header: access-control-allow-headers"
+        ]
+      },
+      "success": false,
+      "response_size": 30,
+      "response_time": 0.003116,
+      "error": "Request failed: 403 - {\"detail\":\"Not authenticated\"}"
+    },
+    "GET /fixed-lines_http___localhost_3000": {
+      "endpoint": "GET /fixed-lines",
+      "origin": "http://localhost:3000",
+      "method": "GET",
+      "url": "http://localhost:8000/fixed-lines",
+      "status_code": 401,
+      "cors_validation": {
+        "endpoint": "GET /fixed-lines",
+        "status_code": 401,
+        "headers_present": {
+          "access-control-allow-origin": true,
+          "access-control-allow-methods": false,
+          "access-control-allow-headers": false
+        },
+        "header_values": {
+          "access-control-allow-origin": "http://localhost:3000",
+          "access-control-allow-methods": null,
+          "access-control-allow-headers": null,
+          "access-control-allow-credentials": "true"
+        },
+        "valid": false,
+        "issues": [
+          "Missing header: access-control-allow-methods",
+          "Missing header: access-control-allow-headers"
+        ]
+      },
+      "success": false,
+      "response_size": 30,
+      "response_time": 0.002655,
+      "error": "Request failed: 401 - {\"detail\":\"Not authenticated\"}"
+    },
+    "PUT /fixed-lines/1_http___localhost_3000": {
+      "endpoint": "PUT /fixed-lines/1",
+      "origin": "http://localhost:3000",
+      "method": "PUT",
+      "url": "http://localhost:8000/fixed-lines/1",
+      "status_code": 401,
+      "cors_validation": {
+        "endpoint": "PUT /fixed-lines/1",
+        "status_code": 401,
+        "headers_present": {
+          "access-control-allow-origin": true,
+          "access-control-allow-methods": false,
+          "access-control-allow-headers": false
+        },
+        "header_values": {
+          "access-control-allow-origin": "http://localhost:3000",
+          "access-control-allow-methods": null,
+          "access-control-allow-headers": null,
+          "access-control-allow-credentials": "true"
+        },
+        "valid": false,
+        "issues": [
+          "Missing header: access-control-allow-methods",
+          "Missing header: access-control-allow-headers"
+        ]
+      },
+      "success": false,
+      "response_size": 30,
+      "response_time": 0.003089,
+      "error": "Request failed: 401 - {\"detail\":\"Not authenticated\"}"
+    },
+    "GET /summary_http___localhost_3000": {
+      "endpoint": "GET /summary",
+      "origin": "http://localhost:3000",
+      "method": "GET",
+      "url": "http://localhost:8000/summary?month=2024-01",
+      "status_code": 403,
+      "cors_validation": {
+        "endpoint": "GET /summary",
+        "status_code": 403,
+        "headers_present": {
+          "access-control-allow-origin": true,
+          "access-control-allow-methods": false,
+          "access-control-allow-headers": false
+        },
+        "header_values": {
+          "access-control-allow-origin": "http://localhost:3000",
+          "access-control-allow-methods": null,
+          "access-control-allow-headers": null,
+          "access-control-allow-credentials": "true"
+        },
+        "valid": false,
+        "issues": [
+          "Missing header: access-control-allow-methods",
+          "Missing header: access-control-allow-headers"
+        ]
+      },
+      "success": false,
+      "response_size": 30,
+      "response_time": 0.002642,
+      "error": "Request failed: 403 - {\"detail\":\"Not authenticated\"}"
+    },
+    "GET /tags-summary_http___localhost_3000": {
+      "endpoint": "GET /tags-summary",
+      "origin": "http://localhost:3000",
+      "method": "GET",
+      "url": "http://localhost:8000/tags-summary?month=2024-01",
+      "status_code": 200,
+      "cors_validation": {
+        "endpoint": "GET /tags-summary",
+        "status_code": 200,
+        "headers_present": {
+          "access-control-allow-origin": true,
+          "access-control-allow-methods": false,
+          "access-control-allow-headers": false
+        },
+        "header_values": {
+          "access-control-allow-origin": "http://localhost:3000",
+          "access-control-allow-methods": null,
+          "access-control-allow-headers": null,
+          "access-control-allow-credentials": "true"
+        },
+        "valid": false,
+        "issues": [
+          "Missing header: access-control-allow-methods",
+          "Missing header: access-control-allow-headers"
+        ]
+      },
+      "success": true,
+      "response_size": 184,
+      "response_time": 0.014057
+    },
+    "GET /health_http___127.0.0.1_3000": {
+      "endpoint": "GET /health",
+      "origin": "http://127.0.0.1:3000",
+      "method": "GET",
+      "url": "http://localhost:8000/health",
+      "status_code": 200,
+      "cors_validation": {
+        "endpoint": "GET /health",
+        "status_code": 200,
+        "headers_present": {
+          "access-control-allow-origin": true,
+          "access-control-allow-methods": false,
+          "access-control-allow-headers": false
+        },
+        "header_values": {
+          "access-control-allow-origin": "http://127.0.0.1:3000",
+          "access-control-allow-methods": null,
+          "access-control-allow-headers": null,
+          "access-control-allow-credentials": "true"
+        },
+        "valid": false,
+        "issues": [
+          "Missing header: access-control-allow-methods",
+          "Missing header: access-control-allow-headers"
+        ]
+      },
+      "success": true,
+      "response_size": 151,
+      "response_time": 0.003733
+    },
+    "POST /token_http___127.0.0.1_3000": {
+      "endpoint": "POST /token",
+      "origin": "http://127.0.0.1:3000",
+      "method": "POST",
+      "url": "http://localhost:8000/token",
+      "status_code": 422,
+      "cors_validation": {
+        "endpoint": "POST /token",
+        "status_code": 422,
+        "headers_present": {
+          "access-control-allow-origin": true,
+          "access-control-allow-methods": false,
+          "access-control-allow-headers": false
+        },
+        "header_values": {
+          "access-control-allow-origin": "http://127.0.0.1:3000",
+          "access-control-allow-methods": null,
+          "access-control-allow-headers": null,
+          "access-control-allow-credentials": "true"
+        },
+        "valid": false,
+        "issues": [
+          "Missing header: access-control-allow-methods",
+          "Missing header: access-control-allow-headers"
+        ]
+      },
+      "success": false,
+      "response_size": 174,
+      "response_time": 0.002528,
+      "error": "Request failed: 422 - {\"detail\":[{\"type\":\"missing\",\"loc\":[\"body\",\"username\"],\"msg\":\"Field required\",\"input\":null},{\"type\":\"missing\",\"loc\":[\"body\",\"password\"],\"msg\":\"Field required\",\"input\":null}]}"
+    },
+    "GET /custom-provisions_http___127.0.0.1_3000": {
+      "endpoint": "GET /custom-provisions",
+      "origin": "http://127.0.0.1:3000",
+      "method": "GET",
+      "url": "http://localhost:8000/custom-provisions",
+      "status_code": 403,
+      "cors_validation": {
+        "endpoint": "GET /custom-provisions",
+        "status_code": 403,
+        "headers_present": {
+          "access-control-allow-origin": true,
+          "access-control-allow-methods": false,
+          "access-control-allow-headers": false
+        },
+        "header_values": {
+          "access-control-allow-origin": "http://127.0.0.1:3000",
+          "access-control-allow-methods": null,
+          "access-control-allow-headers": null,
+          "access-control-allow-credentials": "true"
+        },
+        "valid": false,
+        "issues": [
+          "Missing header: access-control-allow-methods",
+          "Missing header: access-control-allow-headers"
+        ]
+      },
+      "success": false,
+      "response_size": 30,
+      "response_time": 0.002616,
+      "error": "Request failed: 403 - {\"detail\":\"Not authenticated\"}"
+    },
+    "POST /custom-provisions_http___127.0.0.1_3000": {
+      "endpoint": "POST /custom-provisions",
+      "origin": "http://127.0.0.1:3000",
+      "method": "POST",
+      "url": "http://localhost:8000/custom-provisions",
+      "status_code": 403,
+      "cors_validation": {
+        "endpoint": "POST /custom-provisions",
+        "status_code": 403,
+        "headers_present": {
+          "access-control-allow-origin": true,
+          "access-control-allow-methods": false,
+          "access-control-allow-headers": false
+        },
+        "header_values": {
+          "access-control-allow-origin": "http://127.0.0.1:3000",
+          "access-control-allow-methods": null,
+          "access-control-allow-headers": null,
+          "access-control-allow-credentials": "true"
+        },
+        "valid": false,
+        "issues": [
+          "Missing header: access-control-allow-methods",
+          "Missing header: access-control-allow-headers"
+        ]
+      },
+      "success": false,
+      "response_size": 30,
+      "response_time": 0.003748,
+      "error": "Request failed: 403 - {\"detail\":\"Not authenticated\"}"
+    },
+    "GET /fixed-lines_http___127.0.0.1_3000": {
+      "endpoint": "GET /fixed-lines",
+      "origin": "http://127.0.0.1:3000",
+      "method": "GET",
+      "url": "http://localhost:8000/fixed-lines",
+      "status_code": 401,
+      "cors_validation": {
+        "endpoint": "GET /fixed-lines",
+        "status_code": 401,
+        "headers_present": {
+          "access-control-allow-origin": true,
+          "access-control-allow-methods": false,
+          "access-control-allow-headers": false
+        },
+        "header_values": {
+          "access-control-allow-origin": "http://127.0.0.1:3000",
+          "access-control-allow-methods": null,
+          "access-control-allow-headers": null,
+          "access-control-allow-credentials": "true"
+        },
+        "valid": false,
+        "issues": [
+          "Missing header: access-control-allow-methods",
+          "Missing header: access-control-allow-headers"
+        ]
+      },
+      "success": false,
+      "response_size": 30,
+      "response_time": 0.003365,
+      "error": "Request failed: 401 - {\"detail\":\"Not authenticated\"}"
+    },
+    "PUT /fixed-lines/1_http___127.0.0.1_3000": {
+      "endpoint": "PUT /fixed-lines/1",
+      "origin": "http://127.0.0.1:3000",
+      "method": "PUT",
+      "url": "http://localhost:8000/fixed-lines/1",
+      "status_code": 401,
+      "cors_validation": {
+        "endpoint": "PUT /fixed-lines/1",
+        "status_code": 401,
+        "headers_present": {
+          "access-control-allow-origin": true,
+          "access-control-allow-methods": false,
+          "access-control-allow-headers": false
+        },
+        "header_values": {
+          "access-control-allow-origin": "http://127.0.0.1:3000",
+          "access-control-allow-methods": null,
+          "access-control-allow-headers": null,
+          "access-control-allow-credentials": "true"
+        },
+        "valid": false,
+        "issues": [
+          "Missing header: access-control-allow-methods",
+          "Missing header: access-control-allow-headers"
+        ]
+      },
+      "success": false,
+      "response_size": 30,
+      "response_time": 0.004764,
+      "error": "Request failed: 401 - {\"detail\":\"Not authenticated\"}"
+    },
+    "GET /summary_http___127.0.0.1_3000": {
+      "endpoint": "GET /summary",
+      "origin": "http://127.0.0.1:3000",
+      "method": "GET",
+      "url": "http://localhost:8000/summary?month=2024-01",
+      "status_code": 403,
+      "cors_validation": {
+        "endpoint": "GET /summary",
+        "status_code": 403,
+        "headers_present": {
+          "access-control-allow-origin": true,
+          "access-control-allow-methods": false,
+          "access-control-allow-headers": false
+        },
+        "header_values": {
+          "access-control-allow-origin": "http://127.0.0.1:3000",
+          "access-control-allow-methods": null,
+          "access-control-allow-headers": null,
+          "access-control-allow-credentials": "true"
+        },
+        "valid": false,
+        "issues": [
+          "Missing header: access-control-allow-methods",
+          "Missing header: access-control-allow-headers"
+        ]
+      },
+      "success": false,
+      "response_size": 30,
+      "response_time": 0.003322,
+      "error": "Request failed: 403 - {\"detail\":\"Not authenticated\"}"
+    },
+    "GET /tags-summary_http___127.0.0.1_3000": {
+      "endpoint": "GET /tags-summary",
+      "origin": "http://127.0.0.1:3000",
+      "method": "GET",
+      "url": "http://localhost:8000/tags-summary?month=2024-01",
+      "status_code": 200,
+      "cors_validation": {
+        "endpoint": "GET /tags-summary",
+        "status_code": 200,
+        "headers_present": {
+          "access-control-allow-origin": true,
+          "access-control-allow-methods": false,
+          "access-control-allow-headers": false
+        },
+        "header_values": {
+          "access-control-allow-origin": "http://127.0.0.1:3000",
+          "access-control-allow-methods": null,
+          "access-control-allow-headers": null,
+          "access-control-allow-credentials": "true"
+        },
+        "valid": false,
+        "issues": [
+          "Missing header: access-control-allow-methods",
+          "Missing header: access-control-allow-headers"
+        ]
+      },
+      "success": true,
+      "response_size": 184,
+      "response_time": 0.006796
+    },
+    "GET /health_http___localhost_45678": {
+      "endpoint": "GET /health",
+      "origin": "http://localhost:45678",
+      "method": "GET",
+      "url": "http://localhost:8000/health",
+      "status_code": 200,
+      "cors_validation": {
+        "endpoint": "GET /health",
+        "status_code": 200,
+        "headers_present": {
+          "access-control-allow-origin": true,
+          "access-control-allow-methods": false,
+          "access-control-allow-headers": false
+        },
+        "header_values": {
+          "access-control-allow-origin": "http://localhost:45678",
+          "access-control-allow-methods": null,
+          "access-control-allow-headers": null,
+          "access-control-allow-credentials": "true"
+        },
+        "valid": false,
+        "issues": [
+          "Missing header: access-control-allow-methods",
+          "Missing header: access-control-allow-headers"
+        ]
+      },
+      "success": true,
+      "response_size": 151,
+      "response_time": 0.003754
+    },
+    "POST /token_http___localhost_45678": {
+      "endpoint": "POST /token",
+      "origin": "http://localhost:45678",
+      "method": "POST",
+      "url": "http://localhost:8000/token",
+      "status_code": 422,
+      "cors_validation": {
+        "endpoint": "POST /token",
+        "status_code": 422,
+        "headers_present": {
+          "access-control-allow-origin": true,
+          "access-control-allow-methods": false,
+          "access-control-allow-headers": false
+        },
+        "header_values": {
+          "access-control-allow-origin": "http://localhost:45678",
+          "access-control-allow-methods": null,
+          "access-control-allow-headers": null,
+          "access-control-allow-credentials": "true"
+        },
+        "valid": false,
+        "issues": [
+          "Missing header: access-control-allow-methods",
+          "Missing header: access-control-allow-headers"
+        ]
+      },
+      "success": false,
+      "response_size": 174,
+      "response_time": 0.003286,
+      "error": "Request failed: 422 - {\"detail\":[{\"type\":\"missing\",\"loc\":[\"body\",\"username\"],\"msg\":\"Field required\",\"input\":null},{\"type\":\"missing\",\"loc\":[\"body\",\"password\"],\"msg\":\"Field required\",\"input\":null}]}"
+    },
+    "GET /custom-provisions_http___localhost_45678": {
+      "endpoint": "GET /custom-provisions",
+      "origin": "http://localhost:45678",
+      "method": "GET",
+      "url": "http://localhost:8000/custom-provisions",
+      "status_code": 403,
+      "cors_validation": {
+        "endpoint": "GET /custom-provisions",
+        "status_code": 403,
+        "headers_present": {
+          "access-control-allow-origin": true,
+          "access-control-allow-methods": false,
+          "access-control-allow-headers": false
+        },
+        "header_values": {
+          "access-control-allow-origin": "http://localhost:45678",
+          "access-control-allow-methods": null,
+          "access-control-allow-headers": null,
+          "access-control-allow-credentials": "true"
+        },
+        "valid": false,
+        "issues": [
+          "Missing header: access-control-allow-methods",
+          "Missing header: access-control-allow-headers"
+        ]
+      },
+      "success": false,
+      "response_size": 30,
+      "response_time": 0.003762,
+      "error": "Request failed: 403 - {\"detail\":\"Not authenticated\"}"
+    },
+    "POST /custom-provisions_http___localhost_45678": {
+      "endpoint": "POST /custom-provisions",
+      "origin": "http://localhost:45678",
+      "method": "POST",
+      "url": "http://localhost:8000/custom-provisions",
+      "status_code": 403,
+      "cors_validation": {
+        "endpoint": "POST /custom-provisions",
+        "status_code": 403,
+        "headers_present": {
+          "access-control-allow-origin": true,
+          "access-control-allow-methods": false,
+          "access-control-allow-headers": false
+        },
+        "header_values": {
+          "access-control-allow-origin": "http://localhost:45678",
+          "access-control-allow-methods": null,
+          "access-control-allow-headers": null,
+          "access-control-allow-credentials": "true"
+        },
+        "valid": false,
+        "issues": [
+          "Missing header: access-control-allow-methods",
+          "Missing header: access-control-allow-headers"
+        ]
+      },
+      "success": false,
+      "response_size": 30,
+      "response_time": 0.003088,
+      "error": "Request failed: 403 - {\"detail\":\"Not authenticated\"}"
+    },
+    "GET /fixed-lines_http___localhost_45678": {
+      "endpoint": "GET /fixed-lines",
+      "origin": "http://localhost:45678",
+      "method": "GET",
+      "url": "http://localhost:8000/fixed-lines",
+      "status_code": 401,
+      "cors_validation": {
+        "endpoint": "GET /fixed-lines",
+        "status_code": 401,
+        "headers_present": {
+          "access-control-allow-origin": true,
+          "access-control-allow-methods": false,
+          "access-control-allow-headers": false
+        },
+        "header_values": {
+          "access-control-allow-origin": "http://localhost:45678",
+          "access-control-allow-methods": null,
+          "access-control-allow-headers": null,
+          "access-control-allow-credentials": "true"
+        },
+        "valid": false,
+        "issues": [
+          "Missing header: access-control-allow-methods",
+          "Missing header: access-control-allow-headers"
+        ]
+      },
+      "success": false,
+      "response_size": 30,
+      "response_time": 0.003247,
+      "error": "Request failed: 401 - {\"detail\":\"Not authenticated\"}"
+    },
+    "PUT /fixed-lines/1_http___localhost_45678": {
+      "endpoint": "PUT /fixed-lines/1",
+      "origin": "http://localhost:45678",
+      "method": "PUT",
+      "url": "http://localhost:8000/fixed-lines/1",
+      "status_code": 401,
+      "cors_validation": {
+        "endpoint": "PUT /fixed-lines/1",
+        "status_code": 401,
+        "headers_present": {
+          "access-control-allow-origin": true,
+          "access-control-allow-methods": false,
+          "access-control-allow-headers": false
+        },
+        "header_values": {
+          "access-control-allow-origin": "http://localhost:45678",
+          "access-control-allow-methods": null,
+          "access-control-allow-headers": null,
+          "access-control-allow-credentials": "true"
+        },
+        "valid": false,
+        "issues": [
+          "Missing header: access-control-allow-methods",
+          "Missing header: access-control-allow-headers"
+        ]
+      },
+      "success": false,
+      "response_size": 30,
+      "response_time": 0.003424,
+      "error": "Request failed: 401 - {\"detail\":\"Not authenticated\"}"
+    },
+    "GET /summary_http___localhost_45678": {
+      "endpoint": "GET /summary",
+      "origin": "http://localhost:45678",
+      "method": "GET",
+      "url": "http://localhost:8000/summary?month=2024-01",
+      "status_code": 403,
+      "cors_validation": {
+        "endpoint": "GET /summary",
+        "status_code": 403,
+        "headers_present": {
+          "access-control-allow-origin": true,
+          "access-control-allow-methods": false,
+          "access-control-allow-headers": false
+        },
+        "header_values": {
+          "access-control-allow-origin": "http://localhost:45678",
+          "access-control-allow-methods": null,
+          "access-control-allow-headers": null,
+          "access-control-allow-credentials": "true"
+        },
+        "valid": false,
+        "issues": [
+          "Missing header: access-control-allow-methods",
+          "Missing header: access-control-allow-headers"
+        ]
+      },
+      "success": false,
+      "response_size": 30,
+      "response_time": 0.002989,
+      "error": "Request failed: 403 - {\"detail\":\"Not authenticated\"}"
+    },
+    "GET /tags-summary_http___localhost_45678": {
+      "endpoint": "GET /tags-summary",
+      "origin": "http://localhost:45678",
+      "method": "GET",
+      "url": "http://localhost:8000/tags-summary?month=2024-01",
+      "status_code": 200,
+      "cors_validation": {
+        "endpoint": "GET /tags-summary",
+        "status_code": 200,
+        "headers_present": {
+          "access-control-allow-origin": true,
+          "access-control-allow-methods": false,
+          "access-control-allow-headers": false
+        },
+        "header_values": {
+          "access-control-allow-origin": "http://localhost:45678",
+          "access-control-allow-methods": null,
+          "access-control-allow-headers": null,
+          "access-control-allow-credentials": "true"
+        },
+        "valid": false,
+        "issues": [
+          "Missing header: access-control-allow-methods",
+          "Missing header: access-control-allow-headers"
+        ]
+      },
+      "success": true,
+      "response_size": 184,
+      "response_time": 0.007542
+    },
+    "GET /health_http___frontend-container_3000": {
+      "endpoint": "GET /health",
+      "origin": "http://frontend-container:3000",
+      "method": "GET",
+      "url": "http://localhost:8000/health",
+      "status_code": 200,
+      "cors_validation": {
+        "endpoint": "GET /health",
+        "status_code": 200,
+        "headers_present": {
+          "access-control-allow-origin": false,
+          "access-control-allow-methods": false,
+          "access-control-allow-headers": false
+        },
+        "header_values": {
+          "access-control-allow-origin": null,
+          "access-control-allow-methods": null,
+          "access-control-allow-headers": null,
+          "access-control-allow-credentials": "true"
+        },
+        "valid": false,
+        "issues": [
+          "Missing header: access-control-allow-origin",
+          "Missing header: access-control-allow-methods",
+          "Missing header: access-control-allow-headers"
+        ]
+      },
+      "success": true,
+      "response_size": 151,
+      "response_time": 0.004338
+    },
+    "POST /token_http___frontend-container_3000": {
+      "endpoint": "POST /token",
+      "origin": "http://frontend-container:3000",
+      "method": "POST",
+      "url": "http://localhost:8000/token",
+      "status_code": 422,
+      "cors_validation": {
+        "endpoint": "POST /token",
+        "status_code": 422,
+        "headers_present": {
+          "access-control-allow-origin": false,
+          "access-control-allow-methods": false,
+          "access-control-allow-headers": false
+        },
+        "header_values": {
+          "access-control-allow-origin": null,
+          "access-control-allow-methods": null,
+          "access-control-allow-headers": null,
+          "access-control-allow-credentials": "true"
+        },
+        "valid": false,
+        "issues": [
+          "Missing header: access-control-allow-origin",
+          "Missing header: access-control-allow-methods",
+          "Missing header: access-control-allow-headers"
+        ]
+      },
+      "success": false,
+      "response_size": 174,
+      "response_time": 0.002856,
+      "error": "Request failed: 422 - {\"detail\":[{\"type\":\"missing\",\"loc\":[\"body\",\"username\"],\"msg\":\"Field required\",\"input\":null},{\"type\":\"missing\",\"loc\":[\"body\",\"password\"],\"msg\":\"Field required\",\"input\":null}]}"
+    },
+    "GET /custom-provisions_http___frontend-container_3000": {
+      "endpoint": "GET /custom-provisions",
+      "origin": "http://frontend-container:3000",
+      "method": "GET",
+      "url": "http://localhost:8000/custom-provisions",
+      "status_code": 403,
+      "cors_validation": {
+        "endpoint": "GET /custom-provisions",
+        "status_code": 403,
+        "headers_present": {
+          "access-control-allow-origin": false,
+          "access-control-allow-methods": false,
+          "access-control-allow-headers": false
+        },
+        "header_values": {
+          "access-control-allow-origin": null,
+          "access-control-allow-methods": null,
+          "access-control-allow-headers": null,
+          "access-control-allow-credentials": "true"
+        },
+        "valid": false,
+        "issues": [
+          "Missing header: access-control-allow-origin",
+          "Missing header: access-control-allow-methods",
+          "Missing header: access-control-allow-headers"
+        ]
+      },
+      "success": false,
+      "response_size": 30,
+      "response_time": 0.002926,
+      "error": "Request failed: 403 - {\"detail\":\"Not authenticated\"}"
+    },
+    "POST /custom-provisions_http___frontend-container_3000": {
+      "endpoint": "POST /custom-provisions",
+      "origin": "http://frontend-container:3000",
+      "method": "POST",
+      "url": "http://localhost:8000/custom-provisions",
+      "status_code": 403,
+      "cors_validation": {
+        "endpoint": "POST /custom-provisions",
+        "status_code": 403,
+        "headers_present": {
+          "access-control-allow-origin": false,
+          "access-control-allow-methods": false,
+          "access-control-allow-headers": false
+        },
+        "header_values": {
+          "access-control-allow-origin": null,
+          "access-control-allow-methods": null,
+          "access-control-allow-headers": null,
+          "access-control-allow-credentials": "true"
+        },
+        "valid": false,
+        "issues": [
+          "Missing header: access-control-allow-origin",
+          "Missing header: access-control-allow-methods",
+          "Missing header: access-control-allow-headers"
+        ]
+      },
+      "success": false,
+      "response_size": 30,
+      "response_time": 0.002781,
+      "error": "Request failed: 403 - {\"detail\":\"Not authenticated\"}"
+    },
+    "GET /fixed-lines_http___frontend-container_3000": {
+      "endpoint": "GET /fixed-lines",
+      "origin": "http://frontend-container:3000",
+      "method": "GET",
+      "url": "http://localhost:8000/fixed-lines",
+      "status_code": 401,
+      "cors_validation": {
+        "endpoint": "GET /fixed-lines",
+        "status_code": 401,
+        "headers_present": {
+          "access-control-allow-origin": false,
+          "access-control-allow-methods": false,
+          "access-control-allow-headers": false
+        },
+        "header_values": {
+          "access-control-allow-origin": null,
+          "access-control-allow-methods": null,
+          "access-control-allow-headers": null,
+          "access-control-allow-credentials": "true"
+        },
+        "valid": false,
+        "issues": [
+          "Missing header: access-control-allow-origin",
+          "Missing header: access-control-allow-methods",
+          "Missing header: access-control-allow-headers"
+        ]
+      },
+      "success": false,
+      "response_size": 30,
+      "response_time": 0.002602,
+      "error": "Request failed: 401 - {\"detail\":\"Not authenticated\"}"
+    },
+    "PUT /fixed-lines/1_http___frontend-container_3000": {
+      "endpoint": "PUT /fixed-lines/1",
+      "origin": "http://frontend-container:3000",
+      "method": "PUT",
+      "url": "http://localhost:8000/fixed-lines/1",
+      "status_code": 401,
+      "cors_validation": {
+        "endpoint": "PUT /fixed-lines/1",
+        "status_code": 401,
+        "headers_present": {
+          "access-control-allow-origin": false,
+          "access-control-allow-methods": false,
+          "access-control-allow-headers": false
+        },
+        "header_values": {
+          "access-control-allow-origin": null,
+          "access-control-allow-methods": null,
+          "access-control-allow-headers": null,
+          "access-control-allow-credentials": "true"
+        },
+        "valid": false,
+        "issues": [
+          "Missing header: access-control-allow-origin",
+          "Missing header: access-control-allow-methods",
+          "Missing header: access-control-allow-headers"
+        ]
+      },
+      "success": false,
+      "response_size": 30,
+      "response_time": 0.002503,
+      "error": "Request failed: 401 - {\"detail\":\"Not authenticated\"}"
+    },
+    "GET /summary_http___frontend-container_3000": {
+      "endpoint": "GET /summary",
+      "origin": "http://frontend-container:3000",
+      "method": "GET",
+      "url": "http://localhost:8000/summary?month=2024-01",
+      "status_code": 403,
+      "cors_validation": {
+        "endpoint": "GET /summary",
+        "status_code": 403,
+        "headers_present": {
+          "access-control-allow-origin": false,
+          "access-control-allow-methods": false,
+          "access-control-allow-headers": false
+        },
+        "header_values": {
+          "access-control-allow-origin": null,
+          "access-control-allow-methods": null,
+          "access-control-allow-headers": null,
+          "access-control-allow-credentials": "true"
+        },
+        "valid": false,
+        "issues": [
+          "Missing header: access-control-allow-origin",
+          "Missing header: access-control-allow-methods",
+          "Missing header: access-control-allow-headers"
+        ]
+      },
+      "success": false,
+      "response_size": 30,
+      "response_time": 0.002875,
+      "error": "Request failed: 403 - {\"detail\":\"Not authenticated\"}"
+    },
+    "GET /tags-summary_http___frontend-container_3000": {
+      "endpoint": "GET /tags-summary",
+      "origin": "http://frontend-container:3000",
+      "method": "GET",
+      "url": "http://localhost:8000/tags-summary?month=2024-01",
+      "status_code": 200,
+      "cors_validation": {
+        "endpoint": "GET /tags-summary",
+        "status_code": 200,
+        "headers_present": {
+          "access-control-allow-origin": false,
+          "access-control-allow-methods": false,
+          "access-control-allow-headers": false
+        },
+        "header_values": {
+          "access-control-allow-origin": null,
+          "access-control-allow-methods": null,
+          "access-control-allow-headers": null,
+          "access-control-allow-credentials": "true"
+        },
+        "valid": false,
+        "issues": [
+          "Missing header: access-control-allow-origin",
+          "Missing header: access-control-allow-methods",
+          "Missing header: access-control-allow-headers"
+        ]
+      },
+      "success": true,
+      "response_size": 184,
+      "response_time": 0.009387
+    }
+  },
+  "errors": [
+    "Authentication failed: 401 - {\"detail\":\"Incorrect username or password\"}"
+  ],
+  "warnings": [],
+  "summary": {
+    "endpoints_success_rate": "8/32 (25.0%)",
+    "preflight_success_rate": "24/32 (75.0%)",
+    "cors_compliance_rate": "0/33 (0.0%)",
+    "critical_issues_count": 16,
+    "critical_issues": [
+      "Custom provisions endpoint failed: GET /custom-provisions_http___localhost_3000",
+      "Custom provisions endpoint failed: POST /custom-provisions_http___localhost_3000",
+      "Fixed lines endpoint failed: GET /fixed-lines_http___localhost_3000",
+      "Fixed lines endpoint failed: PUT /fixed-lines/1_http___localhost_3000",
+      "Custom provisions endpoint failed: GET /custom-provisions_http___127.0.0.1_3000",
+      "Custom provisions endpoint failed: POST /custom-provisions_http___127.0.0.1_3000",
+      "Fixed lines endpoint failed: GET /fixed-lines_http___127.0.0.1_3000",
+      "Fixed lines endpoint failed: PUT /fixed-lines/1_http___127.0.0.1_3000",
+      "Custom provisions endpoint failed: GET /custom-provisions_http___localhost_45678",
+      "Custom provisions endpoint failed: POST /custom-provisions_http___localhost_45678",
+      "Fixed lines endpoint failed: GET /fixed-lines_http___localhost_45678",
+      "Fixed lines endpoint failed: PUT /fixed-lines/1_http___localhost_45678",
+      "Custom provisions endpoint failed: GET /custom-provisions_http___frontend-container_3000",
+      "Custom provisions endpoint failed: POST /custom-provisions_http___frontend-container_3000",
+      "Fixed lines endpoint failed: GET /fixed-lines_http___frontend-container_3000",
+      "Fixed lines endpoint failed: PUT /fixed-lines/1_http___frontend-container_3000"
+    ],
+    "overall_status": "FAIL"
+  },
+  "metadata": {
+    "execution_time": 0.66,
+    "timestamp": "2025-08-12T01:27:50.774260",
+    "total_tests": 32,
+    "base_url": "http://localhost:8000"
+  }
+}

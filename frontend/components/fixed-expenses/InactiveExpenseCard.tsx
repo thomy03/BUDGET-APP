@@ -24,10 +24,10 @@ export function InactiveExpenseCard({
       <div className="flex items-start justify-between">
         <div className="flex items-center space-x-3">
           <span className="text-2xl grayscale" role="img" aria-label="icon">
-            {expense.icon || getCategoryIcon(expense.category)}
+            {getCategoryIcon(expense.category || 'autres')}
           </span>
           <div>
-            <h4 className="font-semibold text-gray-700">{expense.name}</h4>
+            <h4 className="font-semibold text-gray-700">{expense.label}</h4>
             <p className="text-sm text-gray-500">Inactive</p>
           </div>
         </div>
