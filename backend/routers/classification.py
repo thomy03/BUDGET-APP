@@ -1791,20 +1791,7 @@ class ClassificationSummaryResponse(BaseModel):
     classification_sources: Dict[str, int]
     last_updated: str
 
-class AutoClassifyOnLoadRequest(BaseModel):
-    """Request model for auto-classify on load"""
-    month: Optional[str] = Field(None, description="Specific month to process (YYYY-MM)")
-    background_processing: bool = Field(default=True, description="Process in background")
-    priority_threshold: float = Field(default=0.7, description="Priority confidence threshold")
-
-class AutoClassifyOnLoadResponse(BaseModel):
-    """Response model for auto-classify on load"""
-    job_id: str
-    status: str  # "STARTED", "PROCESSING", "COMPLETED", "FAILED"
-    estimated_completion_ms: int
-    transactions_queued: int
-    background_processing: bool
-    immediate_results: Optional[Dict[str, Any]] = None
+# Removed duplicate model definitions - using the ones defined earlier in the file
 
 class ConfidenceScoreRequest(BaseModel):
     """Request model for updating confidence score"""
@@ -2067,7 +2054,7 @@ async def get_classification_summary_by_month(
 
 @router.post("/transactions/auto-classify-on-load", response_model=AutoClassifyOnLoadResponse)
 async def auto_classify_on_load(
-    request: AutoClassifyOnLoadRequest,
+    request: AutoClassifyOnLoadRequest = AutoClassifyOnLoadRequest(),
     current_user = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
@@ -2079,89 +2066,150 @@ async def auto_classify_on_load(
     
     Performance cible: Retour immédiat + traitement en arrière-plan
     """
-    import uuid
+    import time
+    start_time = time.time()
     
     try:
-        job_id = str(uuid.uuid4())
+        classification_service = get_expense_classification_service(db)
         
-        # Determine which month to process
-        target_month = request.month
-        if not target_month:
-            # Use current month if not specified
-            from datetime import datetime
-            target_month = datetime.now().strftime("%Y-%m")
+        # Build query for transactions to classify
+        query = db.query(Transaction).filter(
+            Transaction.exclude == False
+        )
         
-        # Quick count of transactions to process
-        unclassified_count = db.query(Transaction).filter(
-            Transaction.month == target_month,
-            Transaction.exclude == False,
-            or_(
-                Transaction.expense_type.is_(None),
-                Transaction.expense_type == '',
-                and_(
-                    Transaction.expense_type == 'VARIABLE',
-                    or_(
-                        Transaction.confidence_score.is_(None),
-                        Transaction.confidence_score < request.priority_threshold
+        # Apply filters
+        if request.month:
+            query = query.filter(Transaction.month == request.month)
+        
+        if not request.include_classified:
+            # Only unclassified transactions or those without confidence scores
+            query = query.filter(
+                or_(
+                    Transaction.expense_type.is_(None),
+                    Transaction.expense_type == '',
+                    and_(
+                        request.force_reclassify == True,
+                        Transaction.confidence_score.is_(None)
                     )
                 )
-            ),
-            Transaction.user_id == current_user.id if hasattr(Transaction, 'user_id') else True
-        ).count()
-        
-        estimated_time = min(unclassified_count * 10, 5000)  # 10ms per transaction, max 5s
-        
-        if request.background_processing:
-            # For background processing, we'd typically use Celery or similar
-            # For now, we'll simulate the response format
-            logger.info(f"🚀 Auto-classify job {job_id} queued for {unclassified_count} transactions")
-            
-            return AutoClassifyOnLoadResponse(
-                job_id=job_id,
-                status="STARTED",
-                estimated_completion_ms=estimated_time,
-                transactions_queued=unclassified_count,
-                background_processing=True,
-                immediate_results=None
             )
-        else:
-            # Process immediately for small batches
-            if unclassified_count <= 50:
-                # Quick classification for immediate response
-                classification_service = get_expense_classification_service(db)
+        
+        # Get transactions to process
+        transactions = query.order_by(Transaction.date_op.desc()).limit(request.limit).all()
+        
+        if not transactions:
+            return AutoClassifyOnLoadResponse(
+                total_analyzed=0,
+                auto_applied=0,
+                pending_review=0,
+                high_confidence_applied=0,
+                medium_confidence_pending=0,
+                classifications=[],
+                processing_time_ms=0.0,
+                month_analyzed=request.month
+            )
+        
+        # Process classifications in batch
+        classifications = []
+        auto_applied = 0
+        pending_review = 0
+        high_confidence_applied = 0
+        medium_confidence_pending = 0
+        cache_used = False
+        
+        for transaction in transactions:
+            try:
+                # Extract primary tag for classification
+                tag_name = ""
+                if transaction.tags and transaction.tags.strip():
+                    tags = [t.strip() for t in transaction.tags.split(',') if t.strip()]
+                    if tags:
+                        tag_name = tags[0]
                 
-                quick_results = {
-                    "processed_count": unclassified_count,
-                    "estimated_accuracy": 0.85,
-                    "processing_status": "IMMEDIATE_COMPLETION"
+                # Use label if no tags
+                if not tag_name and transaction.label:
+                    tag_name = transaction.label.lower()[:50]
+                
+                if not tag_name:
+                    continue
+                
+                # Get historical data for better classification
+                history = classification_service.get_historical_transactions(tag_name)
+                
+                # Perform fast classification
+                result = classification_service.classify_expense(
+                    tag_name=tag_name,
+                    transaction_amount=float(transaction.amount or 0),
+                    transaction_description=transaction.label or "",
+                    transaction_history=history
+                )
+                
+                cache_used = True  # Mark that we're using cached results
+                
+                classification_data = {
+                    "transaction_id": transaction.id,
+                    "suggested_type": result.expense_type,
+                    "confidence_score": result.confidence,
+                    "explanation": result.primary_reason,
+                    "contributing_factors": result.contributing_factors[:3],
+                    "keyword_matches": result.keyword_matches[:3],
+                    "tag_analyzed": tag_name,
+                    "auto_applied": False,
+                    "needs_review": False
                 }
                 
-                logger.info(f"⚡ Immediate classification completed for {unclassified_count} transactions")
+                # Auto-apply high confidence suggestions
+                if result.confidence >= request.confidence_threshold:
+                    transaction.expense_type = result.expense_type
+                    transaction.expense_type_confidence = result.confidence
+                    transaction.expense_type_auto_detected = True
+                    
+                    classification_data["auto_applied"] = True
+                    auto_applied += 1
+                    
+                    if result.confidence >= 0.85:
+                        high_confidence_applied += 1
+                    
+                    logger.info(f"Auto-applied {result.expense_type} to transaction {transaction.id} (confidence: {result.confidence:.2f})")
                 
-                return AutoClassifyOnLoadResponse(
-                    job_id=job_id,
-                    status="COMPLETED",
-                    estimated_completion_ms=0,
-                    transactions_queued=unclassified_count,
-                    background_processing=False,
-                    immediate_results=quick_results
-                )
-            else:
-                # Too many for immediate processing
-                return AutoClassifyOnLoadResponse(
-                    job_id=job_id,
-                    status="QUEUED_FOR_BACKGROUND",
-                    estimated_completion_ms=estimated_time,
-                    transactions_queued=unclassified_count,
-                    background_processing=True,
-                    immediate_results=None
-                )
+                else:
+                    # Medium confidence - mark for review
+                    transaction.expense_type_confidence = result.confidence
+                    classification_data["needs_review"] = True
+                    pending_review += 1
+                    medium_confidence_pending += 1
+                
+                classifications.append(classification_data)
+                
+            except Exception as e:
+                logger.error(f"Error classifying transaction {transaction.id}: {e}")
+                continue
+        
+        # Commit all changes
+        db.commit()
+        
+        processing_time = (time.time() - start_time) * 1000
+        
+        logger.info(f"🚀 Auto-classification completed: {auto_applied} applied, {pending_review} pending (processed {len(classifications)} transactions in {processing_time:.1f}ms)")
+        
+        return AutoClassifyOnLoadResponse(
+            total_analyzed=len(classifications),
+            auto_applied=auto_applied,
+            pending_review=pending_review,
+            high_confidence_applied=high_confidence_applied,
+            medium_confidence_pending=medium_confidence_pending,
+            classifications=classifications,
+            processing_time_ms=round(processing_time, 1),
+            month_analyzed=request.month,
+            cache_used=cache_used
+        )
         
     except Exception as e:
-        logger.error(f"Error in auto-classify on load: {e}")
+        logger.error(f"Error in auto-classification on load: {e}")
+        db.rollback()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Auto-classify initialization failed: {str(e)}"
+            detail=f"Auto-classification error: {str(e)}"
         )
 
 @router.patch("/transactions/{transaction_id}/confidence-score", response_model=ConfidenceScoreResponse)
