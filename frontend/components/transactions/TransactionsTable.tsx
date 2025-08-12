@@ -15,6 +15,7 @@ interface TransactionsTableProps {
   };
   onToggle: (id: number, exclude: boolean) => void;
   onSaveTags: (id: number, tagsCSV: string) => void;
+  onExpenseTypeChange?: (id: number, expenseType: 'fixed' | 'variable') => void;
 }
 
 export function TransactionsTable({ 
@@ -22,7 +23,8 @@ export function TransactionsTable({
   importId, 
   calculations, 
   onToggle, 
-  onSaveTags 
+  onSaveTags,
+  onExpenseTypeChange
 }: TransactionsTableProps) {
   return (
     <div className="overflow-x-auto">
@@ -35,6 +37,15 @@ export function TransactionsTable({
             <th className="text-right p-3 font-medium">Montant</th>
             <th className="text-center p-3 font-medium">Exclure</th>
             <th className="text-left p-3 font-medium">Tags</th>
+            <th className="text-center p-3 font-medium">
+              <div className="flex items-center justify-center gap-1">
+                <span>Type de dépense</span>
+                <div className="flex items-center gap-1 text-xs text-gray-500">
+                  <span>📊</span>
+                  <span>🏠</span>
+                </div>
+              </div>
+            </th>
           </tr>
         </thead>
         <tbody>
@@ -45,6 +56,7 @@ export function TransactionsTable({
               importId={importId}
               onToggle={onToggle}
               onSaveTags={onSaveTags}
+              onExpenseTypeChange={onExpenseTypeChange}
             />
           ))}
         </tbody>
@@ -65,7 +77,7 @@ export function TransactionsTable({
                   {calculations.totalAmount >= 0 ? "+" : ""}{calculations.totalAmount.toFixed(2)} €
                 </span>
               </td>
-              <td className="p-3" colSpan={2}>
+              <td className="p-3" colSpan={3}>
                 <div className="text-xs text-gray-600 space-y-1">
                   <div>Revenus: +{calculations.totalIncome.toFixed(2)} €</div>
                   <div>Dépenses: -{calculations.totalExpenses.toFixed(2)} €</div>

@@ -13,6 +13,12 @@ export type ConfigOut = {
   split_mode: "revenus" | "manuel";
   split1: number;
   split2: number;
+  other_split_mode?: string;
+  var_percent?: number;
+  max_var?: number;
+  min_fixed?: number;
+  created_at?: string;
+  updated_at?: string;
   // Champs obsolètes - remplacés par le système de dépenses fixes personnalisables
   /** @deprecated Utiliser le système de dépenses fixes personnalisables */
   loan_equal: boolean;
@@ -48,6 +54,11 @@ export type Tx = {
   month: string;
   is_expense: boolean;
   exclude?: boolean; // Optionnel
+  // New fields for expense type classification
+  expense_type?: 'fixed' | 'variable'; // Type de dépense
+  expense_type_confidence?: number; // Score de confiance IA (0-1)
+  expense_type_auto_detected?: boolean; // Si détecté automatiquement par IA
+  expense_type_manual_override?: boolean; // Si modifié manuellement par l'utilisateur
   // Optional fields for backward compatibility
   category_parent?: string; // Legacy field - mapped from subcategory
   account_label?: string; // Legacy field - not used in current backend
@@ -189,6 +200,48 @@ export type CustomProvisionSummary = {
   total_monthly_member2: number;
   provisions_by_category: Record<string, number>;
   provisions_details: CustomProvision[];
+};
+
+// Types pour le système de classification automatique des dépenses
+export type ExpenseClassificationRule = {
+  id: number;
+  name: string;
+  description?: string;
+  keywords: string[]; // Mots-clés à rechercher dans les libellés
+  expense_type: 'fixed' | 'variable';
+  confidence_threshold: number; // Seuil de confiance minimum (0-1)
+  is_active: boolean;
+  priority: number; // Ordre de priorité d'application
+  created_at: string;
+  updated_at?: string;
+  match_type: 'exact' | 'partial' | 'regex'; // Type de correspondance
+  case_sensitive: boolean;
+};
+
+export type ExpenseClassificationRuleCreate = {
+  name: string;
+  description?: string;
+  keywords: string[];
+  expense_type: 'fixed' | 'variable';
+  confidence_threshold: number;
+  is_active: boolean;
+  priority?: number;
+  match_type?: 'exact' | 'partial' | 'regex';
+  case_sensitive?: boolean;
+};
+
+export type ExpenseClassificationRuleUpdate = Partial<ExpenseClassificationRuleCreate>;
+
+export type ExpenseClassificationResult = {
+  transaction_id: number;
+  suggested_type: 'fixed' | 'variable';
+  confidence_score: number;
+  matched_rules: {
+    rule_id: number;
+    rule_name: string;
+    matched_keywords: string[];
+  }[];
+  reasoning: string; // Explication textuelle du choix
 };
 
 // Types pour les erreurs API
@@ -544,5 +597,137 @@ export const fixedExpensesApi = {
   // Supprimer une dépense fixe
   async delete(id: number): Promise<void> {
     await api.delete(`/fixed-lines/${id}`);
+  }
+};
+
+// =============================================================================
+// FONCTIONS API POUR CLASSIFICATION AUTOMATIQUE DES DÉPENSES
+// =============================================================================
+
+export const expenseClassificationApi = {
+  // Récupérer toutes les règles de classification avec fallback gracieux
+  async getRules(): Promise<ExpenseClassificationRule[]> {
+    try {
+      const response = await api.get<ExpenseClassificationRule[]>('/expense-classification/rules');
+      return response.data || [];
+    } catch (error: any) {
+      console.warn('Expense classification rules endpoint unavailable:', error);
+      
+      // Fallback : règles de classification par défaut
+      const defaultRules: ExpenseClassificationRule[] = [
+        {
+          id: 1,
+          name: 'Abonnements et Services',
+          description: 'Détecte les abonnements récurrents (Netflix, Spotify, etc.)',
+          keywords: ['netflix', 'spotify', 'abonnement', 'mensuel', 'subscription'],
+          expense_type: 'fixed',
+          confidence_threshold: 0.8,
+          is_active: true,
+          priority: 1,
+          match_type: 'partial',
+          case_sensitive: false,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        },
+        {
+          id: 2,
+          name: 'Courses et Alimentaire',
+          description: 'Détecte les dépenses alimentaires variables',
+          keywords: ['carrefour', 'leclerc', 'auchan', 'courses', 'supermarché', 'alimentaire'],
+          expense_type: 'variable',
+          confidence_threshold: 0.7,
+          is_active: true,
+          priority: 2,
+          match_type: 'partial',
+          case_sensitive: false,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        },
+        {
+          id: 3,
+          name: 'Loyer et Charges',
+          description: 'Détecte les charges fixes de logement',
+          keywords: ['loyer', 'charges', 'syndic', 'électricité', 'gaz', 'eau'],
+          expense_type: 'fixed',
+          confidence_threshold: 0.9,
+          is_active: true,
+          priority: 3,
+          match_type: 'partial',
+          case_sensitive: false,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        },
+        {
+          id: 4,
+          name: 'Transport Variable',
+          description: 'Détecte les dépenses de transport variables (essence, parking)',
+          keywords: ['essence', 'station', 'parking', 'péage', 'carburant'],
+          expense_type: 'variable',
+          confidence_threshold: 0.8,
+          is_active: true,
+          priority: 4,
+          match_type: 'partial',
+          case_sensitive: false,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        },
+        {
+          id: 5,
+          name: 'Assurances',
+          description: 'Détecte les paiements d\'assurance fixes',
+          keywords: ['assurance', 'mutuelle', 'maaf', 'axa', 'generali'],
+          expense_type: 'fixed',
+          confidence_threshold: 0.9,
+          is_active: true,
+          priority: 5,
+          match_type: 'partial',
+          case_sensitive: false,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        }
+      ];
+      
+      // Ajouter une indication que ce sont des données par défaut
+      console.info('Using default classification rules due to API unavailability');
+      return defaultRules;
+    }
+  },
+
+  // Créer une nouvelle règle de classification
+  async createRule(rule: ExpenseClassificationRuleCreate): Promise<ExpenseClassificationRule> {
+    const response = await api.post<ExpenseClassificationRule>('/expense-classification/rules', rule);
+    return response.data;
+  },
+
+  // Mettre à jour une règle de classification
+  async updateRule(id: number, rule: ExpenseClassificationRuleUpdate): Promise<ExpenseClassificationRule> {
+    const response = await api.put<ExpenseClassificationRule>(`/expense-classification/rules/${id}`, rule);
+    return response.data;
+  },
+
+  // Supprimer une règle de classification
+  async deleteRule(id: number): Promise<void> {
+    await api.delete(`/expense-classification/rules/${id}`);
+  },
+
+  // Classifier une transaction spécifique
+  async classifyTransaction(transactionId: number): Promise<ExpenseClassificationResult> {
+    const response = await api.post<ExpenseClassificationResult>(`/expense-classification/classify/${transactionId}`);
+    return response.data;
+  },
+
+  // Classifier toutes les transactions d'un mois
+  async classifyMonth(month: string): Promise<ExpenseClassificationResult[]> {
+    const response = await api.post<ExpenseClassificationResult[]>(`/expense-classification/classify-month`, { month });
+    return response.data || [];
+  },
+
+  // Mettre à jour le type de dépense d'une transaction
+  async updateTransactionType(transactionId: number, expenseType: 'fixed' | 'variable', manualOverride: boolean = true): Promise<Tx> {
+    const response = await api.patch<Tx>(`/transactions/${transactionId}/expense-type`, {
+      expense_type: expenseType,
+      expense_type_manual_override: manualOverride
+    });
+    return response.data;
   }
 };

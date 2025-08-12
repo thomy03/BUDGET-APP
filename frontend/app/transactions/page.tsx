@@ -28,6 +28,13 @@ export default function TransactionsPage() {
   
   console.log('📊 Transactions page - Current month:', month, 'ImportId:', importId);
 
+  // Gestionnaire pour les changements de type de dépense (classification IA)
+  const handleExpenseTypeChange = (id: number, expenseType: 'fixed' | 'variable') => {
+    console.log(`✨ Expense type changed for transaction ${id}: ${expenseType}`);
+    // Actualiser les données pour refléter le changement
+    refresh(isAuthenticated, month);
+  };
+
   useEffect(() => {
     if (!authLoading) {
       refresh(isAuthenticated, month);
@@ -114,6 +121,7 @@ export default function TransactionsPage() {
             calculations={calculations}
             onToggle={toggle}
             onSaveTags={saveTags}
+            onExpenseTypeChange={handleExpenseTypeChange}
           />
         )}
       </Card>

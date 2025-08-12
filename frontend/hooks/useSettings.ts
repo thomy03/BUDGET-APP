@@ -57,9 +57,9 @@ export function useSettings(isAuthenticated: boolean): UseSettingsReturn {
         member2: formData.get('member2') as string,
         rev1: parseFloat(formData.get('rev1') as string) || 0,
         rev2: parseFloat(formData.get('rev2') as string) || 0,
-        r1: parseFloat(formData.get('r1') as string) || 0.5,
-        r2: parseFloat(formData.get('r2') as string) || 0.5,
-        split_mode: formData.get('split_mode') as string || 'auto'
+        split1: parseFloat(formData.get('split1') as string) || 0.5,
+        split2: parseFloat(formData.get('split2') as string) || 0.5,
+        split_mode: formData.get('split_mode') as string || 'revenus'
       };
       
       console.log('Saving configuration:', payload);

@@ -8,6 +8,8 @@ import CustomProvisions from "../../components/CustomProvisions";
 import FixedExpenses from "../../components/FixedExpenses";
 import APIDebugPanel from "../../components/APIDebugPanel";
 import { BudgetConfiguration } from "../../components/settings";
+import { TagsManagement } from "../../components/settings/TagsManagement";
+import { ExpenseClassificationSettings } from "../../components/settings/ExpenseClassificationSettings";
 import { useSettings } from "../../hooks/useSettings";
 
 export default function Settings() {
@@ -101,6 +103,22 @@ export default function Settings() {
           🎯 Gestion des Provisions
         </h2>
         <CustomProvisions config={cfg} onDataChange={load} />
+      </div>
+
+      {/* Gestion des Tags */}
+      <div className="space-y-4">
+        <h2 className="text-2xl font-semibold text-gray-900">
+          🏷️ Gestion des Tags
+        </h2>
+        <TagsManagement />
+      </div>
+
+      {/* Classification automatique des dépenses */}
+      <div className="space-y-4">
+        <h2 className="text-2xl font-semibold text-gray-900">
+          🤖 Classification Automatique
+        </h2>
+        <ExpenseClassificationSettings />
       </div>
 
       {/* Panel de debug API */}

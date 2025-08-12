@@ -97,7 +97,7 @@ export default function TransactionsPage() {
       }
 
       const tags = tagsCSV.split(",").map(s => s.trim()).filter(Boolean);
-      const response = await api.patch(`/transactions/${id}/tags`, { tags });
+      const response = await api.patch(`/transactions/${id}/tags`, { tags: tagsCSV });
       setRows(prev => prev.map(x => x.id === id ? response.data : x));
     } catch (err: any) {
       console.error("Erreur tags:", err);

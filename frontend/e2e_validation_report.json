@@ -1,0 +1,110 @@
+{
+  "timestamp": "2025-08-12T15:58:59.865572",
+  "summary": {
+    "total_tests": 14,
+    "passed": 14,
+    "failed": 0,
+    "success_rate": 100.0,
+    "duration": 0.5731315612792969
+  },
+  "tests": [
+    {
+      "test": "Authentication",
+      "success": true,
+      "message": "Token obtained successfully",
+      "duration": 0.39987778663635254,
+      "timestamp": "2025-08-12T15:58:59.692348"
+    },
+    {
+      "test": "Fixed Lines API",
+      "success": true,
+      "message": "Retrieved 2 fixed lines",
+      "duration": 0.01684093475341797,
+      "timestamp": "2025-08-12T15:58:59.709303"
+    },
+    {
+      "test": "Config API",
+      "success": true,
+      "message": "Config retrieved",
+      "duration": 0.016528606414794922,
+      "timestamp": "2025-08-12T15:58:59.725965"
+    },
+    {
+      "test": "Dashboard Summary API",
+      "success": true,
+      "message": "Summary data retrieved",
+      "duration": 0.03209519386291504,
+      "timestamp": "2025-08-12T15:58:59.758197"
+    },
+    {
+      "test": "Tags API",
+      "success": true,
+      "message": "Retrieved tags data",
+      "duration": 0.017988920211791992,
+      "timestamp": "2025-08-12T15:58:59.776348"
+    },
+    {
+      "test": "Classification API",
+      "success": true,
+      "message": "Retrieved classification rules",
+      "duration": 0.013586044311523438,
+      "timestamp": "2025-08-12T15:58:59.790059"
+    },
+    {
+      "test": "CORS Preflight /fixed-lines",
+      "success": true,
+      "message": "No OPTIONS support (acceptable)",
+      "duration": 0.004552125930786133,
+      "timestamp": "2025-08-12T15:58:59.794657"
+    },
+    {
+      "test": "CORS Preflight /config",
+      "success": true,
+      "message": "No OPTIONS support (acceptable)",
+      "duration": 0.004241466522216797,
+      "timestamp": "2025-08-12T15:58:59.798948"
+    },
+    {
+      "test": "CORS Preflight /summary",
+      "success": true,
+      "message": "No OPTIONS support (acceptable)",
+      "duration": 0.004141569137573242,
+      "timestamp": "2025-08-12T15:58:59.803132"
+    },
+    {
+      "test": "Performance /config",
+      "success": true,
+      "message": "Response time: 0.010s",
+      "duration": 0.010157585144042969,
+      "timestamp": "2025-08-12T15:58:59.813349"
+    },
+    {
+      "test": "Performance /summary?month=2025-08",
+      "success": true,
+      "message": "Response time: 0.017s",
+      "duration": 0.017048358917236328,
+      "timestamp": "2025-08-12T15:58:59.830446"
+    },
+    {
+      "test": "Performance /custom-provisions",
+      "success": true,
+      "message": "Response time: 0.020s",
+      "duration": 0.019748449325561523,
+      "timestamp": "2025-08-12T15:58:59.850242"
+    },
+    {
+      "test": "Performance /fixed-lines",
+      "success": true,
+      "message": "Response time: 0.015s",
+      "duration": 0.015161275863647461,
+      "timestamp": "2025-08-12T15:58:59.865459"
+    },
+    {
+      "test": "Overall Performance",
+      "success": true,
+      "message": "Average response time: 0.016s",
+      "duration": null,
+      "timestamp": "2025-08-12T15:58:59.865501"
+    }
+  ]
+}

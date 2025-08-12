@@ -105,7 +105,7 @@ export function useTransactions(): UseTransactionsReturn {
       
       console.log('🏷️ Saving tags for transaction', id, ':', tags);
       
-      const response = await api.patch(`/transactions/${id}`, { tags });
+      const response = await api.patch(`/transactions/${id}/tags`, { tags: tagsCSV });
       
       console.log('✅ Tags saved successfully:', response.data);
       

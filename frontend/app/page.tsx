@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useGlobalMonth } from "../lib/month";
 import { useAuth } from "../lib/auth";
 import { LoadingSpinner } from "../components/ui";
-import { KeyMetrics, DetailedBudgetTable } from "../components/dashboard";
+import { KeyMetrics, EnhancedDashboard } from "../components/dashboard";
 import ProvisionsWidget from "../components/ProvisionsWidget";
 import { useDashboardData } from "../hooks/useDashboardData";
 
@@ -48,32 +48,27 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* Key Metrics - Now handles its own loading states */}
-      <KeyMetrics 
-        summary={summary} 
-        config={config} 
-        provisions={provisions} 
-        fixedExpenses={fixedExpenses}
+      {/* Enhanced Dashboard - NEW RESTRUCTURED INTERFACE */}
+      <EnhancedDashboard 
+        month={month}
+        isAuthenticated={isAuthenticated}
       />
 
-      {/* Only render these components when we have the basic data */}
-      {summary && config ? (
-        <>
-          {/* Provisions Widget */}
-          <ProvisionsWidget config={config} />
+      {/* Legacy Provisions Widget - Keep for now as complementary info */}
+      {summary && config && (
+        <ProvisionsWidget config={config} />
+      )}
 
-          {/* Detailed Budget Table */}
-          <DetailedBudgetTable 
+      {/* Legacy Key Metrics - Keep for backward compatibility */}
+      {summary && config && (
+        <div className="mt-8 p-4 bg-gray-50 rounded-lg">
+          <h3 className="text-sm font-medium text-gray-600 mb-4">🔍 Métriques de contrôle (legacy)</h3>
+          <KeyMetrics 
             summary={summary} 
             config={config} 
             provisions={provisions} 
             fixedExpenses={fixedExpenses}
-            month={month}
           />
-        </>
-      ) : (
-        <div className="flex justify-center py-12">
-          <LoadingSpinner size="lg" text="Chargement des données..." />
         </div>
       )}
     </main>

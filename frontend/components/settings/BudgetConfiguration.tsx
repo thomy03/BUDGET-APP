@@ -114,12 +114,11 @@ export function BudgetConfiguration({ cfg, saving, onSave }: BudgetConfiguration
             </label>
             <select 
               name="split_mode" 
-              defaultValue={cfg.split_mode || 'auto'}
+              defaultValue={cfg.split_mode || 'revenus'}
               className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
             >
-              <option value="auto">Automatique (proportionnel aux revenus)</option>
-              <option value="50/50">50/50</option>
-              <option value="custom">Personnalisé</option>
+              <option value="revenus">Automatique (proportionnel aux revenus)</option>
+              <option value="manuel">Personnalisé</option>
             </select>
           </div>
 
