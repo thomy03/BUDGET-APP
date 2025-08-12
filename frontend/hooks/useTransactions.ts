@@ -7,6 +7,13 @@ interface UseTransactionsReturn {
   rows: Tx[];
   loading: boolean;
   error: string;
+  autoClassifying: boolean;
+  autoClassificationResults: {
+    totalAnalyzed: number;
+    autoApplied: number;
+    pendingReview: number;
+    processingTimeMs: number;
+  } | null;
   calculations: {
     totalExpenses: number;
     totalIncome: number;
@@ -25,6 +32,13 @@ export function useTransactions(): UseTransactionsReturn {
   const [rows, setRows] = useState<Tx[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [autoClassifying, setAutoClassifying] = useState(false);
+  const [autoClassificationResults, setAutoClassificationResults] = useState<{
+    totalAnalyzed: number;
+    autoApplied: number;
+    pendingReview: number;
+    processingTimeMs: number;
+  } | null>(null);
 
   // Calculs des totaux
   const calculations = useMemo(() => {
@@ -63,9 +77,50 @@ export function useTransactions(): UseTransactionsReturn {
     try {
       setLoading(true);
       setError(''); // Clear any previous errors
+      
+      // 1. Charger les transactions
       const response = await api.get<Tx[]>('/transactions', { params: { month } });
       console.log('✅ Refresh successful - loaded', response.data.length, 'transactions');
       setRows(response.data);
+      
+      // 2. Auto-classification automatique en arrière-plan
+      if (response.data.length > 0) {
+        console.log('🤖 Starting auto-classification for', response.data.length, 'transactions');
+        setAutoClassifying(true);
+        
+        try {
+          const autoClassifyResponse = await api.post('/expense-classification/transactions/auto-classify-on-load', {
+            month: month,
+            confidence_threshold: 0.7,
+            limit: 200,
+            include_classified: false
+          });
+          
+          console.log('🚀 Auto-classification completed:', autoClassifyResponse.data);
+          
+          // Stocker les résultats de la classification
+          setAutoClassificationResults({
+            totalAnalyzed: autoClassifyResponse.data.total_analyzed,
+            autoApplied: autoClassifyResponse.data.auto_applied,
+            pendingReview: autoClassifyResponse.data.pending_review,
+            processingTimeMs: autoClassifyResponse.data.processing_time_ms
+          });
+          
+          // 3. Si des classifications ont été appliquées, recharger les transactions
+          if (autoClassifyResponse.data.auto_applied > 0) {
+            console.log(`✨ ${autoClassifyResponse.data.auto_applied} classifications applied - reloading transactions`);
+            const updatedResponse = await api.get<Tx[]>('/transactions', { params: { month } });
+            setRows(updatedResponse.data);
+          }
+          
+        } catch (classificationErr) {
+          console.warn('⚠️ Auto-classification failed (non-critical):', classificationErr);
+          // La classification échoue de manière non critique - les transactions sont quand même chargées
+        } finally {
+          setAutoClassifying(false);
+        }
+      }
+      
     } catch (err) {
       console.error('❌ Refresh error:', err);
       setError('Erreur lors du chargement des transactions');
@@ -134,6 +189,8 @@ export function useTransactions(): UseTransactionsReturn {
     rows,
     loading,
     error,
+    autoClassifying,
+    autoClassificationResults,
     calculations,
     refresh,
     toggle,

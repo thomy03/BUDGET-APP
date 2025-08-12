@@ -142,3 +142,78 @@ export function ExpenseTypeBadges({ types, onTypeClick, className = '' }: Expens
     </div>
   );
 }
+
+// Composant pour les transactions en attente de classification
+interface PendingClassificationBadgeProps {
+  size?: 'sm' | 'md';
+  interactive?: boolean;
+  onClick?: () => void;
+  className?: string;
+  hasAISuggestion?: boolean;
+}
+
+export function PendingClassificationBadge({ 
+  size = 'sm',
+  interactive = false,
+  onClick,
+  className = '',
+  hasAISuggestion = false
+}: PendingClassificationBadgeProps) {
+  const sizeClasses = {
+    sm: 'px-2 py-1 text-xs',
+    md: 'px-3 py-1.5 text-sm'
+  };
+
+  const badgeClasses = [
+    'inline-flex items-center gap-1.5 font-medium border rounded-full transition-all duration-200',
+    sizeClasses[size],
+    hasAISuggestion 
+      ? 'bg-purple-50 text-purple-700 border-purple-300 hover:bg-purple-100 shadow-sm'
+      : 'bg-slate-50 text-slate-600 border-slate-300 hover:bg-slate-100',
+    interactive ? `cursor-pointer focus:outline-none focus:ring-2 focus:ring-offset-1 ${
+      hasAISuggestion ? 'focus:ring-purple-500' : 'focus:ring-slate-500'
+    }` : '',
+    hasAISuggestion ? 'ring-1 ring-purple-200 animate-pulse' : '',
+    className
+  ].filter(Boolean).join(' ');
+
+  const badgeContent = (
+    <>
+      <span className={size === 'sm' ? 'text-xs' : 'text-sm'}>
+        {hasAISuggestion ? '⚠️' : '⏳'}
+      </span>
+      <span>
+        {hasAISuggestion ? 'Suggestion IA' : 'À classifier'}
+      </span>
+      {interactive && (
+        <span className="text-xs opacity-50">
+          <svg width="10" height="10" viewBox="0 0 10 10" fill="currentColor">
+            <path d="M5 7l2-2-2-2-.5.5L6 5l-1.5 1.5L5 7z"/>
+          </svg>
+        </span>
+      )}
+    </>
+  );
+
+  const tooltipText = hasAISuggestion 
+    ? 'IA a une suggestion - Cliquer pour voir'
+    : 'Transaction en attente de classification - Cliquer pour analyser avec l\'IA';
+
+  if (interactive && onClick) {
+    return (
+      <button
+        onClick={onClick}
+        className={badgeClasses}
+        title={tooltipText}
+      >
+        {badgeContent}
+      </button>
+    );
+  }
+
+  return (
+    <span className={badgeClasses} title={tooltipText}>
+      {badgeContent}
+    </span>
+  );
+}

@@ -2,9 +2,12 @@
 
 import { useState } from 'react';
 import { useTagsManagement, TagInfo } from '../../hooks/useTagsManagement';
-import { Card, Button, Modal, Alert } from '../ui';
+import { Card, Button, Modal, Alert, Tabs, TabsList, TabsTrigger, TabsContent } from '../ui';
 import { ExpenseTypeBadge } from '../transactions/ExpenseTypeBadge';
 import { TagEditModal } from './TagEditModal';
+import { TagsStatistics } from './TagsStatistics';
+import { AutoTaggingRules } from './AutoTaggingRules';
+import { TagsImportExport } from './TagsImportExport';
 
 export function TagsManagement() {
   const {
@@ -61,21 +64,129 @@ export function TagsManagement() {
 
   return (
     <>
-      <Card padding="lg">
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-              🏷️ Gestion des Tags
-            </h3>
-            <p className="text-sm text-gray-600 mt-1">
-              Gérez vos tags et leur classification automatique (Fixe/Variable)
-            </p>
+      <Tabs defaultValue="overview" className="w-full">
+        <TabsList className="grid w-full grid-cols-5">
+          <TabsTrigger value="overview" icon="📊">
+            Vue d'ensemble
+          </TabsTrigger>
+          <TabsTrigger value="management" icon="🏷️">
+            Gestion
+          </TabsTrigger>
+          <TabsTrigger value="rules" icon="🤖">
+            Règles Auto
+          </TabsTrigger>
+          <TabsTrigger value="statistics" icon="📈">
+            Statistiques
+          </TabsTrigger>
+          <TabsTrigger value="import-export" icon="📁">
+            Import/Export
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="overview">
+          <div className="grid lg:grid-cols-2 gap-6">
+            {/* Statistiques rapides */}
+            <Card padding="lg">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                📊 Résumé rapide
+              </h3>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="text-center p-3 bg-blue-50 rounded-lg">
+                  <div className="text-2xl font-bold text-blue-600">{tags.length}</div>
+                  <div className="text-sm text-gray-600">Tags total</div>
+                </div>
+                <div className="text-center p-3 bg-green-50 rounded-lg">
+                  <div className="text-2xl font-bold text-green-600">
+                    {tags.reduce((sum, tag) => sum + tag.transaction_count, 0)}
+                  </div>
+                  <div className="text-sm text-gray-600">Transactions</div>
+                </div>
+              </div>
+              <div className="mt-4 pt-4 border-t border-gray-200">
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">Tags Fixes:</span>
+                  <span className="font-medium">{tags.filter(t => t.expense_type === 'fixed').length}</span>
+                </div>
+                <div className="flex justify-between text-sm mt-1">
+                  <span className="text-gray-600">Tags Variables:</span>
+                  <span className="font-medium">{tags.filter(t => t.expense_type === 'variable').length}</span>
+                </div>
+              </div>
+            </Card>
+
+            {/* Top 5 tags */}
+            <Card padding="lg">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                🏆 Top 5 des tags
+              </h3>
+              <div className="space-y-2">
+                {[...tags]
+                  .sort((a, b) => b.transaction_count - a.transaction_count)
+                  .slice(0, 5)
+                  .map((tag, index) => (
+                    <div key={tag.name} className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                      <div className="flex items-center gap-2">
+                        <div className="w-6 h-6 rounded-full bg-blue-100 text-blue-600 font-bold text-xs flex items-center justify-center">
+                          {index + 1}
+                        </div>
+                        <span className="font-medium text-sm">{tag.name}</span>
+                        <ExpenseTypeBadge type={tag.expense_type} size="sm" />
+                      </div>
+                      <span className="text-sm text-gray-600">{tag.transaction_count}</span>
+                    </div>
+                  ))
+                }
+                {tags.length === 0 && (
+                  <div className="text-center py-4 text-gray-500 text-sm">
+                    Aucun tag disponible
+                  </div>
+                )}
+              </div>
+            </Card>
           </div>
-          <Button onClick={handleCreateTag} className="flex items-center gap-2">
-            <span>+</span>
-            Nouveau tag
-          </Button>
-        </div>
+
+          {/* Actions rapides */}
+          <Card padding="lg" className="mt-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+              ⚡ Actions rapides
+            </h3>
+            <div className="grid md:grid-cols-4 gap-3">
+              <Button onClick={handleCreateTag} className="flex items-center gap-2">
+                <span>+</span>
+                Nouveau tag
+              </Button>
+              <Button variant="outline" className="flex items-center gap-2">
+                <span>🔄</span>
+                Recalculer stats
+              </Button>
+              <Button variant="outline" className="flex items-center gap-2">
+                <span>🧹</span>
+                Nettoyer tags
+              </Button>
+              <Button variant="outline" className="flex items-center gap-2">
+                <span>📊</span>
+                Rapport complet
+              </Button>
+            </div>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="management">
+          <Card padding="lg">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                  🏷️ Gestion des Tags
+                </h3>
+                <p className="text-sm text-gray-600 mt-1">
+                  Gérez vos tags et leur classification automatique (Fixe/Variable)
+                </p>
+              </div>
+              <Button onClick={handleCreateTag} className="flex items-center gap-2">
+                <span>+</span>
+                Nouveau tag
+              </Button>
+            </div>
 
         {/* Messages d'erreur et d'état */}
         {error && (
@@ -220,7 +331,21 @@ export function TagsManagement() {
             ))}
           </div>
         )}
-      </Card>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="rules">
+          <AutoTaggingRules tags={tags} isLoading={isLoading} />
+        </TabsContent>
+
+        <TabsContent value="statistics">
+          <TagsStatistics tags={tags} isLoading={isLoading} />
+        </TabsContent>
+
+        <TabsContent value="import-export">
+          <TagsImportExport tags={tags} isLoading={isLoading} />
+        </TabsContent>
+      </Tabs>
 
       {/* Modal d'édition */}
       <TagEditModal

@@ -46,6 +46,14 @@ export function TransactionsTable({
                 </div>
               </div>
             </th>
+            <th className="text-center p-3 font-medium">
+              <div className="flex items-center justify-center gap-1">
+                <span>🤖 Confiance IA</span>
+                <div className="text-xs text-gray-500">
+                  <span title="Niveau de confiance de la classification automatique">%</span>
+                </div>
+              </div>
+            </th>
           </tr>
         </thead>
         <tbody>
@@ -77,7 +85,7 @@ export function TransactionsTable({
                   {calculations.totalAmount >= 0 ? "+" : ""}{calculations.totalAmount.toFixed(2)} €
                 </span>
               </td>
-              <td className="p-3" colSpan={3}>
+              <td className="p-3" colSpan={4}>
                 <div className="text-xs text-gray-600 space-y-1">
                   <div>Revenus: +{calculations.totalIncome.toFixed(2)} €</div>
                   <div>Dépenses: -{calculations.totalExpenses.toFixed(2)} €</div>

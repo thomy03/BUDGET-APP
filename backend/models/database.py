@@ -166,6 +166,7 @@ class Transaction(Base):
     is_expense = Column(Boolean, default=False)
     exclude = Column(Boolean, default=False, index=True)
     expense_type = Column(String, default="VARIABLE", index=True)  # FIXED, VARIABLE, PROVISION - for strict separation
+    confidence_score = Column(Float, nullable=True, index=True)  # AI classification confidence score (0.0-1.0)
     row_id = Column(String, index=True)  # stable hash
     tags = Column(Text, default="")      # CSV of tags
     import_id = Column(String, nullable=True, index=True)  # UUID of the import that created this transaction
@@ -191,6 +192,7 @@ class Transaction(Base):
         Index('idx_transactions_month_date_exclude', 'month', 'date_op', 'exclude'),
         Index('idx_transactions_expense_category_month', 'is_expense', 'category', 'month'),
         Index('idx_transactions_expense_type_month', 'expense_type', 'is_expense', 'month'),  # New index for filtering by type
+        Index('idx_transactions_confidence_expense_type', 'confidence_score', 'expense_type', 'month'),  # AI confidence filtering
     )
 
 
@@ -606,6 +608,10 @@ def migrate_schema():
             if "expense_type" not in cols:
                 conn.exec_driver_sql("ALTER TABLE transactions ADD COLUMN expense_type TEXT DEFAULT 'VARIABLE'")
                 logger.info("Added 'expense_type' column to transactions table")
+                
+            if "confidence_score" not in cols:
+                conn.exec_driver_sql("ALTER TABLE transactions ADD COLUMN confidence_score FLOAT")
+                logger.info("Added 'confidence_score' column to transactions table")
             
             # Create comprehensive performance indexes
             critical_indexes = [
@@ -622,6 +628,7 @@ def migrate_schema():
                 "CREATE INDEX IF NOT EXISTS idx_transactions_month_date_exclude ON transactions(month, date_op, exclude)",
                 "CREATE INDEX IF NOT EXISTS idx_transactions_expense_category_month ON transactions(is_expense, category, month)",
                 "CREATE INDEX IF NOT EXISTS idx_transactions_expense_type_month ON transactions(expense_type, is_expense, month)",
+                "CREATE INDEX IF NOT EXISTS idx_transactions_confidence_expense_type ON transactions(confidence_score, expense_type, month)",
                 
                 # Fixed lines performance indexes
                 "CREATE INDEX IF NOT EXISTS idx_fixed_lines_active_freq ON fixed_lines(active, freq)",

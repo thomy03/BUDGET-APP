@@ -1,7 +1,9 @@
 export { TransactionsSummary } from './TransactionsSummary';
 export { TransactionRow } from './TransactionRow';
 export { TransactionsTable } from './TransactionsTable';
-export { ExpenseTypeBadge } from './ExpenseTypeBadge';
+export { ExpenseTypeBadge, PendingClassificationBadge } from './ExpenseTypeBadge';
 export { ExpenseTypeModal } from './ExpenseTypeModal';
 export { ClassificationModal } from './ClassificationModal';
+export { InfoButton } from './InfoButton';
+export { ConfidenceBadge, CompactConfidenceBadge } from './ConfidenceBadge';
 export { TagClassificationBadge, CompactTagClassificationBadge, HistoryTagClassificationBadge } from './TagClassificationBadge';

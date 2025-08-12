@@ -17,6 +17,8 @@ export default function TransactionsPage() {
     rows,
     loading,
     error,
+    autoClassifying,
+    autoClassificationResults,
     calculations,
     refresh,
     toggle,
@@ -71,6 +73,24 @@ export default function TransactionsPage() {
           🔄 Actualiser
         </button>
       </div>
+
+      {/* Auto-classification status */}
+      {autoClassifying && (
+        <Alert variant="info">
+          🤖 Classification IA en cours... Analyse automatique des transactions non classifiées.
+        </Alert>
+      )}
+
+      {autoClassificationResults && !autoClassifying && (
+        <Alert variant="success">
+          ✨ Classification IA terminée en {autoClassificationResults.processingTimeMs.toFixed(0)}ms : 
+          <strong> {autoClassificationResults.autoApplied} classifications appliquées</strong> 
+          sur {autoClassificationResults.totalAnalyzed} analysées
+          {autoClassificationResults.pendingReview > 0 && (
+            <span>, {autoClassificationResults.pendingReview} en attente de révision</span>
+          )}
+        </Alert>
+      )}
 
       {error && (
         <Alert variant="error">

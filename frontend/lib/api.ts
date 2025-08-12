@@ -57,6 +57,7 @@ export type Tx = {
   // New fields for expense type classification
   expense_type?: 'fixed' | 'variable'; // Type de dépense
   expense_type_confidence?: number; // Score de confiance IA (0-1)
+  confidence_score?: number; // Score de confiance IA (0-1) - backend field
   expense_type_auto_detected?: boolean; // Si détecté automatiquement par IA
   expense_type_manual_override?: boolean; // Si modifié manuellement par l'utilisateur
   // Optional fields for backward compatibility

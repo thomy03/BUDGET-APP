@@ -2,9 +2,11 @@
 
 import { useState, useEffect } from 'react';
 import { Tx, expenseClassificationApi } from '../../lib/api';
-import { ExpenseTypeBadge } from './ExpenseTypeBadge';
+import { ExpenseTypeBadge, PendingClassificationBadge } from './ExpenseTypeBadge';
 import { ExpenseTypeModal, ClassificationChoice } from './ExpenseTypeModal';
 import { ClassificationModal } from './ClassificationModal';
+import { InfoButton } from './InfoButton';
+import { CompactConfidenceBadge } from './ConfidenceBadge';
 import { CompactToggleSwitch } from '../ui/ToggleSwitch';
 import { WebResearchIndicator } from '../ui/WebResearchIndicator';
 import { MerchantInfoDisplay } from '../ui/MerchantInfoDisplay';
@@ -35,22 +37,45 @@ export function TransactionRow({ row, importId, onToggle, onSaveTags, onExpenseT
   const isExpense = row.amount < 0; // Les dépenses sont négatives
   const currentExpenseType = row.expense_type || (isExpense ? 'variable' : null);
   
-  // Nouveau workflow : classification intelligente après saisie de tags
+  // Nouveau workflow : classification intelligente immédiate au focus
+  const handleTagsFocus = async () => {
+    if (!isExpense) return;
+    
+    // Si déjà en cours de classification pour cette transaction, ne pas relancer
+    if (classificationState.isLoading && classificationState.currentTransaction?.id === row.id) {
+      return;
+    }
+    
+    // Si la transaction a déjà une classification IA en attente, ouvrir directement la modal
+    if (classificationState.pendingClassification && classificationState.currentTransaction?.id === row.id) {
+      console.log('📋 Opening existing classification modal immediately');
+      return;
+    }
+    
+    console.log(`🚀 Auto-triggering AI classification on focus for transaction ${row.id}`);
+    
+    // Utiliser les tags existants, ou le label comme fallback
+    const currentTags = Array.isArray(row.tags) ? row.tags.join(", ") : (row.tags || "");
+    const tagsForClassification = currentTags.trim() || row.label;
+    
+    const success = await classificationActions.classifyAfterTagUpdate(row, tagsForClassification);
+    
+    if (!success && classificationState.showModal) {
+      console.log('🤔 Auto-classification needs user input, modal opened');
+    }
+  };
+
+  // Sauvegarde des tags (comportement existant maintenu)
   const handleTagsSave = async (id: number, tagsCSV: string) => {
-    // D'abord, sauvegarder les tags (comportement existant)
+    // Sauvegarder les tags
     onSaveTags(id, tagsCSV);
     
-    // Ensuite, déclencher la classification intelligente si c'est une dépense
-    if (isExpense && tagsCSV.trim()) {
-      console.log(`🏷️ Tags saved for transaction ${id}, triggering AI classification...`);
+    // Re-déclencher la classification avec les nouveaux tags si nécessaire
+    if (isExpense && tagsCSV.trim() && tagsCSV !== (Array.isArray(row.tags) ? row.tags.join(", ") : (row.tags || ""))) {
+      console.log(`🏷️ Tags updated for transaction ${id}, re-triggering AI classification...`);
       
       const success = await classificationActions.classifyAfterTagUpdate(row, tagsCSV);
       
-      if (!success && classificationState.showModal) {
-        console.log('🤔 Low confidence classification, showing modal for user decision');
-      }
-      
-      // Notifier le parent du changement si la classification a réussi
       if (success) {
         onExpenseTypeChange?.(row.id, currentExpenseType === 'fixed' ? 'fixed' : 'variable');
       }
@@ -109,13 +134,73 @@ export function TransactionRow({ row, importId, onToggle, onSaveTags, onExpenseT
       handleExpenseTypeToggle(choice);
     }
   };
+
+  // Nouveau: Classification à la demande via le bouton d'information
+  const handleTriggerClassification = async () => {
+    if (!isExpense) return;
+    
+    console.log(`🔍 Manual AI classification triggered for transaction ${row.id}`);
+    
+    // Si la transaction a déjà une classification IA en attente, ouvrir directement la modal
+    if (classificationState.pendingClassification && classificationState.currentTransaction?.id === row.id) {
+      console.log('📋 Opening existing classification modal');
+      classificationActions.clearState();
+      // Recréer l'état pour forcer l'ouverture de la modal
+      setTimeout(() => {
+        // Cette logique sera gérée par l'état existant
+      }, 100);
+      return;
+    }
+    
+    // Déclencher une nouvelle classification pour cette transaction
+    const currentTags = Array.isArray(row.tags) ? row.tags.join(", ") : (row.tags || "");
+    
+    if (!currentTags.trim()) {
+      console.log('⚠️ No tags available for classification, using label as fallback');
+      // Utiliser le label comme tag temporaire pour la classification
+      const success = await classificationActions.classifyAfterTagUpdate(row, row.label);
+      
+      if (!success && classificationState.showModal) {
+        console.log('🤔 Manual classification needs user input');
+      }
+    } else {
+      // Refaire la classification avec les tags existants
+      const success = await classificationActions.classifyAfterTagUpdate(row, currentTags);
+      
+      if (!success && classificationState.showModal) {
+        console.log('🤔 Re-classification needs user input');
+      }
+    }
+  };
   
+  // État de classification en cours pour animations
+  const isClassifying = classificationState.isLoading && classificationState.currentTransaction?.id === row.id;
+
+  // Déterminer la couleur de fond selon le type de dépense
+  const getRowBackgroundClass = () => {
+    if (isHighlighted) {
+      return 'bg-green-50 border-green-200 shadow-sm';
+    }
+    
+    if (isClassifying) {
+      return 'bg-blue-50/50 border-blue-200/50 shadow-sm animate-pulse';
+    }
+    
+    if (isExpense && currentExpenseType) {
+      if (currentExpenseType === 'fixed') {
+        return 'bg-emerald-50/30 hover:bg-emerald-50 border-emerald-200/50 hover:shadow-sm';
+      } else {
+        return 'bg-orange-50/30 hover:bg-orange-50 border-orange-200/50 hover:shadow-sm';
+      }
+    }
+    
+    return 'hover:bg-zinc-50';
+  };
+
   return (
     <>
       <tr 
-        className={`border-t border-zinc-100 hover:bg-zinc-50 transition-colors ${
-          isHighlighted ? 'bg-green-50 border-green-200' : ''
-        }`}
+        className={`border-t border-zinc-100 transition-all duration-300 ease-in-out ${getRowBackgroundClass()}`}
       >
         <td className="p-3">{row.date_op}</td>
         <td className="p-3">
@@ -149,15 +234,21 @@ export function TransactionRow({ row, importId, onToggle, onSaveTags, onExpenseT
         <td className="p-3">
           <div className="relative">
             <input 
-              className="w-full px-2 py-1 border border-zinc-200 rounded text-sm focus:ring-1 focus:ring-zinc-900 focus:border-transparent" 
+              className={`w-full px-2 py-1 border rounded text-sm transition-all duration-300 ${
+                isClassifying 
+                  ? 'border-blue-300 bg-blue-50/50 ring-1 ring-blue-200 shadow-sm' 
+                  : 'border-zinc-200 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 hover:border-zinc-300'
+              }`}
               defaultValue={Array.isArray(row.tags) ? row.tags.join(", ") : (row.tags || "")} 
+              onFocus={handleTagsFocus}
               onBlur={e => handleTagsSave(row.id, e.target.value)} 
-              placeholder="courses, resto, santé…" 
+              placeholder={isExpense ? "Cliquer pour analyser avec l'IA..." : "courses, resto, santé…"}
+              disabled={isClassifying}
             />
             {/* Indicateur de classification en cours - protection hydratation */}
-            {isMounted && classificationState.isLoading && classificationState.currentTransaction?.id === row.id && (
-              <div className="absolute right-2 top-1/2 transform -translate-y-1/2">
-                <div className="w-3 h-3 animate-spin rounded-full border border-blue-600 border-t-transparent"></div>
+            {isMounted && isClassifying && (
+              <div className="absolute right-2 top-1/2 transform -translate-y-1/2 animate-fade-in">
+                <div className="w-4 h-4 animate-spin rounded-full border-2 border-blue-600 border-t-transparent shadow-sm"></div>
               </div>
             )}
             
@@ -169,10 +260,10 @@ export function TransactionRow({ row, importId, onToggle, onSaveTags, onExpenseT
                 onCancel={() => classificationActions.clearState()}
                 confidence={classificationState.pendingClassification?.confidence_score}
                 result={classificationState.pendingClassification ? {
-                  name: classificationState.pendingClassification.merchant_name || row.label,
-                  category: classificationState.pendingClassification.merchant_category || 'Non défini',
+                  name: row.label, // Utiliser le label de la transaction
+                  category: row.category, // Utiliser la catégorie de la transaction
                   type: classificationState.pendingClassification.suggested_type,
-                  source: classificationState.pendingClassification.reasoning ? 'Recherche web' : undefined
+                  source: classificationState.pendingClassification.reasoning ? 'Classification IA' : undefined
                 } : undefined}
               />
             )}
@@ -200,16 +291,75 @@ export function TransactionRow({ row, importId, onToggle, onSaveTags, onExpenseT
               {isUpdatingExpenseType && (
                 <div className="w-4 h-4 animate-spin rounded-full border-2 border-blue-600 border-t-transparent"></div>
               )}
+              {/* Bouton d'information IA - protection hydratation */}
+              {isMounted && (
+                <InfoButton
+                  transaction={row}
+                  isClassifying={classificationState.isLoading && classificationState.currentTransaction?.id === row.id}
+                  onTriggerClassification={handleTriggerClassification}
+                  hasPendingClassification={
+                    classificationState.showModal && 
+                    classificationState.pendingClassification !== null &&
+                    classificationState.currentTransaction?.id === row.id
+                  }
+                  confidenceScore={row.expense_type_confidence}
+                  isAutoDetected={row.expense_type_auto_detected || false}
+                />
+              )}
             </div>
           ) : isExpense ? (
-            <CompactToggleSwitch
-              value="variable"
-              onChange={handleExpenseTypeToggle}
-              disabled={isUpdatingExpenseType}
-            />
+            <div className="flex items-center gap-2">
+              {/* Afficher badge "À classifier" ou "Suggestion IA" pour les dépenses non classifiées */}
+              {isMounted && classificationState.showModal && 
+               classificationState.pendingClassification &&
+               classificationState.currentTransaction?.id === row.id ? (
+                <PendingClassificationBadge
+                  size="sm"
+                  interactive={true}
+                  onClick={handleTriggerClassification}
+                  hasAISuggestion={true}
+                />
+              ) : (
+                <>
+                  <CompactToggleSwitch
+                    value="variable"
+                    onChange={handleExpenseTypeToggle}
+                    disabled={isUpdatingExpenseType}
+                  />
+                  <PendingClassificationBadge
+                    size="sm"
+                    interactive={true}
+                    onClick={handleTriggerClassification}
+                    hasAISuggestion={false}
+                  />
+                </>
+              )}
+              
+              {/* Bouton d'information IA pour transactions non classifiées - protection hydratation */}
+              {isMounted && (
+                <InfoButton
+                  transaction={row}
+                  isClassifying={classificationState.isLoading && classificationState.currentTransaction?.id === row.id}
+                  onTriggerClassification={handleTriggerClassification}
+                  hasPendingClassification={
+                    classificationState.showModal && 
+                    classificationState.pendingClassification !== null &&
+                    classificationState.currentTransaction?.id === row.id
+                  }
+                />
+              )}
+            </div>
           ) : (
             <span className="text-xs text-gray-400">Revenus</span>
           )}
+        </td>
+        <td className="p-3 text-center">
+          <CompactConfidenceBadge
+            confidence={row.expense_type_confidence}
+            isAutoDetected={row.expense_type_auto_detected}
+            isLoading={classificationState.isLoading && classificationState.currentTransaction?.id === row.id}
+            showProgressBar={true}
+          />
         </td>
       </tr>
 

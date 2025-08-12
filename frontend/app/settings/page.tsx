@@ -69,65 +69,88 @@ export default function Settings() {
         </button>
       </div>
 
-      {/* Messages */}
+      {/* Messages globaux */}
       {message && (
-        <Alert variant="success">
+        <Alert variant="success" className="mb-4">
           {message}
         </Alert>
       )}
 
       {error && (
-        <Alert variant="error">
+        <Alert variant="error" className="mb-4">
           {error}
         </Alert>
       )}
 
-      {/* Configuration du budget */}
-      <BudgetConfiguration
-        cfg={cfg}
-        saving={saving}
-        onSave={save}
-      />
+      <Tabs defaultValue="budget" className="w-full">
+        <TabsList className="grid w-full grid-cols-5">
+          <TabsTrigger value="budget" icon="💰">
+            Budget
+          </TabsTrigger>
+          <TabsTrigger value="expenses" icon="💳">
+            Dépenses
+          </TabsTrigger>
+          <TabsTrigger value="tags" icon="🏷️">
+            Tags
+          </TabsTrigger>
+          <TabsTrigger value="ai" icon="🤖">
+            Intelligence IA
+          </TabsTrigger>
+          <TabsTrigger value="debug" icon="🔧">
+            Debug
+          </TabsTrigger>
+        </TabsList>
 
-      {/* Dépenses fixes personnalisables */}
-      <div className="space-y-4">
-        <h2 className="text-2xl font-semibold text-gray-900">
-          💳 Gestion des Dépenses Fixes
-        </h2>
-        <FixedExpenses config={cfg} onDataChange={load} />
-      </div>
+        <TabsContent value="budget" className="space-y-6">
+          <BudgetConfiguration
+            cfg={cfg}
+            saving={saving}
+            onSave={save}
+          />
+        </TabsContent>
 
-      {/* Provisions personnalisables */}
-      <div className="space-y-4">
-        <h2 className="text-2xl font-semibold text-gray-900">
-          🎯 Gestion des Provisions
-        </h2>
-        <CustomProvisions config={cfg} onDataChange={load} />
-      </div>
+        <TabsContent value="expenses" className="space-y-6">
+          {/* Dépenses fixes personnalisables */}
+          <div className="space-y-4">
+            <h2 className="text-2xl font-semibold text-gray-900">
+              💳 Gestion des Dépenses Fixes
+            </h2>
+            <FixedExpenses config={cfg} onDataChange={load} />
+          </div>
 
-      {/* Gestion des Tags */}
-      <div className="space-y-4">
-        <h2 className="text-2xl font-semibold text-gray-900">
-          🏷️ Gestion des Tags
-        </h2>
-        <TagsManagement />
-      </div>
+          {/* Provisions personnalisables */}
+          <div className="space-y-4">
+            <h2 className="text-2xl font-semibold text-gray-900">
+              🎯 Gestion des Provisions
+            </h2>
+            <CustomProvisions config={cfg} onDataChange={load} />
+          </div>
+        </TabsContent>
 
-      {/* Classification automatique des dépenses */}
-      <div className="space-y-4">
-        <h2 className="text-2xl font-semibold text-gray-900">
-          🤖 Classification Automatique
-        </h2>
-        <ExpenseClassificationSettings />
-      </div>
+        <TabsContent value="tags">
+          <TagsManagement />
+        </TabsContent>
 
-      {/* Panel de debug API */}
-      <div className="space-y-4">
-        <h2 className="text-2xl font-semibold text-gray-900">
-          🔧 Outils de Débogage
-        </h2>
-        <APIDebugPanel />
-      </div>
+        <TabsContent value="ai" className="space-y-6">
+          {/* Classification automatique des dépenses */}
+          <div className="space-y-4">
+            <h2 className="text-2xl font-semibold text-gray-900">
+              🤖 Classification Automatique
+            </h2>
+            <ExpenseClassificationSettings />
+          </div>
+        </TabsContent>
+
+        <TabsContent value="debug" className="space-y-6">
+          {/* Panel de debug API */}
+          <div className="space-y-4">
+            <h2 className="text-2xl font-semibold text-gray-900">
+              🔧 Outils de Débogage
+            </h2>
+            <APIDebugPanel />
+          </div>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
