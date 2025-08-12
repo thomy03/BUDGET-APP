@@ -192,9 +192,11 @@ export function useAutoTagging(): UseAutoTaggingReturn {
       // Start the batch processing job using the correct API endpoint
       const response = await api.post<BatchAutoTagResponse>('/api/auto-tag/batch', {
         month,
-        confidence_threshold: options.confidenceThreshold || 0.7,
+        confidence_threshold: options.confidenceThreshold || 0.5,
         force_retag: options.includeClassified || false,
-        include_fixed_variable: true
+        include_fixed_variable: true,
+        use_web_research: true,  // Activer la recherche web pour enrichir la base
+        max_concurrent: 3  // Limiter la concurrence pour éviter la surcharge
       });
       
       const data = response.data;
