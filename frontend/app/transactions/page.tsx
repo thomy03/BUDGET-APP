@@ -23,7 +23,9 @@ export default function TransactionsPage() {
     calculations,
     refresh,
     toggle,
-    saveTags
+    saveTags,
+    bulkToggleIncome,
+    updateExpenseType
   } = useTransactions();
 
   // Auto-tagging functionality
@@ -46,10 +48,15 @@ export default function TransactionsPage() {
   console.log('📊 Transactions page - Current month:', month, 'ImportId:', importId);
 
   // Gestionnaire pour les changements de type de dépense (classification IA)
-  const handleExpenseTypeChange = (id: number, expenseType: 'fixed' | 'variable') => {
+  const handleExpenseTypeChange = async (id: number, expenseType: 'fixed' | 'variable') => {
     console.log(`✨ Expense type changed for transaction ${id}: ${expenseType}`);
-    // Actualiser les données pour refléter le changement
-    refresh(isAuthenticated, month);
+    await updateExpenseType(id, expenseType);
+  };
+
+  // Gestionnaire pour la sélection en masse des revenus
+  const handleBulkToggleIncome = async (exclude: boolean) => {
+    console.log(`📊 Bulk toggling income transactions: exclude=${exclude}`);
+    await bulkToggleIncome(exclude);
   };
 
   // Gestionnaire pour démarrer l'auto-tagging
@@ -209,6 +216,7 @@ export default function TransactionsPage() {
             onToggle={toggle}
             onSaveTags={saveTags}
             onExpenseTypeChange={handleExpenseTypeChange}
+            onBulkToggleIncome={handleBulkToggleIncome}
           />
         )}
       </Card>

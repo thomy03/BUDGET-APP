@@ -263,6 +263,59 @@ class ExportHistory(Base):
     )
 
 
+class MLFeedback(Base):
+    """ML Feedback model for storing user corrections and learning patterns"""
+    __tablename__ = "ml_feedback"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    
+    # Transaction reference
+    transaction_id = Column(Integer, ForeignKey('transactions.id'), nullable=False, index=True)
+    
+    # Tag correction
+    original_tag = Column(String(100), nullable=True)  # What ML suggested
+    corrected_tag = Column(String(100), nullable=True)  # What user chose
+    
+    # Expense type correction  
+    original_expense_type = Column(String(20), nullable=True)  # FIXED/VARIABLE suggested
+    corrected_expense_type = Column(String(20), nullable=True)  # FIXED/VARIABLE corrected
+    
+    # Pattern learning data
+    merchant_pattern = Column(String(200), nullable=True, index=True)  # Cleaned merchant name for pattern matching
+    transaction_amount = Column(Float, nullable=True)  # Amount for context
+    transaction_description = Column(Text, nullable=True)  # Full transaction label
+    
+    # Feedback metadata
+    feedback_type = Column(String(20), nullable=False, index=True)  # 'correction', 'acceptance', 'manual'
+    confidence_before = Column(Float, nullable=True)  # ML confidence before correction
+    user_id = Column(String(50), nullable=True, index=True)  # User who provided feedback
+    
+    # Timestamps
+    created_at = Column(DateTime, server_default=func.now(), index=True)
+    applied_at = Column(DateTime, nullable=True)  # When the learning was applied
+    
+    # Learning status
+    pattern_learned = Column(Boolean, default=False, index=True)  # Whether this feedback contributed to learned patterns
+    times_pattern_used = Column(Integer, default=0)  # How many times this pattern was applied
+    pattern_success_rate = Column(Float, default=0.0)  # Success rate of this pattern
+    
+    # Performance indexes for ML feedback
+    __table_args__ = (
+        # Core learning pattern indexes
+        Index('idx_ml_feedback_merchant_pattern', 'merchant_pattern'),
+        Index('idx_ml_feedback_pattern_learned', 'pattern_learned', 'merchant_pattern'),
+        Index('idx_ml_feedback_transaction_user', 'transaction_id', 'user_id'),
+        
+        # Temporal analysis indexes  
+        Index('idx_ml_feedback_created_type', 'created_at', 'feedback_type'),
+        Index('idx_ml_feedback_user_created', 'user_id', 'created_at'),
+        
+        # Pattern performance tracking
+        Index('idx_ml_feedback_pattern_success', 'merchant_pattern', 'pattern_success_rate'),
+        Index('idx_ml_feedback_usage_tracking', 'times_pattern_used', 'pattern_learned'),
+    )
+
+
 class CustomProvision(Base):
     """Custom provision model for flexible budget provisions"""
     __tablename__ = "custom_provisions"

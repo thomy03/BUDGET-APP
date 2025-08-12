@@ -3,6 +3,8 @@
 import React, { useState } from 'react';
 import { useEnhancedDashboard, EnhancedSummaryData, SavingsDetail, FixedExpenseDetail, VariableDetail } from '../../hooks/useEnhancedDashboard';
 import { Card, LoadingSpinner } from '../ui';
+import { TransactionDetailModal } from './TransactionDetailModal';
+import { useRouter } from 'next/navigation';
 
 interface EnhancedDashboardProps {
   month: string;
@@ -12,6 +14,14 @@ interface EnhancedDashboardProps {
 const EnhancedDashboard = React.memo<EnhancedDashboardProps>(({ month, isAuthenticated }) => {
   const { data, loading, error, reload, convertExpenseType, bulkConvertExpenseType } = useEnhancedDashboard(month, isAuthenticated);
   const [convertingIds, setConvertingIds] = useState<Set<number>>(new Set());
+  const [modalState, setModalState] = useState<{
+    isOpen: boolean;
+    title: string;
+    category: 'provision' | 'fixed' | 'variable';
+    categoryName?: string;
+    tagFilter?: string;
+  }>({ isOpen: false, title: '', category: 'variable' });
+  const router = useRouter();
 
   const handleConvertExpenseType = async (transactionId: number, newType: 'FIXED' | 'VARIABLE' | 'PROVISION') => {
     setConvertingIds(prev => new Set(prev).add(transactionId));
@@ -57,10 +67,33 @@ const EnhancedDashboard = React.memo<EnhancedDashboardProps>(({ month, isAuthent
     );
   }
 
+  const openModal = (category: 'provision' | 'fixed' | 'variable', categoryName?: string, tagFilter?: string) => {
+    const titles = {
+      provision: `Détail des Provisions${categoryName ? ` - ${categoryName}` : ''}`,
+      fixed: `Détail des Charges Fixes${categoryName ? ` - ${categoryName}` : ''}`,
+      variable: `Détail des Dépenses Variables${categoryName ? ` - ${categoryName}` : ''}`
+    };
+    
+    setModalState({
+      isOpen: true,
+      title: titles[category],
+      category,
+      categoryName,
+      tagFilter
+    });
+  };
+
+  const closeModal = () => {
+    setModalState({ isOpen: false, title: '', category: 'variable' });
+  };
+
   return (
     <div className="space-y-8">
+      {/* Revenue Details Section */}
+      <RevenueSection data={data} />
+      
       {/* Key Metrics Overview */}
-      <MetricsOverview data={data} />
+      <MetricsOverview data={data} onCategoryClick={openModal} />
       
       {/* Strict Separation Info Banner */}
       <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-4">
@@ -92,57 +125,193 @@ const EnhancedDashboard = React.memo<EnhancedDashboardProps>(({ month, isAuthent
       {/* Main Content - Split Layout */}
       <div className="grid lg:grid-cols-2 gap-8">
         {/* LEFT: ÉPARGNE (PROVISIONS) */}
-        <SavingsSection data={data} />
+        <SavingsSection data={data} onCategoryClick={openModal} />
         
         {/* RIGHT: DÉPENSES (FIXED + VARIABLES) */}
         <ExpensesSection 
           data={data} 
           convertingIds={convertingIds}
           onConvertExpenseType={handleConvertExpenseType}
+          onCategoryClick={openModal}
         />
       </div>
       
       {/* Summary Totals */}
       <TotalsSummary data={data} />
+      
+      {/* Transaction Detail Modal */}
+      <TransactionDetailModal
+        isOpen={modalState.isOpen}
+        onClose={closeModal}
+        title={modalState.title}
+        category={modalState.category}
+        categoryName={modalState.categoryName}
+        month={month}
+        tagFilter={modalState.tagFilter}
+      />
     </div>
   );
 });
 
 EnhancedDashboard.displayName = 'EnhancedDashboard';
 
-// Metrics Overview Component
-const MetricsOverview = React.memo<{ data: EnhancedSummaryData }>(({ data }) => {
+// Revenue Section Component
+const RevenueSection = React.memo<{ data: EnhancedSummaryData }>(({ data }) => {
+  if (!data.revenues) return null;
+  
+  // Calculate recommended provision amount: Total Fixed Expenses + Suggested Provisions
+  const recommendedProvision = data.fixed_expenses.total + data.savings.total;
+  
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-      <MetricCard 
-        title="Épargne" 
-        value={data.savings.total} 
-        color="green"
-        icon="🎯"
-        subtitle={`${data.savings.count} provision${data.savings.count > 1 ? 's' : ''}`}
-      />
-      <MetricCard 
-        title="Charges Fixes" 
-        value={data.fixed_expenses.total} 
-        color="blue"
-        icon="💳"
-        subtitle={`${data.fixed_expenses.count} charge${data.fixed_expenses.count > 1 ? 's' : ''}`}
-      />
-      <MetricCard 
-        title="Variables" 
-        value={data.variables.total} 
-        color="orange"
-        icon="📊"
-        subtitle={`${data.variables.total_transactions} transaction${data.variables.total_transactions > 1 ? 's' : ''}`}
-      />
-      <MetricCard 
-        title="Total Budget" 
-        value={data.totals.grand_total} 
-        color="purple"
-        icon="📈"
-        subtitle="Budget complet"
-        isTotal
-      />
+    <Card className="p-6 border-l-4 border-l-emerald-500 bg-gradient-to-r from-emerald-50 to-green-50">
+      <div className="flex items-center mb-6">
+        <span className="text-2xl mr-3">💰</span>
+        <div>
+          <h2 className="text-xl font-bold text-emerald-900">DÉTAIL DES REVENUS</h2>
+          <p className="text-sm text-emerald-700">Répartition des revenus mensuels par membre</p>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="bg-white rounded-lg p-4 border border-emerald-100">
+          <div className="text-sm font-medium text-emerald-700 mb-1">{data.member1}</div>
+          <div className="text-xl font-bold text-emerald-900">{data.revenues.member1_revenue.toFixed(2)} €</div>
+          <div className="text-xs text-emerald-600 mt-1">Revenus individuels</div>
+        </div>
+        <div className="bg-white rounded-lg p-4 border border-emerald-100">
+          <div className="text-sm font-medium text-emerald-700 mb-1">{data.member2}</div>
+          <div className="text-xl font-bold text-emerald-900">{data.revenues.member2_revenue.toFixed(2)} €</div>
+          <div className="text-xs text-emerald-600 mt-1">Revenus individuels</div>
+        </div>
+        <div className="bg-white rounded-lg p-4 border border-emerald-100 ring-2 ring-emerald-200">
+          <div className="text-sm font-medium text-emerald-700 mb-1">Total Revenus</div>
+          <div className="text-xl font-bold text-emerald-900">{data.revenues.total_revenue.toFixed(2)} €</div>
+          <div className="text-xs text-emerald-600 mt-1">Revenus combinés</div>
+        </div>
+        <div className="bg-gradient-to-r from-yellow-50 to-orange-50 rounded-lg p-4 border border-orange-200">
+          <div className="text-sm font-medium text-orange-700 mb-1">Montant à Provisionner</div>
+          <div className="text-xl font-bold text-orange-900">{recommendedProvision.toFixed(2)} €</div>
+          <div className="text-xs text-orange-600 mt-1">Charges fixes + Épargne</div>
+        </div>
+      </div>
+
+      {/* Detailed calculation breakdown */}
+      <div className="mt-4 bg-white rounded-lg p-4 border border-emerald-100">
+        <div className="text-sm font-medium text-emerald-700 mb-2">Calcul du montant à provisionner:</div>
+        <div className="grid grid-cols-3 gap-4 text-xs">
+          <div className="text-center">
+            <div className="text-blue-600 font-semibold">{data.fixed_expenses.total.toFixed(2)} €</div>
+            <div className="text-gray-600">Charges fixes</div>
+          </div>
+          <div className="text-center">
+            <div className="text-green-600 font-semibold">+ {data.savings.total.toFixed(2)} €</div>
+            <div className="text-gray-600">Provisions épargne</div>
+          </div>
+          <div className="text-center">
+            <div className="text-orange-600 font-bold">{recommendedProvision.toFixed(2)} €</div>
+            <div className="text-gray-600">Total recommandé</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Progress bar showing coverage */}
+      <div className="mt-4">
+        <div className="flex justify-between text-sm text-emerald-700 mb-2">
+          <span>Couverture Budget Total</span>
+          <span>{((data.revenues.total_revenue / data.totals.total_expenses) * 100).toFixed(1)}%</span>
+        </div>
+        <div className="w-full bg-gray-200 rounded-full h-3">
+          <div 
+            className="bg-gradient-to-r from-emerald-400 to-green-500 h-3 rounded-full transition-all duration-300"
+            style={{ 
+              width: `${Math.min(100, (data.revenues.total_revenue / data.totals.total_expenses) * 100)}%` 
+            }}
+          ></div>
+        </div>
+      </div>
+    </Card>
+  );
+});
+
+RevenueSection.displayName = 'RevenueSection';
+
+// Metrics Overview Component
+const MetricsOverview = React.memo<{ 
+  data: EnhancedSummaryData;
+  onCategoryClick: (category: 'provision' | 'fixed' | 'variable', categoryName?: string, tagFilter?: string) => void;
+}>(({ data, onCategoryClick }) => {
+  return (
+    <div className="space-y-4">
+      {/* Total Dépenses - Enhanced with clear visual separation */}
+      <Card className="p-6 border-2 border-red-300 bg-gradient-to-r from-red-50 to-pink-50 shadow-lg">
+        <div className="text-center">
+          <h3 className="text-lg font-bold text-red-900 mb-4 flex items-center justify-center">
+            <span className="mr-2">💸</span>
+            TOTAL DES DÉPENSES
+          </h3>
+          
+          {/* Main total */}
+          <div className="text-4xl font-bold text-red-900 mb-4">{data.totals.total_expenses.toFixed(2)} €</div>
+          
+          {/* Breakdown with visual separation */}
+          <div className="grid grid-cols-2 gap-4 max-w-md mx-auto">
+            <div className="bg-white rounded-lg p-4 border-l-4 border-l-orange-400">
+              <div className="text-sm font-medium text-orange-700 mb-1">Variables</div>
+              <div className="text-xl font-bold text-orange-900">{data.variables.total.toFixed(2)} €</div>
+              <div className="text-xs text-orange-600 mt-1">{data.variables.total_transactions} transactions</div>
+            </div>
+            <div className="bg-white rounded-lg p-4 border-l-4 border-l-blue-400">
+              <div className="text-sm font-medium text-blue-700 mb-1">Fixes</div>
+              <div className="text-xl font-bold text-blue-900">{data.fixed_expenses.total.toFixed(2)} €</div>
+              <div className="text-xs text-blue-600 mt-1">{data.fixed_expenses.count} charges</div>
+            </div>
+          </div>
+          
+          {/* Sum equation */}
+          <div className="text-sm text-red-700 mt-4 font-medium">
+            {data.variables.total.toFixed(2)} € + {data.fixed_expenses.total.toFixed(2)} € = {data.totals.total_expenses.toFixed(2)} €
+          </div>
+        </div>
+      </Card>
+      
+      {/* Métriques détaillées */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <MetricCard 
+          title="Épargne" 
+          value={data.savings.total} 
+          color="green"
+          icon="🎯"
+          subtitle={`${data.savings.count} provision${data.savings.count > 1 ? 's' : ''}`}
+          onClick={() => onCategoryClick('provision')}
+          clickable
+        />
+        <MetricCard 
+          title="Charges Fixes" 
+          value={data.fixed_expenses.total} 
+          color="blue"
+          icon="💳"
+          subtitle={`${data.fixed_expenses.count} charge${data.fixed_expenses.count > 1 ? 's' : ''}`}
+          onClick={() => onCategoryClick('fixed')}
+          clickable
+        />
+        <MetricCard 
+          title="Variables" 
+          value={data.variables.total} 
+          color="orange"
+          icon="📊"
+          subtitle={`${data.variables.total_transactions} transaction${data.variables.total_transactions > 1 ? 's' : ''}`}
+          onClick={() => onCategoryClick('variable')}
+          clickable
+        />
+        <MetricCard 
+          title="Total Budget" 
+          value={data.totals.grand_total} 
+          color="purple"
+          icon="📈"
+          subtitle="Budget complet"
+          isTotal
+        />
+      </div>
     </div>
   );
 });
@@ -150,7 +319,10 @@ const MetricsOverview = React.memo<{ data: EnhancedSummaryData }>(({ data }) => 
 MetricsOverview.displayName = 'MetricsOverview';
 
 // Savings Section Component (LEFT)
-const SavingsSection = React.memo<{ data: EnhancedSummaryData }>(({ data }) => {
+const SavingsSection = React.memo<{ 
+  data: EnhancedSummaryData;
+  onCategoryClick: (category: 'provision' | 'fixed' | 'variable', categoryName?: string, tagFilter?: string) => void;
+}>(({ data, onCategoryClick }) => {
   return (
     <Card className="p-6 border-l-4 border-l-green-500 bg-gradient-to-r from-green-50 to-emerald-50">
       <div className="flex items-center mb-6">
@@ -164,7 +336,13 @@ const SavingsSection = React.memo<{ data: EnhancedSummaryData }>(({ data }) => {
       {data.savings.detail.length > 0 ? (
         <div className="space-y-3">
           {data.savings.detail.map((saving, index) => (
-            <SavingRow key={index} saving={saving} member1={data.member1} member2={data.member2} />
+            <SavingRow 
+              key={index} 
+              saving={saving} 
+              member1={data.member1} 
+              member2={data.member2}
+              onClick={() => onCategoryClick('provision', saving.name)}
+            />
           ))}
           
           <div className="border-t-2 border-green-200 pt-3 mt-4">
@@ -194,7 +372,8 @@ const ExpensesSection = React.memo<{
   data: EnhancedSummaryData;
   convertingIds: Set<number>;
   onConvertExpenseType: (transactionId: number, newType: 'FIXED' | 'VARIABLE' | 'PROVISION') => void;
-}>(({ data, convertingIds, onConvertExpenseType }) => {
+  onCategoryClick: (category: 'provision' | 'fixed' | 'variable', categoryName?: string, tagFilter?: string) => void;
+}>(({ data, convertingIds, onConvertExpenseType, onCategoryClick }) => {
   return (
     <Card className="p-6 border-l-4 border-l-red-500 bg-gradient-to-r from-red-50 to-orange-50">
       <div className="flex items-center mb-6">
@@ -227,7 +406,13 @@ const ExpensesSection = React.memo<{
             </div>
             <div className="space-y-2 mb-4">
               {data.fixed_expenses.detail.map((expense, index) => (
-                <FixedExpenseRow key={index} expense={expense} member1={data.member1} member2={data.member2} />
+                <FixedExpenseRow 
+                  key={index} 
+                  expense={expense} 
+                  member1={data.member1} 
+                  member2={data.member2}
+                  onClick={() => onCategoryClick('fixed', expense.name)}
+                />
               ))}
             </div>
             <div className="border-b border-blue-200 pb-2 mb-4">
@@ -262,6 +447,7 @@ const ExpensesSection = React.memo<{
                   member2={data.member2}
                   convertingIds={convertingIds}
                   onConvert={onConvertExpenseType}
+                  onClick={() => onCategoryClick('variable', variable.name, variable.tag)}
                 />
               ))}
             </div>
@@ -287,9 +473,19 @@ const ExpensesSection = React.memo<{
 ExpensesSection.displayName = 'ExpensesSection';
 
 // Individual Row Components
-const SavingRow = React.memo<{ saving: SavingsDetail; member1: string; member2: string }>(({ saving, member1, member2 }) => {
+const SavingRow = React.memo<{ 
+  saving: SavingsDetail; 
+  member1: string; 
+  member2: string;
+  onClick?: () => void;
+}>(({ saving, member1, member2, onClick }) => {
   return (
-    <div className="flex justify-between items-center py-2 px-3 bg-white rounded-lg border border-green-100 hover:bg-green-25 transition-colors">
+    <div 
+      className={`flex justify-between items-center py-2 px-3 bg-white rounded-lg border border-green-100 transition-colors ${
+        onClick ? 'hover:bg-green-50 cursor-pointer hover:shadow-md' : 'hover:bg-green-25'
+      }`}
+      onClick={onClick}
+    >
       <div className="flex items-center space-x-2">
         <span className="text-lg">{saving.icon}</span>
         <div className="min-w-0 flex-1">
@@ -307,15 +503,25 @@ const SavingRow = React.memo<{ saving: SavingsDetail; member1: string; member2: 
 
 SavingRow.displayName = 'SavingRow';
 
-const FixedExpenseRow = React.memo<{ expense: FixedExpenseDetail; member1: string; member2: string }>(({ expense, member1, member2 }) => {
+const FixedExpenseRow = React.memo<{ 
+  expense: FixedExpenseDetail; 
+  member1: string; 
+  member2: string;
+  onClick?: () => void;
+}>(({ expense, member1, member2, onClick }) => {
   const isAIGenerated = expense.source === 'ai_classified';
   
   return (
-    <div className={`flex justify-between items-center py-2 px-3 bg-white rounded-lg border transition-colors ${
-      isAIGenerated 
-        ? 'border-blue-200 bg-gradient-to-r from-blue-50 to-indigo-50 hover:from-blue-100 hover:to-indigo-100' 
-        : 'border-blue-100 hover:bg-blue-50'
-    }`}>
+    <div 
+      className={`flex justify-between items-center py-2 px-3 bg-white rounded-lg border transition-colors ${
+        isAIGenerated 
+          ? 'border-blue-200 bg-gradient-to-r from-blue-50 to-indigo-50' 
+          : 'border-blue-100'
+      } ${
+        onClick ? 'cursor-pointer hover:shadow-md hover:scale-[1.02]' : 'hover:bg-blue-50'
+      }`}
+      onClick={onClick}
+    >
       <div className="flex items-center space-x-2 min-w-0 flex-1">
         <span className="text-lg flex-shrink-0">{expense.icon}</span>
         <div className="min-w-0 flex-1">
@@ -351,11 +557,17 @@ const VariableRow = React.memo<{
   member2: string;
   convertingIds: Set<number>;
   onConvert: (transactionId: number, newType: 'FIXED' | 'VARIABLE' | 'PROVISION') => void;
-}>(({ variable, member1, member2, convertingIds, onConvert }) => {
+  onClick?: () => void;
+}>(({ variable, member1, member2, convertingIds, onConvert, onClick }) => {
   const isUntagged = variable.type === 'untagged_variable';
   
   return (
-    <div className="flex justify-between items-center py-2 px-3 bg-white rounded-lg border border-orange-100 hover:bg-orange-25 transition-colors">
+    <div 
+      className={`flex justify-between items-center py-2 px-3 bg-white rounded-lg border border-orange-100 transition-colors ${
+        onClick ? 'cursor-pointer hover:bg-orange-50 hover:shadow-md hover:scale-[1.02]' : 'hover:bg-orange-25'
+      }`}
+      onClick={onClick}
+    >
       <div className="flex items-center space-x-2 min-w-0 flex-1">
         <span className={`text-sm font-medium truncate ${isUntagged ? 'text-gray-700' : 'text-orange-900'}`}>
           {variable.name}
@@ -433,7 +645,9 @@ const MetricCard = React.memo<{
   icon: string;
   subtitle?: string;
   isTotal?: boolean;
-}>(({ title, value, color, icon, subtitle, isTotal = false }) => {
+  onClick?: () => void;
+  clickable?: boolean;
+}>(({ title, value, color, icon, subtitle, isTotal = false, onClick, clickable = false }) => {
   const colorClasses = {
     green: 'border-l-green-500 bg-gradient-to-r from-green-50 to-green-100 text-green-900',
     blue: 'border-l-blue-500 bg-gradient-to-r from-blue-50 to-blue-100 text-blue-900',
@@ -444,12 +658,30 @@ const MetricCard = React.memo<{
   const safeValue = typeof value === 'number' && !isNaN(value) ? value : 0;
 
   return (
-    <Card className={`p-4 border-l-4 ${colorClasses[color as keyof typeof colorClasses]} ${
-      isTotal ? 'ring-2 ring-purple-200 shadow-lg' : ''
-    }`}>
+    <Card 
+      className={`p-4 border-l-4 ${colorClasses[color as keyof typeof colorClasses]} ${
+        isTotal ? 'ring-2 ring-purple-200 shadow-lg' : ''
+      } ${
+        clickable ? 'cursor-pointer hover:shadow-lg hover:scale-105 transition-all duration-200 hover:ring-2 hover:ring-opacity-30' : ''
+      } ${
+        clickable && color === 'green' ? 'hover:ring-green-300' : ''
+      } ${
+        clickable && color === 'blue' ? 'hover:ring-blue-300' : ''
+      } ${
+        clickable && color === 'orange' ? 'hover:ring-orange-300' : ''
+      }`}
+      onClick={clickable ? onClick : undefined}
+    >
       <div className="flex items-center justify-between mb-2">
         <span className="text-lg">{icon}</span>
-        {isTotal && <span className="text-xs font-medium px-2 py-1 bg-purple-200 rounded-full">TOTAL</span>}
+        <div className="flex items-center space-x-2">
+          {isTotal && <span className="text-xs font-medium px-2 py-1 bg-purple-200 rounded-full">TOTAL</span>}
+          {clickable && (
+            <span className="text-xs bg-gray-200 text-gray-600 px-2 py-1 rounded-full">
+              Cliquer pour détails
+            </span>
+          )}
+        </div>
       </div>
       <div className="text-sm font-medium mb-1">{title}</div>
       <div className={`text-xl font-bold ${isTotal ? 'text-2xl' : ''}`}>{safeValue.toFixed(2)} €</div>

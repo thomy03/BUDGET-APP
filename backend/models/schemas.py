@@ -850,3 +850,207 @@ class BatchErrorResponse(BaseModel):
                 "timestamp": "2025-08-12T14:30:00Z"
             }
         }
+
+
+# ML Feedback Schemas
+
+class MLFeedbackCreate(BaseModel):
+    """Schema for creating ML feedback records"""
+    transaction_id: int = Field(description="ID de la transaction concernée")
+    original_tag: Optional[str] = Field(None, max_length=100, description="Tag suggéré par le ML")
+    corrected_tag: Optional[str] = Field(None, max_length=100, description="Tag corrigé par l'utilisateur")
+    original_expense_type: Optional[str] = Field(None, pattern="^(FIXED|VARIABLE|PROVISION)$", description="Type suggéré par le ML")
+    corrected_expense_type: Optional[str] = Field(None, pattern="^(FIXED|VARIABLE|PROVISION)$", description="Type corrigé par l'utilisateur")
+    feedback_type: str = Field(pattern="^(correction|acceptance|manual)$", description="Type de feedback")
+    confidence_before: Optional[float] = Field(None, ge=0.0, le=1.0, description="Confiance ML avant correction")
+    
+    class Config:
+        schema_extra = {
+            "example": {
+                "transaction_id": 1234,
+                "original_tag": "divers",
+                "corrected_tag": "restaurant",
+                "original_expense_type": "VARIABLE",
+                "corrected_expense_type": "VARIABLE",
+                "feedback_type": "correction",
+                "confidence_before": 0.3
+            }
+        }
+
+
+class MLFeedbackResponse(BaseModel):
+    """Schema for ML feedback responses"""
+    id: int
+    transaction_id: int
+    original_tag: Optional[str]
+    corrected_tag: Optional[str]
+    original_expense_type: Optional[str]
+    corrected_expense_type: Optional[str]
+    merchant_pattern: Optional[str]
+    transaction_amount: Optional[float]
+    transaction_description: Optional[str]
+    feedback_type: str
+    confidence_before: Optional[float]
+    user_id: Optional[str]
+    created_at: dt.datetime
+    applied_at: Optional[dt.datetime]
+    pattern_learned: bool
+    times_pattern_used: int
+    pattern_success_rate: float
+    
+    class Config:
+        from_attributes = True
+        schema_extra = {
+            "example": {
+                "id": 1,
+                "transaction_id": 1234,
+                "original_tag": "divers",
+                "corrected_tag": "restaurant",
+                "original_expense_type": "VARIABLE",
+                "corrected_expense_type": "VARIABLE",
+                "merchant_pattern": "chez paul",
+                "transaction_amount": 35.50,
+                "transaction_description": "CB CHEZ PAUL RESTAURANT",
+                "feedback_type": "correction",
+                "confidence_before": 0.3,
+                "user_id": "admin",
+                "created_at": "2025-08-12T14:30:00Z",
+                "applied_at": None,
+                "pattern_learned": False,
+                "times_pattern_used": 0,
+                "pattern_success_rate": 0.0
+            }
+        }
+
+
+class TransactionTagUpdate(BaseModel):
+    """Schema for updating transaction tags"""
+    tags: str = Field(description="Tags séparés par des virgules")
+    
+    @validator('tags', pre=True)
+    def clean_tags(cls, v):
+        if isinstance(v, str):
+            # Clean and normalize tags
+            tags = [tag.strip().lower() for tag in v.split(',') if tag.strip()]
+            return ','.join(tags)
+        return v
+    
+    class Config:
+        schema_extra = {
+            "example": {
+                "tags": "restaurant,sortie"
+            }
+        }
+
+
+class TransactionExpenseTypeUpdate(BaseModel):
+    """Schema for updating transaction expense type"""
+    expense_type: str = Field(pattern="^(FIXED|VARIABLE|PROVISION)$", description="Type de dépense")
+    confidence_score: Optional[float] = Field(None, ge=0.0, le=1.0, description="Score de confiance de la classification")
+    
+    class Config:
+        schema_extra = {
+            "example": {
+                "expense_type": "FIXED",
+                "confidence_score": 0.95
+            }
+        }
+
+
+class MLTaggingResult(BaseModel):
+    """Schema for ML tagging results with enhanced confidence scoring"""
+    suggested_tag: str = Field(description="Tag suggéré par le ML")
+    confidence: float = Field(ge=0.0, le=1.0, description="Confiance totale (0-1)")
+    expense_type: str = Field(pattern="^(FIXED|VARIABLE|PROVISION)$", description="Type de dépense classifié")
+    explanation: str = Field(description="Explication du choix du ML")
+    
+    # Confidence factors breakdown
+    pattern_match_confidence: float = Field(ge=0.0, le=1.0, description="Confiance basée sur les patterns")
+    web_research_confidence: float = Field(ge=0.0, le=1.0, description="Confiance basée sur la recherche web")
+    user_feedback_confidence: float = Field(ge=0.0, le=1.0, description="Confiance basée sur l'apprentissage utilisateur")
+    context_confidence: float = Field(ge=0.0, le=1.0, description="Confiance basée sur le contexte")
+    
+    # Additional info
+    merchant_category: Optional[str] = Field(None, description="Catégorie de marchand identifiée")
+    merchant_name_clean: Optional[str] = Field(None, description="Nom de marchand nettoyé")
+    alternative_tags: List[str] = Field(default_factory=list, description="Tags alternatifs suggérés")
+    data_sources: List[str] = Field(default_factory=list, description="Sources de données utilisées")
+    processing_time_ms: int = Field(description="Temps de traitement en millisecondes")
+    web_research_performed: bool = Field(default=False, description="Recherche web effectuée")
+    user_correction_applied: bool = Field(default=False, description="Correction utilisateur appliquée")
+    
+    class Config:
+        schema_extra = {
+            "example": {
+                "suggested_tag": "restaurant",
+                "confidence": 0.85,
+                "expense_type": "VARIABLE",
+                "explanation": "Haute confiance (85%): chez paul identifié comme restaurant",
+                "pattern_match_confidence": 0.95,
+                "web_research_confidence": 0.0,
+                "user_feedback_confidence": 0.0,
+                "context_confidence": 0.3,
+                "merchant_category": "restaurant",
+                "merchant_name_clean": "chez paul",
+                "alternative_tags": ["repas", "sortie"],
+                "data_sources": ["pattern_matching"],
+                "processing_time_ms": 125,
+                "web_research_performed": False,
+                "user_correction_applied": False
+            }
+        }
+
+
+class MLFeedbackStats(BaseModel):
+    """Schema for ML feedback statistics"""
+    total_feedback_entries: int = Field(description="Nombre total d'entrées de feedback")
+    corrections_count: int = Field(description="Nombre de corrections")
+    acceptances_count: int = Field(description="Nombre d'acceptations")
+    manual_entries_count: int = Field(description="Nombre d'entrées manuelles")
+    patterns_learned: int = Field(description="Nombre de patterns appris")
+    average_confidence_improvement: float = Field(description="Amélioration moyenne de confiance")
+    most_corrected_tags: List[Dict[str, Any]] = Field(description="Tags les plus corrigés")
+    learning_success_rate: float = Field(description="Taux de succès de l'apprentissage")
+    
+    class Config:
+        schema_extra = {
+            "example": {
+                "total_feedback_entries": 156,
+                "corrections_count": 89,
+                "acceptances_count": 45,
+                "manual_entries_count": 22,
+                "patterns_learned": 34,
+                "average_confidence_improvement": 0.15,
+                "most_corrected_tags": [
+                    {"tag": "divers", "corrections": 23},
+                    {"tag": "shopping", "corrections": 12}
+                ],
+                "learning_success_rate": 0.78
+            }
+        }
+
+
+class MLLearningPattern(BaseModel):
+    """Schema for learned ML patterns"""
+    merchant_pattern: str = Field(description="Pattern de marchand")
+    learned_tag: str = Field(description="Tag appris")
+    learned_expense_type: str = Field(description="Type de dépense appris")
+    confidence_score: float = Field(ge=0.0, le=1.0, description="Score de confiance du pattern")
+    usage_count: int = Field(description="Nombre d'utilisations")
+    success_rate: float = Field(ge=0.0, le=1.0, description="Taux de succès")
+    last_used: Optional[dt.datetime] = Field(None, description="Dernière utilisation")
+    created_from_feedback: dt.datetime = Field(description="Créé à partir du feedback")
+    
+    class Config:
+        schema_extra = {
+            "example": {
+                "merchant_pattern": "chez paul",
+                "learned_tag": "restaurant",
+                "learned_expense_type": "VARIABLE",
+                "confidence_score": 0.92,
+                "usage_count": 8,
+                "success_rate": 0.875,
+                "last_used": "2025-08-12T14:30:00Z",
+                "created_from_feedback": "2025-08-01T10:15:00Z"
+            }
+        }

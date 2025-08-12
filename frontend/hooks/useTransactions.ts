@@ -26,6 +26,8 @@ interface UseTransactionsReturn {
   refresh: (isAuthenticated: boolean, month: string | null) => Promise<void>;
   toggle: (id: number, exclude: boolean) => Promise<void>;
   saveTags: (id: number, tagsCSV: string) => Promise<void>;
+  bulkToggleIncome: (exclude: boolean) => Promise<void>;
+  updateExpenseType: (id: number, expenseType: 'fixed' | 'variable') => Promise<void>;
 }
 
 export function useTransactions(): UseTransactionsReturn {
@@ -160,7 +162,7 @@ export function useTransactions(): UseTransactionsReturn {
       
       console.log('🏷️ Saving tags for transaction', id, ':', tags);
       
-      const response = await api.patch(`/transactions/${id}/tags`, { tags: tagsCSV });
+      const response = await api.put(`/transactions/${id}/tag`, { tag: tagsCSV });
       
       console.log('✅ Tags saved successfully:', response.data);
       
@@ -185,6 +187,39 @@ export function useTransactions(): UseTransactionsReturn {
     }
   };
 
+  const bulkToggleIncome = async (exclude: boolean) => {
+    try {
+      const incomeTransactions = rows.filter(tx => tx.amount >= 0);
+      const updates = incomeTransactions.map(tx => 
+        api.patch(`/transactions/${tx.id}`, { exclude })
+      );
+      
+      await Promise.all(updates);
+      
+      // Update local state
+      setRows(prev => prev.map(tx => 
+        tx.amount >= 0 ? { ...tx, exclude } : tx
+      ));
+    } catch (err: any) {
+      console.error('Error bulk toggling income:', err);
+      setError('Erreur lors de la modification en masse des revenus');
+    }
+  };
+
+  const updateExpenseType = async (id: number, expenseType: 'fixed' | 'variable') => {
+    try {
+      const response = await api.patch(`/transactions/${id}/expense-type`, {
+        expense_type: expenseType,
+        expense_type_manual_override: true
+      });
+      
+      setRows(prev => prev.map(x => x.id === id ? response.data : x));
+    } catch (err: any) {
+      console.error('Error updating expense type:', err);
+      setError('Erreur lors de la mise à jour du type de dépense');
+    }
+  };
+
   return {
     rows,
     loading,
@@ -194,6 +229,8 @@ export function useTransactions(): UseTransactionsReturn {
     calculations,
     refresh,
     toggle,
-    saveTags
+    saveTags,
+    bulkToggleIncome,
+    updateExpenseType
   };
 }

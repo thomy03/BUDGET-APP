@@ -12,6 +12,12 @@ export interface EnhancedSummaryData {
     member1: number;
     member2: number;
   };
+  revenues: {
+    member1_revenue: number;
+    member2_revenue: number;
+    total_revenue: number;
+    provision_needed: number;
+  };
   savings: {
     total: number;
     member1_total: number;
@@ -39,6 +45,7 @@ export interface EnhancedSummaryData {
     grand_total: number;
     member1_total: number;
     member2_total: number;
+    total_expenses: number;
   };
   metadata: {
     active_provisions: number;

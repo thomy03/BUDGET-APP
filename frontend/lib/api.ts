@@ -732,3 +732,61 @@ export const expenseClassificationApi = {
     return response.data;
   }
 };
+
+// =============================================================================
+// FONCTIONS API POUR ML FEEDBACK
+// =============================================================================
+
+export const mlFeedbackApi = {
+  // Envoyer un feedback pour un changement de tag
+  async sendTagFeedback(transactionId: number, oldTags: string, newTags: string): Promise<void> {
+    try {
+      await api.post('/api/ml-feedback', {
+        transaction_id: transactionId,
+        feedback_type: 'tag_change',
+        old_value: oldTags,
+        new_value: newTags,
+        timestamp: new Date().toISOString()
+      });
+      console.log(`📝 ML Feedback sent: Tag change for transaction ${transactionId}`);
+    } catch (error) {
+      console.warn('Failed to send ML feedback for tag change:', error);
+      // Non-blocking error - don't throw
+    }
+  },
+
+  // Envoyer un feedback pour un changement de type de dépense
+  async sendExpenseTypeFeedback(transactionId: number, oldType: string | null, newType: 'fixed' | 'variable'): Promise<void> {
+    try {
+      await api.post('/api/ml-feedback', {
+        transaction_id: transactionId,
+        feedback_type: 'expense_type_change',
+        old_value: oldType,
+        new_value: newType,
+        timestamp: new Date().toISOString()
+      });
+      console.log(`📝 ML Feedback sent: Expense type change for transaction ${transactionId}`);
+    } catch (error) {
+      console.warn('Failed to send ML feedback for expense type change:', error);
+      // Non-blocking error - don't throw
+    }
+  },
+
+  // Envoyer un feedback pour une classification acceptée/rejetée
+  async sendClassificationFeedback(transactionId: number, suggestedType: string, userAction: 'accept' | 'reject', finalType?: 'fixed' | 'variable'): Promise<void> {
+    try {
+      await api.post('/api/ml-feedback', {
+        transaction_id: transactionId,
+        feedback_type: 'classification_feedback',
+        suggested_value: suggestedType,
+        user_action: userAction,
+        final_value: finalType,
+        timestamp: new Date().toISOString()
+      });
+      console.log(`📝 ML Feedback sent: Classification ${userAction} for transaction ${transactionId}`);
+    } catch (error) {
+      console.warn('Failed to send ML feedback for classification:', error);
+      // Non-blocking error - don't throw
+    }
+  }
+};

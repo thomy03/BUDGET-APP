@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Tx, expenseClassificationApi } from '../../lib/api';
+import { Tx, expenseClassificationApi, mlFeedbackApi } from '../../lib/api';
 import { ExpenseTypeBadge, PendingClassificationBadge } from './ExpenseTypeBadge';
 import { ExpenseTypeModal, ClassificationChoice } from './ExpenseTypeModal';
 import { ClassificationModal } from './ClassificationModal';
@@ -11,6 +11,7 @@ import { CompactToggleSwitch } from '../ui/ToggleSwitch';
 import { WebResearchIndicator } from '../ui/WebResearchIndicator';
 import { MerchantInfoDisplay } from '../ui/MerchantInfoDisplay';
 import { useTagClassification } from '../../hooks/useTagClassification';
+import { Select, useToast, TagsInput } from '../ui';
 
 interface TransactionRowProps {
   row: Tx;
@@ -28,6 +29,8 @@ export function TransactionRow({ row, importId, onToggle, onSaveTags, onExpenseT
   const [isLegacyModalOpen, setIsLegacyModalOpen] = useState(false);
   const [isUpdatingExpenseType, setIsUpdatingExpenseType] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
+  const [tagsValue, setTagsValue] = useState(Array.isArray(row.tags) ? row.tags.join(", ") : (row.tags || ""));
+  const { addToast } = useToast();
   
   // Intégration du hook de classification intelligente
   const { state: classificationState, actions: classificationActions } = useTagClassification();
@@ -69,20 +72,47 @@ export function TransactionRow({ row, importId, onToggle, onSaveTags, onExpenseT
     }
   };
 
-  // Sauvegarde des tags (comportement existant maintenu)
+  // Sauvegarde des tags avec feedback API et optimistic update
   const handleTagsSave = async (id: number, tagsCSV: string) => {
-    // Sauvegarder les tags
-    onSaveTags(id, tagsCSV);
+    const oldTags = Array.isArray(row.tags) ? row.tags.join(", ") : (row.tags || "");
     
-    // Re-déclencher la classification avec les nouveaux tags si nécessaire
-    if (isExpense && tagsCSV.trim() && tagsCSV !== (Array.isArray(row.tags) ? row.tags.join(", ") : (row.tags || ""))) {
-      console.log(`🏷️ Tags updated for transaction ${id}, re-triggering AI classification...`);
+    // Optimistic update
+    setTagsValue(tagsCSV);
+    
+    try {
+      // Sauvegarder les tags
+      onSaveTags(id, tagsCSV);
       
-      const success = await classificationActions.classifyAfterTagUpdate(row, tagsCSV);
-      
-      if (success) {
-        onExpenseTypeChange?.(row.id, currentExpenseType === 'fixed' ? 'fixed' : 'variable');
+      // Envoyer feedback ML si les tags ont changé
+      if (tagsCSV.trim() !== oldTags.trim()) {
+        await mlFeedbackApi.sendTagFeedback(id, oldTags, tagsCSV);
+        
+        addToast({
+          message: "Tags mis à jour avec succès",
+          type: "success",
+          duration: 2000
+        });
       }
+      
+      // Re-déclencher la classification avec les nouveaux tags si nécessaire
+      if (isExpense && tagsCSV.trim() && tagsCSV !== oldTags) {
+        console.log(`🏷️ Tags updated for transaction ${id}, re-triggering AI classification...`);
+        
+        const success = await classificationActions.classifyAfterTagUpdate(row, tagsCSV);
+        
+        if (success) {
+          onExpenseTypeChange?.(row.id, currentExpenseType === 'fixed' ? 'fixed' : 'variable');
+        }
+      }
+    } catch (error) {
+      // Rollback optimistic update
+      setTagsValue(oldTags);
+      addToast({
+        message: "Erreur lors de la mise à jour des tags",
+        type: "error",
+        duration: 3000
+      });
+      console.error('Failed to update tags:', error);
     }
   };
 
@@ -109,17 +139,33 @@ export function TransactionRow({ row, importId, onToggle, onSaveTags, onExpenseT
     }
   };
 
-  // Legacy: Toggle manuel pour les cas simples
+  // Toggle manuel pour les cas simples avec feedback API
   const handleExpenseTypeToggle = async (newType: 'fixed' | 'variable') => {
     if (!isExpense || isUpdatingExpenseType) return;
     
+    const oldType = currentExpenseType;
     setIsUpdatingExpenseType(true);
+    
     try {
       await expenseClassificationApi.updateTransactionType(row.id, newType, true);
+      
+      // Envoyer feedback ML pour le changement de type
+      await mlFeedbackApi.sendExpenseTypeFeedback(row.id, oldType, newType);
+      
       onExpenseTypeChange?.(row.id, newType);
+      
+      addToast({
+        message: `Type de dépense changé en ${newType === 'fixed' ? 'FIXE' : 'VARIABLE'}`,
+        type: "success",
+        duration: 2000
+      });
     } catch (error) {
       console.error('Failed to update expense type:', error);
-      // TODO: Show toast error
+      addToast({
+        message: "Erreur lors de la mise à jour du type de dépense",
+        type: "error",
+        duration: 3000
+      });
     } finally {
       setIsUpdatingExpenseType(false);
     }
@@ -259,21 +305,19 @@ export function TransactionRow({ row, importId, onToggle, onSaveTags, onExpenseT
         </td>
         <td className="p-3">
           <div className="relative">
-            <input 
-              className={`w-full px-2 py-1 border rounded text-sm transition-all duration-300 ${
-                isClassifying 
-                  ? 'border-blue-300 bg-blue-50/50 ring-1 ring-blue-200 shadow-sm' 
-                  : 'border-zinc-200 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 hover:border-zinc-300'
-              }`}
-              defaultValue={Array.isArray(row.tags) ? row.tags.join(", ") : (row.tags || "")} 
+            <TagsInput
+              value={tagsValue}
+              onChange={setTagsValue}
               onFocus={handleTagsFocus}
-              onBlur={e => handleTagsSave(row.id, e.target.value)} 
+              onBlur={(value) => handleTagsSave(row.id, value)}
               placeholder={isExpense ? "Cliquer pour analyser avec l'IA..." : "courses, resto, santé…"}
               disabled={isClassifying}
+              isClassifying={isClassifying}
             />
+            
             {/* Indicateur de classification en cours - protection hydratation */}
             {isMounted && isClassifying && (
-              <div className="absolute right-2 top-1/2 transform -translate-y-1/2 animate-fade-in">
+              <div className="absolute right-2 top-1/2 transform -translate-y-1/2 animate-fade-in z-10">
                 <div className="w-4 h-4 animate-spin rounded-full border-2 border-blue-600 border-t-transparent shadow-sm"></div>
               </div>
             )}
@@ -298,13 +342,17 @@ export function TransactionRow({ row, importId, onToggle, onSaveTags, onExpenseT
         <td className="p-3">
           {isExpense && currentExpenseType ? (
             <div className="flex items-center gap-2">
-              <ExpenseTypeBadge
-                type={currentExpenseType}
+              <Select
+                options={[
+                  { value: 'variable', label: 'VARIABLE' },
+                  { value: 'fixed', label: 'FIXE' }
+                ]}
+                value={currentExpenseType}
+                onChange={(value) => handleExpenseTypeToggle(value as 'fixed' | 'variable')}
+                variant="compact"
                 size="sm"
-                interactive={true}
-                onClick={handleBadgeClick}
-                confidenceScore={row.expense_type_confidence}
-                autoDetected={row.expense_type_auto_detected}
+                disabled={isUpdatingExpenseType}
+                className="min-w-[90px] text-xs font-medium"
               />
               {isUpdatingExpenseType && (
                 <div className="w-4 h-4 animate-spin rounded-full border-2 border-blue-600 border-t-transparent"></div>
@@ -339,10 +387,18 @@ export function TransactionRow({ row, importId, onToggle, onSaveTags, onExpenseT
                 />
               ) : (
                 <>
-                  <CompactToggleSwitch
+                  <Select
+                    options={[
+                      { value: 'variable', label: 'VARIABLE' },
+                      { value: 'fixed', label: 'FIXE' }
+                    ]}
                     value="variable"
-                    onChange={handleExpenseTypeToggle}
+                    onChange={(value) => handleExpenseTypeToggle(value as 'fixed' | 'variable')}
+                    variant="compact"
+                    size="sm"
                     disabled={isUpdatingExpenseType}
+                    className="min-w-[90px] text-xs font-medium"
+                    placeholder="Choisir..."
                   />
                   <PendingClassificationBadge
                     size="sm"

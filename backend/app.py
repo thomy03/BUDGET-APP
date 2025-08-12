@@ -390,6 +390,8 @@ from routers.auto_tagging import router as auto_tagging_router  # Batch auto-tag
 # from routers.intelligence import router as intelligence_router  # Temporarily disabled due to syntax error
 from routers.research import router as research_router
 from routers.ml_tagging import router as ml_tagging_router  # ML-based tagging with confidence scoring
+from routers.ml_feedback import router as ml_feedback_router  # ML feedback learning system
+from routers.ml_enhanced_classification import router as ml_enhanced_classification_router  # Enhanced ML classification
 
 # Include routers with their prefixes
 app.include_router(auth_router, tags=["authentication"])
@@ -408,6 +410,8 @@ app.include_router(auto_tagging_router, tags=["auto-tagging"])  # Batch auto-tag
 # app.include_router(intelligence_router, tags=["intelligence"])  # Temporarily disabled
 app.include_router(research_router, tags=["web-research"])
 app.include_router(ml_tagging_router, tags=["ml-tagging"])  # ML-based tagging with confidence scoring
+app.include_router(ml_feedback_router, tags=["ml-feedback"])  # ML feedback learning system
+app.include_router(ml_enhanced_classification_router, tags=["ml-enhanced-classification"])  # Enhanced ML classification
 
 # Configure CORS middleware after all routes are defined
 # This ensures CORS preflight requests are handled correctly for all endpoints
