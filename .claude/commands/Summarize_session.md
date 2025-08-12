@@ -1,6 +1,6 @@
 # Summarize Session
 
-Document session progress and achievements in project documentation.
+Document session progress and achievements in project documentation on dedicated markdown under .claude
 
 ## Instructions
 
