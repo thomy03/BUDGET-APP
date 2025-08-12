@@ -28,6 +28,9 @@ from enum import Enum
 from models.database import Transaction, TagFixedLineMapping, MerchantKnowledgeBase
 from sqlalchemy import or_
 
+# Import tag suggestion service for enhanced classification
+from services.tag_suggestion_service import TagSuggestionService, TagSuggestionResult
+
 logger = logging.getLogger(__name__)
 
 class ExpenseType(Enum):
@@ -38,13 +41,24 @@ class ExpenseType(Enum):
 @dataclass
 class ClassificationResult:
     """Result of expense classification with explainability"""
-    expense_type: str  # "FIXED" or "VARIABLE"
+    expense_type: str  # "FIXED" or "VARIABLE" (legacy support)
     confidence: float  # 0.0 to 1.0
     primary_reason: str  # Main classification reason
     contributing_factors: List[str]  # Additional factors
     keyword_matches: List[str]  # Matching keywords found
     stability_score: Optional[float] = None  # Amount stability metric
     frequency_score: Optional[float] = None  # Frequency pattern score
+    # NEW: Tag suggestion fields (primary feature)
+    suggested_tag: Optional[str] = None  # Primary tag suggestion
+    tag_confidence: Optional[float] = None  # Confidence in tag suggestion
+    alternative_tags: List[str] = None  # Alternative tag suggestions
+    tag_explanation: Optional[str] = None  # Explanation for tag choice
+    web_research_used: bool = False  # Whether web research was used
+    merchant_info: Optional[Dict] = None  # Web research merchant data
+    
+    def __post_init__(self):
+        if self.alternative_tags is None:
+            self.alternative_tags = []
 
 
 class ExpenseClassificationService:
@@ -1557,6 +1571,173 @@ class ExpenseClassificationService:
         self._cache_hits = 0
         self._cache_misses = 0
         logger.info("🗑️ Performance cache cleared")
+
+    # ======================================================================
+    # NOUVEAU: SUGGESTION DE TAGS INTELLIGENTE (REMPLACE FIXE/VARIABLE)
+    # ======================================================================
+    
+    async def suggest_tag_for_transaction(self, transaction_label: str, amount: float = None) -> Dict[str, Any]:
+        """
+        Nouvelle méthode: Suggère un TAG pertinent au lieu de fixe/variable
+        
+        Utilise la recherche web pour identifier le type de marchand/service
+        et propose un tag approprié (ex: Netflix → "streaming")
+        """
+        try:
+            # Import du service de suggestion de tags
+            from services.tag_suggestion_service import get_tag_suggestion_service
+            
+            tag_service = get_tag_suggestion_service(self.db)
+            
+            # Utilise la recherche web pour suggérer un tag pertinent
+            suggestion_result = await tag_service.suggest_tag_with_web_research(
+                transaction_label=transaction_label,
+                amount=amount
+            )
+            
+            return {
+                "suggested_tag": suggestion_result.suggested_tag,
+                "confidence": suggestion_result.confidence,
+                "explanation": suggestion_result.explanation,
+                "category": suggestion_result.category,
+                "alternative_tags": suggestion_result.alternative_tags,
+                "research_source": suggestion_result.research_source,
+                "web_research_used": suggestion_result.web_research_used,
+                "merchant_info": suggestion_result.merchant_info
+            }
+            
+        except Exception as e:
+            logger.error(f"Error in tag suggestion for '{transaction_label}': {e}")
+            
+            # Fallback: utiliser patterns locaux
+            from services.tag_suggestion_service import get_tag_suggestion_service
+            tag_service = get_tag_suggestion_service(self.db)
+            fallback_result = tag_service.suggest_tag_fast(transaction_label, amount)
+            
+            return {
+                "suggested_tag": fallback_result.suggested_tag,
+                "confidence": fallback_result.confidence,
+                "explanation": fallback_result.explanation,
+                "category": None,
+                "alternative_tags": fallback_result.alternative_tags,
+                "research_source": fallback_result.research_source,
+                "web_research_used": False,
+                "merchant_info": None
+            }
+
+    def suggest_tag_fast_sync(self, transaction_label: str, amount: float = None) -> Dict[str, Any]:
+        """
+        Version synchrone rapide pour suggestion de tags (sans recherche web)
+        
+        Utilisée pour le traitement en lot rapide
+        """
+        try:
+            from services.tag_suggestion_service import get_tag_suggestion_service
+            
+            tag_service = get_tag_suggestion_service(self.db)
+            result = tag_service.suggest_tag_fast(transaction_label, amount)
+            
+            return {
+                "suggested_tag": result.suggested_tag,
+                "confidence": result.confidence,
+                "explanation": result.explanation,
+                "category": None,
+                "alternative_tags": result.alternative_tags,
+                "research_source": result.research_source,
+                "web_research_used": False,
+                "merchant_info": None
+            }
+            
+        except Exception as e:
+            logger.error(f"Error in fast tag suggestion for '{transaction_label}': {e}")
+            return {
+                "suggested_tag": "divers",
+                "confidence": 0.30,
+                "explanation": "Erreur dans la suggestion - tag par défaut",
+                "category": None,
+                "alternative_tags": [],
+                "research_source": "error_fallback",
+                "web_research_used": False,
+                "merchant_info": None
+            }
+
+    def batch_suggest_tags_for_transactions(self, transactions: List[Dict]) -> Dict[int, Dict[str, Any]]:
+        """
+        Suggestion de tags en lot pour plusieurs transactions
+        
+        Optimisé pour performance - utilise uniquement les patterns locaux
+        """
+        try:
+            from services.tag_suggestion_service import get_tag_suggestion_service
+            
+            tag_service = get_tag_suggestion_service(self.db)
+            batch_results = tag_service.batch_suggest_tags(transactions)
+            
+            # Convertir vers le format de réponse attendu
+            formatted_results = {}
+            for transaction_id, suggestion_result in batch_results.items():
+                formatted_results[transaction_id] = {
+                    "suggested_tag": suggestion_result.suggested_tag,
+                    "confidence": suggestion_result.confidence,
+                    "explanation": suggestion_result.explanation,
+                    "category": suggestion_result.category,
+                    "alternative_tags": suggestion_result.alternative_tags,
+                    "research_source": suggestion_result.research_source,
+                    "web_research_used": False,  # Batch processing sans web research
+                    "merchant_info": None
+                }
+            
+            logger.info(f"🏷️ Batch tag suggestions generated for {len(formatted_results)} transactions")
+            return formatted_results
+            
+        except Exception as e:
+            logger.error(f"Error in batch tag suggestion: {e}")
+            return {}
+
+    def learn_tag_from_user_feedback(self, transaction_label: str, suggested_tag: str, actual_tag: str, confidence: float):
+        """
+        Apprentissage à partir des corrections utilisateur pour améliorer les suggestions de tags
+        """
+        try:
+            from services.tag_suggestion_service import get_tag_suggestion_service
+            
+            tag_service = get_tag_suggestion_service(self.db)
+            tag_service.learn_from_user_feedback(
+                transaction_label=transaction_label,
+                suggested_tag=suggested_tag,
+                actual_tag=actual_tag,
+                confidence=confidence
+            )
+            
+            logger.info(f"📚 Tag learning feedback recorded: '{transaction_label}' → '{actual_tag}' (was: '{suggested_tag}')")
+            
+        except Exception as e:
+            logger.error(f"Error recording tag learning feedback: {e}")
+
+    def get_tag_suggestion_stats(self) -> Dict[str, Any]:
+        """
+        Statistiques du système de suggestion de tags
+        """
+        try:
+            from services.tag_suggestion_service import get_tag_suggestion_service
+            
+            tag_service = get_tag_suggestion_service(self.db)
+            stats = tag_service.get_tag_statistics()
+            
+            # Ajouter des statistiques spécifiques au système de classification
+            stats.update({
+                "classification_integration": "active",
+                "web_research_available": True,
+                "batch_processing_optimized": True,
+                "user_feedback_learning": True,
+                "suggested_confidence_threshold": 0.70
+            })
+            
+            return stats
+            
+        except Exception as e:
+            logger.error(f"Error getting tag suggestion stats: {e}")
+            return {"error": str(e)}
 
 
 # Enhanced auto-suggestion engine factory

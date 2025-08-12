@@ -18,9 +18,13 @@ interface TransactionRowProps {
   onToggle: (id: number, exclude: boolean) => void;
   onSaveTags: (id: number, tagsCSV: string) => void;
   onExpenseTypeChange?: (id: number, expenseType: 'fixed' | 'variable') => void;
+  /** Whether this transaction was recently auto-tagged */
+  isAutoTagged?: boolean;
+  /** Whether this transaction is part of the current auto-tagging batch */
+  isBeingAutoTagged?: boolean;
 }
 
-export function TransactionRow({ row, importId, onToggle, onSaveTags, onExpenseTypeChange }: TransactionRowProps) {
+export function TransactionRow({ row, importId, onToggle, onSaveTags, onExpenseTypeChange, isAutoTagged = false, isBeingAutoTagged = false }: TransactionRowProps) {
   const [isLegacyModalOpen, setIsLegacyModalOpen] = useState(false);
   const [isUpdatingExpenseType, setIsUpdatingExpenseType] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
@@ -94,9 +98,11 @@ export function TransactionRow({ row, importId, onToggle, onSaveTags, onExpenseT
       }
       
       if (success) {
-        onExpenseTypeChange?.(row.id, decision === 'ai_suggestion' 
-          ? (classificationState.pendingClassification?.suggested_type || 'variable')
-          : decision);
+        const normalizedType = decision === 'ai_suggestion' 
+          ? (classificationState.pendingClassification?.suggested_type?.toLowerCase() === 'fixed' ? 'fixed' : 'variable')
+          : (decision?.toLowerCase() === 'fixed' ? 'fixed' : 'variable');
+        
+        onExpenseTypeChange?.(row.id, normalizedType);
       }
     } catch (error) {
       console.error('Error handling classification decision:', error);
@@ -119,10 +125,17 @@ export function TransactionRow({ row, importId, onToggle, onSaveTags, onExpenseT
     }
   };
 
-  // Legacy: Clic sur badge pour modal existante
-  const handleBadgeClick = () => {
-    if (isExpense && row.expense_type_auto_detected) {
-      setIsLegacyModalOpen(true);
+  // Legacy: Clic sur badge pour modal existante ou toggle direct
+  const handleBadgeClick = async () => {
+    if (isExpense) {
+      if (row.expense_type_auto_detected) {
+        // Si auto-détecté, ouvrir la modal de confirmation
+        setIsLegacyModalOpen(true);
+      } else {
+        // Sinon, toggle direct entre fixed/variable
+        const newType = currentExpenseType === 'fixed' ? 'variable' : 'fixed';
+        await handleExpenseTypeToggle(newType);
+      }
     }
   };
 
@@ -176,16 +189,29 @@ export function TransactionRow({ row, importId, onToggle, onSaveTags, onExpenseT
   // État de classification en cours pour animations
   const isClassifying = classificationState.isLoading && classificationState.currentTransaction?.id === row.id;
 
-  // Déterminer la couleur de fond selon le type de dépense
+  // Déterminer la couleur de fond selon le type de dépense et l'état d'auto-tagging
   const getRowBackgroundClass = () => {
+    // Priorité 1: Transaction en cours de traitement par auto-tagging
+    if (isBeingAutoTagged) {
+      return 'bg-indigo-50/60 border-indigo-200/60 shadow-sm animate-pulse ring-1 ring-indigo-200/50';
+    }
+    
+    // Priorité 2: Transaction récemment auto-tagged
+    if (isAutoTagged) {
+      return 'bg-gradient-to-r from-purple-50/80 to-indigo-50/80 border-purple-200/60 shadow-md ring-1 ring-purple-200/50 hover:shadow-lg transition-all duration-300';
+    }
+    
+    // Priorité 3: Transaction highlighted (import récent)
     if (isHighlighted) {
       return 'bg-green-50 border-green-200 shadow-sm';
     }
     
+    // Priorité 4: Classification en cours (IA individuelle)
     if (isClassifying) {
       return 'bg-blue-50/50 border-blue-200/50 shadow-sm animate-pulse';
     }
     
+    // Priorité 5: Classification par type de dépense
     if (isExpense && currentExpenseType) {
       if (currentExpenseType === 'fixed') {
         return 'bg-emerald-50/30 hover:bg-emerald-50 border-emerald-200/50 hover:shadow-sm';
@@ -272,22 +298,14 @@ export function TransactionRow({ row, importId, onToggle, onSaveTags, onExpenseT
         <td className="p-3">
           {isExpense && currentExpenseType ? (
             <div className="flex items-center gap-2">
-              {row.expense_type_auto_detected ? (
-                <ExpenseTypeBadge
-                  type={currentExpenseType}
-                  size="sm"
-                  interactive={true}
-                  onClick={handleBadgeClick}
-                  confidenceScore={row.expense_type_confidence}
-                  autoDetected={true}
-                />
-              ) : (
-                <CompactToggleSwitch
-                  value={currentExpenseType}
-                  onChange={handleExpenseTypeToggle}
-                  disabled={isUpdatingExpenseType}
-                />
-              )}
+              <ExpenseTypeBadge
+                type={currentExpenseType}
+                size="sm"
+                interactive={true}
+                onClick={handleBadgeClick}
+                confidenceScore={row.expense_type_confidence}
+                autoDetected={row.expense_type_auto_detected}
+              />
               {isUpdatingExpenseType && (
                 <div className="w-4 h-4 animate-spin rounded-full border-2 border-blue-600 border-t-transparent"></div>
               )}

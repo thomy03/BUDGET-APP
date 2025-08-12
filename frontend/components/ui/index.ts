@@ -11,6 +11,7 @@ export { ToggleSwitch, CompactToggleSwitch } from "./ToggleSwitch";
 export { WebResearchIndicator } from "./WebResearchIndicator";
 export { MerchantInfoDisplay } from "./MerchantInfoDisplay";
 export { Tabs, TabsList, TabsTrigger, TabsContent } from "./Tabs";
+export { ErrorBoundary, withErrorBoundary, useErrorHandler } from "./ErrorBoundary";
 
 export type { default as ButtonProps } from "./Button";
 export type { default as InputProps } from "./Input";

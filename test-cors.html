@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test CORS - Budget Family v2.3</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f8fafc;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+        }
+        .success { border-color: #10b981; background-color: #f0fdf4; }
+        .error { border-color: #ef4444; background-color: #fef2f2; }
+        .pending { border-color: #f59e0b; background-color: #fffbeb; }
+        button {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background: #2563eb; }
+        pre {
+            background: #f3f4f6;
+            padding: 10px;
+            border-radius: 4px;
+            overflow: auto;
+            white-space: pre-wrap;
+        }
+        .status {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .status.success { background: #10b981; color: white; }
+        .status.error { background: #ef4444; color: white; }
+        .status.pending { background: #f59e0b; color: white; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 Test de Configuration CORS - Budget Family v2.3</h1>
+        <p><strong>Frontend:</strong> http://localhost:45678 (Docker)</p>
+        <p><strong>Backend:</strong> http://127.0.0.1:8000 (Direct)</p>
+        
+        <div class="test-section pending" id="health-test">
+            <h3>🏥 Test de Santé Backend</h3>
+            <p>Statut: <span class="status pending" id="health-status">EN ATTENTE</span></p>
+            <button onclick="testHealth()">Tester Health Endpoint</button>
+            <pre id="health-result">Cliquez sur le bouton pour tester</pre>
+        </div>
+
+        <div class="test-section pending" id="cors-test">
+            <h3>🌐 Test CORS Frontend → Backend</h3>
+            <p>Statut: <span class="status pending" id="cors-status">EN ATTENTE</span></p>
+            <button onclick="testCORS()">Tester Requête CORS</button>
+            <pre id="cors-result">Cliquez sur le bouton pour tester</pre>
+        </div>
+
+        <div class="test-section pending" id="auth-test">
+            <h3>🔐 Test d'Authentification</h3>
+            <p>Statut: <span class="status pending" id="auth-status">EN ATTENTE</span></p>
+            <button onclick="testAuth()">Tester Login</button>
+            <pre id="auth-result">Cliquez sur le bouton pour tester</pre>
+        </div>
+
+        <div class="test-section pending" id="api-test">
+            <h3>📊 Test API Complète</h3>
+            <p>Statut: <span class="status pending" id="api-status">EN ATTENTE</span></p>
+            <button onclick="testFullAPI()">Test Complet</button>
+            <pre id="api-result">Cliquez sur le bouton pour tester</pre>
+        </div>
+
+        <div class="test-section">
+            <h3>📋 Résumé des Configurations</h3>
+            <ul>
+                <li><strong>CORS Allowed Origins:</strong> http://localhost:45678, http://127.0.0.1:45678</li>
+                <li><strong>CORS Allow Credentials:</strong> true</li>
+                <li><strong>CORS Allow Methods:</strong> GET, POST, PATCH, DELETE, PUT, OPTIONS</li>
+                <li><strong>Frontend Port:</strong> 45678 (Docker)</li>
+                <li><strong>Backend Port:</strong> 8000 (Host)</li>
+                <li><strong>Environment:</strong> development</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://127.0.0.1:8000';
+
+        function updateTestStatus(testId, status, message) {
+            const testSection = document.getElementById(testId);
+            const statusElement = document.getElementById(testId.replace('-test', '-status'));
+            const resultElement = document.getElementById(testId.replace('-test', '-result'));
+            
+            // Update status
+            statusElement.className = `status ${status}`;
+            statusElement.textContent = status === 'success' ? 'SUCCÈS' : 
+                                      status === 'error' ? 'ERREUR' : 'EN COURS';
+            
+            // Update test section class
+            testSection.className = `test-section ${status}`;
+            
+            // Update result
+            resultElement.textContent = message;
+        }
+
+        async function testHealth() {
+            updateTestStatus('health-test', 'pending', 'Test en cours...');
+            
+            try {
+                const response = await fetch(`${API_BASE}/health`, {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json',
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    updateTestStatus('health-test', 'success', 
+                        `✅ Backend accessible!\n\n` +
+                        `Status: ${response.status}\n` +
+                        `Response: ${JSON.stringify(data, null, 2)}`
+                    );
+                } else {
+                    updateTestStatus('health-test', 'error',
+                        `❌ Erreur HTTP: ${response.status}\n\n` +
+                        `Response: ${JSON.stringify(data, null, 2)}`
+                    );
+                }
+            } catch (error) {
+                updateTestStatus('health-test', 'error',
+                    `❌ Erreur de connexion:\n\n${error.message}\n\n` +
+                    `Vérifiez que le backend est démarré sur ${API_BASE}`
+                );
+            }
+        }
+
+        async function testCORS() {
+            updateTestStatus('cors-test', 'pending', 'Test CORS en cours...');
+            
+            try {
+                const response = await fetch(`${API_BASE}/health`, {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json',
+                        'Origin': window.location.origin,
+                    },
+                    credentials: 'include'
+                });
+                
+                const data = await response.json();
+                
+                // Check CORS headers
+                const corsHeaders = {
+                    'Access-Control-Allow-Origin': response.headers.get('Access-Control-Allow-Origin'),
+                    'Access-Control-Allow-Credentials': response.headers.get('Access-Control-Allow-Credentials'),
+                    'Access-Control-Allow-Methods': response.headers.get('Access-Control-Allow-Methods'),
+                };
+                
+                if (response.ok) {
+                    updateTestStatus('cors-test', 'success',
+                        `✅ CORS fonctionne correctement!\n\n` +
+                        `Origin: ${window.location.origin}\n` +
+                        `Status: ${response.status}\n` +
+                        `CORS Headers:\n${JSON.stringify(corsHeaders, null, 2)}\n\n` +
+                        `Response: ${JSON.stringify(data, null, 2)}`
+                    );
+                } else {
+                    updateTestStatus('cors-test', 'error',
+                        `❌ Erreur CORS: ${response.status}\n\n` +
+                        `Headers: ${JSON.stringify(corsHeaders, null, 2)}\n\n` +
+                        `Response: ${JSON.stringify(data, null, 2)}`
+                    );
+                }
+            } catch (error) {
+                if (error.message.includes('CORS')) {
+                    updateTestStatus('cors-test', 'error',
+                        `❌ Erreur CORS:\n\n${error.message}\n\n` +
+                        `L'origine ${window.location.origin} n'est pas autorisée.\n` +
+                        `Vérifiez la configuration CORS dans backend/config/settings.py`
+                    );
+                } else {
+                    updateTestStatus('cors-test', 'error',
+                        `❌ Erreur de connexion:\n\n${error.message}`
+                    );
+                }
+            }
+        }
+
+        async function testAuth() {
+            updateTestStatus('auth-test', 'pending', 'Test d\'authentification en cours...');
+            
+            try {
+                const response = await fetch(`${API_BASE}/auth/users`, {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json',
+                    },
+                    credentials: 'include'
+                });
+                
+                const data = await response.json();
+                
+                if (response.status === 401) {
+                    updateTestStatus('auth-test', 'success',
+                        `✅ Authentification fonctionne (401 attendu)!\n\n` +
+                        `Status: ${response.status}\n` +
+                        `Message: ${data.detail || 'Non authentifié'}\n\n` +
+                        `L'endpoint protégé refuse correctement l'accès sans token.`
+                    );
+                } else if (response.ok) {
+                    updateTestStatus('auth-test', 'success',
+                        `✅ Authentification OK!\n\n` +
+                        `Status: ${response.status}\n` +
+                        `Data: ${JSON.stringify(data, null, 2)}`
+                    );
+                } else {
+                    updateTestStatus('auth-test', 'error',
+                        `❌ Erreur inattendue: ${response.status}\n\n` +
+                        `Response: ${JSON.stringify(data, null, 2)}`
+                    );
+                }
+            } catch (error) {
+                updateTestStatus('auth-test', 'error',
+                    `❌ Erreur de connexion:\n\n${error.message}`
+                );
+            }
+        }
+
+        async function testFullAPI() {
+            updateTestStatus('api-test', 'pending', 'Test complet en cours...');
+            
+            let results = [];
+            
+            try {
+                // Test 1: Health
+                results.push('=== TEST 1: Health Endpoint ===');
+                const healthResponse = await fetch(`${API_BASE}/health`);
+                const healthData = await healthResponse.json();
+                results.push(`Health: ${healthResponse.status} - ${JSON.stringify(healthData)}`);
+                
+                // Test 2: API Info
+                results.push('\\n=== TEST 2: API Info ===');
+                const infoResponse = await fetch(`${API_BASE}/docs`);
+                results.push(`Docs: ${infoResponse.status} - ${infoResponse.ok ? 'Available' : 'Not available'}`);
+                
+                // Test 3: CORS Preflight
+                results.push('\\n=== TEST 3: CORS Preflight ===');
+                try {
+                    const preflightResponse = await fetch(`${API_BASE}/health`, {
+                        method: 'OPTIONS',
+                        headers: {
+                            'Origin': window.location.origin,
+                            'Access-Control-Request-Method': 'GET',
+                            'Access-Control-Request-Headers': 'Content-Type'
+                        }
+                    });
+                    results.push(`Preflight: ${preflightResponse.status}`);
+                } catch (e) {
+                    results.push(`Preflight Error: ${e.message}`);
+                }
+                
+                // Test 4: Environment Check
+                results.push('\\n=== TEST 4: Environment ===');
+                results.push(`Frontend Origin: ${window.location.origin}`);
+                results.push(`API Base: ${API_BASE}`);
+                results.push(`User Agent: ${navigator.userAgent}`);
+                
+                updateTestStatus('api-test', 'success',
+                    `✅ Test complet terminé!\n\n${results.join('\\n')}`
+                );
+                
+            } catch (error) {
+                results.push(`\\n❌ ERREUR: ${error.message}`);
+                updateTestStatus('api-test', 'error',
+                    `❌ Test complet échoué:\n\n${results.join('\\n')}`
+                );
+            }
+        }
+
+        // Auto-run health test on load
+        window.addEventListener('load', () => {
+            setTimeout(testHealth, 1000);
+        });
+    </script>
+</body>
+</html>

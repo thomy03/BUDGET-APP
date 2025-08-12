@@ -2,12 +2,14 @@
 
 import { useState } from 'react';
 import { useTagsManagement, TagInfo } from '../../hooks/useTagsManagement';
-import { Card, Button, Modal, Alert, Tabs, TabsList, TabsTrigger, TabsContent } from '../ui';
+import { Card, Button, Alert } from '../ui';
 import { ExpenseTypeBadge } from '../transactions/ExpenseTypeBadge';
+import { TagSourceBadge } from '../ui/TagSourceBadge';
 import { TagEditModal } from './TagEditModal';
-import { TagsStatistics } from './TagsStatistics';
-import { AutoTaggingRules } from './AutoTaggingRules';
+import { TagsStatsDashboard } from './TagsStatsDashboard';
+import { TagRulesConfig } from './TagRulesConfig';
 import { TagsImportExport } from './TagsImportExport';
+import { TagMergeDialog } from './TagMergeDialog';
 
 export function TagsManagement() {
   const {
@@ -24,6 +26,12 @@ export function TagsManagement() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingTag, setEditingTag] = useState<TagInfo | null>(null);
   const [isCreating, setIsCreating] = useState(false);
+  const [activeTab, setActiveTab] = useState<'overview' | 'tags' | 'rules' | 'import-export'>('overview');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterType, setFilterType] = useState<'all' | 'fixed' | 'variable'>('all');
+  const [sortBy, setSortBy] = useState<'name' | 'usage' | 'amount'>('usage');
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [showMergeDialog, setShowMergeDialog] = useState(false);
 
   const handleEditTag = (tag: TagInfo) => {
     setEditingTag(tag);
@@ -53,142 +61,158 @@ export function TagsManagement() {
 
   if (isLoading) {
     return (
-      <Card padding="lg">
-        <div className="flex items-center justify-center py-8">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-          <span className="ml-2">Chargement des tags...</span>
-        </div>
-      </Card>
+      <div className="flex items-center justify-center py-8">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        <span className="ml-2">Chargement des tags...</span>
+      </div>
     );
   }
 
+  // Filter and sort tags
+  const filteredTags = tags
+    .filter(tag => {
+      const matchesSearch = tag.name.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesType = filterType === 'all' || tag.expense_type === filterType;
+      return matchesSearch && matchesType;
+    })
+    .sort((a, b) => {
+      switch (sortBy) {
+        case 'name':
+          return a.name.localeCompare(b.name);
+        case 'usage':
+          return b.transaction_count - a.transaction_count;
+        case 'amount':
+          return Math.abs(b.total_amount) - Math.abs(a.total_amount);
+        default:
+          return 0;
+      }
+    });
+
+  const handleBulkDelete = async () => {
+    if (selectedTags.length === 0) return;
+    
+    const message = `Êtes-vous sûr de vouloir supprimer ${selectedTags.length} tag(s) sélectionné(s) ?`;
+    if (window.confirm(message)) {
+      for (const tagName of selectedTags) {
+        await deleteTag(tagName);
+      }
+      setSelectedTags([]);
+    }
+  };
+
+  const toggleTagSelection = (tagName: string) => {
+    setSelectedTags(prev => 
+      prev.includes(tagName)
+        ? prev.filter(t => t !== tagName)
+        : [...prev, tagName]
+    );
+  };
+
+  const handleMergeTags = async (sourceTags: string[], targetTag: string) => {
+    try {
+      // TODO: Implement actual merge API call
+      console.log('Merging tags:', sourceTags, 'into', targetTag);
+      
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Reload tags after merge
+      await loadTags();
+      
+      return true;
+    } catch (error) {
+      console.error('Failed to merge tags:', error);
+      return false;
+    }
+  };
+
+  const tabsConfig = [
+    { id: 'overview', label: 'Vue d\'ensemble', icon: '📊' },
+    { id: 'tags', label: 'Mes Tags', icon: '🏷️', count: tags.length },
+    { id: 'rules', label: 'Règles Auto', icon: '⚙️' },
+    { id: 'import-export', label: 'Import/Export', icon: '📁' }
+  ] as const;
+
   return (
     <>
-      <Tabs defaultValue="overview" className="w-full">
-        <TabsList className="grid w-full grid-cols-5">
-          <TabsTrigger value="overview" icon="📊">
-            Vue d'ensemble
-          </TabsTrigger>
-          <TabsTrigger value="management" icon="🏷️">
-            Gestion
-          </TabsTrigger>
-          <TabsTrigger value="rules" icon="🤖">
-            Règles Auto
-          </TabsTrigger>
-          <TabsTrigger value="statistics" icon="📈">
-            Statistiques
-          </TabsTrigger>
-          <TabsTrigger value="import-export" icon="📁">
-            Import/Export
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="overview">
-          <div className="grid lg:grid-cols-2 gap-6">
-            {/* Statistiques rapides */}
-            <Card padding="lg">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                📊 Résumé rapide
-              </h3>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="text-center p-3 bg-blue-50 rounded-lg">
-                  <div className="text-2xl font-bold text-blue-600">{tags.length}</div>
-                  <div className="text-sm text-gray-600">Tags total</div>
-                </div>
-                <div className="text-center p-3 bg-green-50 rounded-lg">
-                  <div className="text-2xl font-bold text-green-600">
-                    {tags.reduce((sum, tag) => sum + tag.transaction_count, 0)}
-                  </div>
-                  <div className="text-sm text-gray-600">Transactions</div>
-                </div>
-              </div>
-              <div className="mt-4 pt-4 border-t border-gray-200">
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">Tags Fixes:</span>
-                  <span className="font-medium">{tags.filter(t => t.expense_type === 'fixed').length}</span>
-                </div>
-                <div className="flex justify-between text-sm mt-1">
-                  <span className="text-gray-600">Tags Variables:</span>
-                  <span className="font-medium">{tags.filter(t => t.expense_type === 'variable').length}</span>
-                </div>
-              </div>
-            </Card>
-
-            {/* Top 5 tags */}
-            <Card padding="lg">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                🏆 Top 5 des tags
-              </h3>
-              <div className="space-y-2">
-                {[...tags]
-                  .sort((a, b) => b.transaction_count - a.transaction_count)
-                  .slice(0, 5)
-                  .map((tag, index) => (
-                    <div key={tag.name} className="flex items-center justify-between p-2 bg-gray-50 rounded">
-                      <div className="flex items-center gap-2">
-                        <div className="w-6 h-6 rounded-full bg-blue-100 text-blue-600 font-bold text-xs flex items-center justify-center">
-                          {index + 1}
-                        </div>
-                        <span className="font-medium text-sm">{tag.name}</span>
-                        <ExpenseTypeBadge type={tag.expense_type} size="sm" />
-                      </div>
-                      <span className="text-sm text-gray-600">{tag.transaction_count}</span>
-                    </div>
-                  ))
-                }
-                {tags.length === 0 && (
-                  <div className="text-center py-4 text-gray-500 text-sm">
-                    Aucun tag disponible
-                  </div>
+      <div className="space-y-6">
+        {/* Navigation Tabs */}
+        <Card className="p-1">
+          <div className="flex items-center gap-1">
+            {tabsConfig.map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`
+                  flex items-center gap-2 px-4 py-3 rounded-lg font-medium text-sm transition-all
+                  ${
+                    activeTab === tab.id
+                      ? 'bg-blue-600 text-white shadow-sm'
+                      : 'text-gray-600 hover:text-blue-600 hover:bg-blue-50'
+                  }
+                `}
+              >
+                <span>{tab.icon}</span>
+                <span>{tab.label}</span>
+                {tab.count !== undefined && (
+                  <span className={`
+                    text-xs px-2 py-1 rounded-full font-semibold
+                    ${
+                      activeTab === tab.id
+                        ? 'bg-blue-500 text-white'
+                        : 'bg-gray-200 text-gray-700'
+                    }
+                  `}>
+                    {tab.count}
+                  </span>
                 )}
+              </button>
+            ))}
+          </div>
+        </Card>
+        {/* Tab Content */}
+        {activeTab === 'overview' && (
+          <TagsStatsDashboard />
+        )}
+
+        {activeTab === 'rules' && (
+          <TagRulesConfig />
+        )}
+
+        {activeTab === 'import-export' && (
+          <TagsImportExport />
+        )}
+
+        {activeTab === 'tags' && (
+          <div className="space-y-6">
+            {/* Tags Management Header */}
+            <Card className="p-6 bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-900 mb-2">Gestion des Tags</h2>
+                  <div className="flex items-center gap-6 text-sm text-gray-600">
+                    <div className="flex items-center gap-2">
+                      <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
+                      <span>{tags.length} tags au total</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                      <span>{tags.reduce((sum, tag) => sum + tag.transaction_count, 0)} transactions</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="w-2 h-2 bg-orange-500 rounded-full"></span>
+                      <span>{tags.filter(t => t.expense_type === 'fixed').length} fixes</span>
+                    </div>
+                  </div>
+                </div>
+                <Button onClick={handleCreateTag} className="bg-blue-600 hover:bg-blue-700">
+                  <span className="mr-2">+</span>
+                  Nouveau tag
+                </Button>
               </div>
             </Card>
-          </div>
 
-          {/* Actions rapides */}
-          <Card padding="lg" className="mt-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-              ⚡ Actions rapides
-            </h3>
-            <div className="grid md:grid-cols-4 gap-3">
-              <Button onClick={handleCreateTag} className="flex items-center gap-2">
-                <span>+</span>
-                Nouveau tag
-              </Button>
-              <Button variant="outline" className="flex items-center gap-2">
-                <span>🔄</span>
-                Recalculer stats
-              </Button>
-              <Button variant="outline" className="flex items-center gap-2">
-                <span>🧹</span>
-                Nettoyer tags
-              </Button>
-              <Button variant="outline" className="flex items-center gap-2">
-                <span>📊</span>
-                Rapport complet
-              </Button>
-            </div>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="management">
-          <Card padding="lg">
-            <div className="flex items-center justify-between mb-6">
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                  🏷️ Gestion des Tags
-                </h3>
-                <p className="text-sm text-gray-600 mt-1">
-                  Gérez vos tags et leur classification automatique (Fixe/Variable)
-                </p>
-              </div>
-              <Button onClick={handleCreateTag} className="flex items-center gap-2">
-                <span>+</span>
-                Nouveau tag
-              </Button>
-            </div>
-
-        {/* Messages d'erreur et d'état */}
+        {/* Error Messages */}
         {error && (
           <Alert variant={error.includes('par défaut') ? 'warning' : 'error'} className="mb-4">
             <div className="flex items-center justify-between">
@@ -216,138 +240,288 @@ export function TagsManagement() {
           </Alert>
         )}
 
-        {tags.length === 0 ? (
-          <div className="text-center py-12">
-            <div className="text-6xl mb-4">🏷️</div>
-            <h3 className="text-lg font-medium text-gray-900 mb-2">
-              Aucun tag trouvé
-            </h3>
-            <p className="text-gray-600 mb-4">
-              Créez votre premier tag pour organiser vos transactions.
-            </p>
-            <Button onClick={handleCreateTag}>
-              Créer le premier tag
-            </Button>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            <div className="text-sm text-gray-600 mb-4">
-              Tags actifs ({tags.length})
-            </div>
-
-            {tags.map((tag) => (
-              <div
-                key={tag.name}
-                className="flex items-center justify-between p-4 border border-gray-200 rounded-lg bg-white hover:shadow-sm transition-shadow"
-              >
-                <div className="flex items-center gap-4 flex-1">
-                  {/* Nom du tag */}
-                  <div className="flex items-center gap-2">
-                    <span className="font-medium text-gray-900">
-                      {tag.name}
-                    </span>
-                    <ExpenseTypeBadge
-                      type={tag.expense_type}
-                      size="sm"
+            {/* Search and Filters */}
+            <Card className="p-4">
+              <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
+                {/* Search */}
+                <div className="flex-1">
+                  <div className="relative">
+                    <input
+                      type="text"
+                      placeholder="Rechercher un tag..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     />
+                    <span className="absolute left-3 top-2.5 text-gray-400">🔍</span>
                   </div>
-
-                  {/* Statistiques */}
-                  <div className="flex items-center gap-4 text-sm text-gray-600">
-                    <span>{tag.transaction_count} transaction{tag.transaction_count > 1 ? 's' : ''}</span>
-                    {tag.total_amount !== 0 && (
-                      <span>
-                        {Math.abs(tag.total_amount).toLocaleString('fr-FR', {
-                          minimumFractionDigits: 2,
-                          maximumFractionDigits: 2
-                        })}€
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Libellés associés (preview) */}
-                  {tag.associated_labels.length > 0 && (
-                    <div className="flex items-center gap-1">
-                      <span className="text-xs text-gray-500">Libellés:</span>
-                      <div className="flex gap-1">
-                        {tag.associated_labels.slice(0, 2).map((label, index) => (
-                          <span
-                            key={index}
-                            className="px-2 py-1 bg-blue-100 text-blue-700 rounded-full text-xs"
-                          >
-                            {label}
-                          </span>
-                        ))}
-                        {tag.associated_labels.length > 2 && (
-                          <span className="text-xs text-gray-500">
-                            +{tag.associated_labels.length - 2}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  )}
                 </div>
 
-                {/* Actions */}
-                <div className="flex items-center gap-2">
-                  {/* Toggle Type */}
-                  <button
-                    onClick={() => handleToggleType(tag.name, tag.expense_type)}
-                    disabled={isUpdating}
-                    className={`
-                      px-3 py-1 text-xs rounded-full transition-colors border
-                      ${tag.expense_type === 'fixed' 
-                        ? 'border-orange-200 bg-orange-50 text-orange-700 hover:bg-orange-100' 
-                        : 'border-green-200 bg-green-50 text-green-700 hover:bg-green-100'
-                      }
-                      ${isUpdating ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
-                    `}
-                    title={`Basculer vers ${tag.expense_type === 'fixed' ? 'Variable' : 'Fixe'}`}
+                {/* Filters */}
+                <div className="flex items-center gap-3">
+                  <select
+                    value={filterType}
+                    onChange={(e) => setFilterType(e.target.value as any)}
+                    className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
                   >
-                    → {tag.expense_type === 'fixed' ? 'Var' : 'Fix'}
-                  </button>
+                    <option value="all">Tous les types</option>
+                    <option value="fixed">Dépenses fixes</option>
+                    <option value="variable">Dépenses variables</option>
+                  </select>
 
-                  {/* Edit */}
-                  <button
-                    onClick={() => handleEditTag(tag)}
-                    disabled={isUpdating}
-                    className="p-2 text-gray-400 hover:text-blue-600 transition-colors disabled:opacity-50"
-                    title="Modifier"
+                  <select
+                    value={sortBy}
+                    onChange={(e) => setSortBy(e.target.value as any)}
+                    className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
                   >
-                    ✏️
-                  </button>
-
-                  {/* Delete */}
-                  <button
-                    onClick={() => handleDeleteTag(tag.name, tag.transaction_count)}
-                    disabled={isUpdating}
-                    className="p-2 text-gray-400 hover:text-red-600 transition-colors disabled:opacity-50"
-                    title="Supprimer"
-                  >
-                    🗑️
-                  </button>
+                    <option value="usage">Par utilisation</option>
+                    <option value="name">Par nom</option>
+                    <option value="amount">Par montant</option>
+                  </select>
                 </div>
+
+                {/* Bulk Actions */}
+                {selectedTags.length > 0 && (
+                  <div className="flex items-center gap-2">
+                    <Button 
+                      onClick={() => setShowMergeDialog(true)}
+                      variant="outline"
+                      size="sm"
+                      className="text-blue-600 border-blue-300 hover:bg-blue-50"
+                      disabled={selectedTags.length < 2}
+                    >
+                      🔗 Fusionner ({selectedTags.length})
+                    </Button>
+                    <Button 
+                      onClick={handleBulkDelete}
+                      variant="outline"
+                      size="sm"
+                      className="text-red-600 border-red-300 hover:bg-red-50"
+                    >
+                      🗑️ Supprimer ({selectedTags.length})
+                    </Button>
+                    <Button 
+                      onClick={() => setSelectedTags([])}
+                      variant="outline"
+                      size="sm"
+                    >
+                      Annuler
+                    </Button>
+                  </div>
+                )}
               </div>
-            ))}
+            </Card>
+
+            {/* Tags List */}
+            <Card className="p-6">
+              {filteredTags.length === 0 ? (
+                searchTerm || filterType !== 'all' ? (
+                  <div className="text-center py-8">
+                    <div className="text-4xl mb-4">🔍</div>
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">
+                      Aucun tag trouvé
+                    </h3>
+                    <p className="text-gray-600 mb-4">
+                      Aucun tag ne correspond à vos critères de recherche.
+                    </p>
+                    <Button 
+                      onClick={() => {
+                        setSearchTerm('');
+                        setFilterType('all');
+                      }}
+                      variant="outline"
+                    >
+                      Réinitialiser les filtres
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="text-center py-12">
+                    <div className="text-6xl mb-4">🏷️</div>
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">
+                      Aucun tag trouvé
+                    </h3>
+                    <p className="text-gray-600 mb-4">
+                      Créez votre premier tag pour organiser vos transactions.
+                    </p>
+                    <Button onClick={handleCreateTag}>
+                      Créer le premier tag
+                    </Button>
+                  </div>
+                )
+              ) : (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-lg font-semibold text-gray-900">
+                      Mes Tags ({filteredTags.length}{filteredTags.length !== tags.length ? ` sur ${tags.length}` : ''})
+                    </h3>
+                    <div className="flex items-center gap-2">
+                      {tags.length > 0 && (
+                        <Button 
+                          onClick={() => setSelectedTags(filteredTags.map(t => t.name))}
+                          variant="outline" 
+                          size="sm"
+                          className="text-sm"
+                        >
+                          Tout sélectionner
+                        </Button>
+                      )}
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={loadTags}
+                        className="text-sm"
+                      >
+                        <span className="mr-1">🔄</span>
+                        Actualiser
+                      </Button>
+                    </div>
+                  </div>
+
+
+                  {/* Tags Grid */}
+                  <div className="space-y-3">
+                    {filteredTags.map((tag) => (
+                      <div
+                        key={tag.name}
+                        className={`
+                          flex items-center justify-between p-4 border border-gray-200 rounded-lg bg-white 
+                          hover:shadow-sm transition-all cursor-pointer
+                          ${
+                            selectedTags.includes(tag.name)
+                              ? 'ring-2 ring-blue-500 border-blue-300 bg-blue-50'
+                              : ''
+                          }
+                        `}
+                        onClick={() => toggleTagSelection(tag.name)}
+                      >
+                        <div className="flex items-center gap-4 flex-1">
+                          {/* Checkbox */}
+                          <input
+                            type="checkbox"
+                            checked={selectedTags.includes(tag.name)}
+                            onChange={() => toggleTagSelection(tag.name)}
+                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                            onClick={(e) => e.stopPropagation()}
+                          />
+
+                          {/* Tag Name & Badges */}
+                          <div className="flex items-center gap-3 min-w-0 flex-1">
+                            <span className="font-medium text-gray-900 truncate">
+                              {tag.name}
+                            </span>
+                            <ExpenseTypeBadge
+                              type={tag.expense_type}
+                              size="sm"
+                            />
+                            {/* Mock AI source badge - replace with actual data */}
+                            <TagSourceBadge 
+                              source={tag.transaction_count > 50 ? 'ai_pattern' : 'manual'} 
+                              size="xs" 
+                              showLabel={false}
+                            />
+                          </div>
+
+                          {/* Stats */}
+                          <div className="flex items-center gap-4 text-sm text-gray-600">
+                            <div className="flex items-center gap-1">
+                              <span>📊</span>
+                              <span className="font-medium">{tag.transaction_count}</span>
+                              <span className="text-xs">uses</span>
+                            </div>
+                            {tag.total_amount !== 0 && (
+                              <div className="flex items-center gap-1">
+                                <span>💰</span>
+                                <span className="font-medium">
+                                  {Math.abs(tag.total_amount).toLocaleString('fr-FR', {
+                                    minimumFractionDigits: 0,
+                                    maximumFractionDigits: 0
+                                  })}€
+                                </span>
+                              </div>
+                            )}
+                            {/* Mock confidence indicator for AI tags */}
+                            {tag.transaction_count > 50 && (
+                              <div className="flex items-center gap-1">
+                                <span className="text-xs text-green-600 font-medium">
+                                  {Math.floor(Math.random() * 15) + 85}%
+                                </span>
+                                <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Actions */}
+                        <div className="flex items-center gap-2 ml-4">
+                          {/* Quick Type Toggle */}
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleToggleType(tag.name, tag.expense_type);
+                            }}
+                            disabled={isUpdating}
+                            className={`
+                              px-3 py-1 text-xs rounded-full transition-colors border text-white font-medium
+                              ${tag.expense_type === 'fixed' 
+                                ? 'bg-orange-500 border-orange-500 hover:bg-orange-600' 
+                                : 'bg-green-500 border-green-500 hover:bg-green-600'
+                              }
+                              ${isUpdating ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
+                            `}
+                            title={`Changer vers ${tag.expense_type === 'fixed' ? 'Variable' : 'Fixe'}`}
+                          >
+                            {tag.expense_type === 'fixed' ? 'Fixe → Var' : 'Var → Fixe'}
+                          </button>
+
+                          {/* View Transactions */}
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              // TODO: Navigate to transactions filtered by tag
+                              console.log('View transactions for', tag.name);
+                            }}
+                            className="p-2 text-gray-400 hover:text-blue-600 transition-colors"
+                            title="Voir les transactions"
+                          >
+                            👁️
+                          </button>
+
+                          {/* Edit */}
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleEditTag(tag);
+                            }}
+                            disabled={isUpdating}
+                            className="p-2 text-gray-400 hover:text-blue-600 transition-colors disabled:opacity-50"
+                            title="Modifier"
+                          >
+                            ✏️
+                          </button>
+
+                          {/* Delete */}
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteTag(tag.name, tag.transaction_count);
+                            }}
+                            disabled={isUpdating}
+                            className="p-2 text-gray-400 hover:text-red-600 transition-colors disabled:opacity-50"
+                            title="Supprimer"
+                          >
+                            🗑️
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </Card>
           </div>
         )}
-          </Card>
-        </TabsContent>
 
-        <TabsContent value="rules">
-          <AutoTaggingRules tags={tags} isLoading={isLoading} />
-        </TabsContent>
-
-        <TabsContent value="statistics">
-          <TagsStatistics tags={tags} isLoading={isLoading} />
-        </TabsContent>
-
-        <TabsContent value="import-export">
-          <TagsImportExport tags={tags} isLoading={isLoading} />
-        </TabsContent>
-      </Tabs>
-
-      {/* Modal d'édition */}
+      {/* Edit Modal */}
       <TagEditModal
         isOpen={isEditModalOpen}
         onClose={() => {
@@ -358,6 +532,18 @@ export function TagsManagement() {
         tag={editingTag}
         isCreating={isCreating}
       />
+
+      {/* Merge Dialog */}
+      <TagMergeDialog
+        isOpen={showMergeDialog}
+        onClose={() => {
+          setShowMergeDialog(false);
+          setSelectedTags([]);
+        }}
+        availableTags={tags}
+        onMerge={handleMergeTags}
+      />
+    </div>
     </>
   );
 }

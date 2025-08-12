@@ -7,7 +7,8 @@ import { useAuth } from "../../lib/auth";
 import { LoadingSpinner, Card, Alert } from "../../components/ui";
 import ImportSuccessBanner from "../../components/ImportSuccessBanner";
 import { useTransactions } from "../../hooks/useTransactions";
-import { TransactionsSummary, TransactionsTable } from "../../components/transactions";
+import { useAutoTagging } from "../../hooks/useAutoTagging";
+import { TransactionsSummary, TransactionsTable, AutoTaggingButton, AutoTaggingProgress } from "../../components/transactions";
 
 export default function TransactionsPage() {
   const { isAuthenticated, loading: authLoading } = useAuth();
@@ -25,6 +26,20 @@ export default function TransactionsPage() {
     saveTags
   } = useTransactions();
 
+  // Auto-tagging functionality
+  const {
+    isProcessing: isAutoTagging,
+    progress: autoTaggingProgress,
+    stats: autoTaggingStats,
+    error: autoTaggingError,
+    showProgressModal,
+    startAutoTagging,
+    cancelAutoTagging,
+    closeProgressModal,
+    getUntaggedCount,
+    resetState: resetAutoTaggingState
+  } = useAutoTagging();
+
   // Paramètres d'URL
   const importId = searchParams.get('importId');
   
@@ -36,6 +51,36 @@ export default function TransactionsPage() {
     // Actualiser les données pour refléter le changement
     refresh(isAuthenticated, month);
   };
+
+  // Gestionnaire pour démarrer l'auto-tagging
+  const handleStartAutoTagging = async () => {
+    if (!month) {
+      console.error('❌ No month selected for auto-tagging');
+      return;
+    }
+
+    try {
+      await startAutoTagging(month, {
+        confidenceThreshold: 0.7,
+        includeClassified: false
+      });
+      
+    } catch (error) {
+      console.error('❌ Failed to start auto-tagging:', error);
+    }
+  };
+
+  // Gestionnaire pour la fermeture du modal de progression
+  const handleCloseProgressModal = () => {
+    closeProgressModal();
+    // Refresh transactions when modal closes to show the updated data
+    if (!isAutoTagging) {
+      refresh(isAuthenticated, month);
+    }
+  };
+
+  // Calculate untagged count for the button
+  const untaggedCount = getUntaggedCount(rows);
 
   useEffect(() => {
     if (!authLoading) {
@@ -74,6 +119,21 @@ export default function TransactionsPage() {
         </button>
       </div>
 
+      {/* Auto-tagging button */}
+      {!loading && rows.length > 0 && (
+        <div className="flex justify-center">
+          <AutoTaggingButton
+            totalTransactions={rows.length}
+            untaggedCount={untaggedCount}
+            isProcessing={isAutoTagging}
+            onStartAutoTagging={handleStartAutoTagging}
+            progress={autoTaggingProgress}
+            processedCount={autoTaggingStats.processed}
+            statusMessage={autoTaggingStats.processed > 0 ? `Traitement ${autoTaggingStats.processed}/${autoTaggingStats.totalTransactions} transactions...` : undefined}
+          />
+        </div>
+      )}
+
       {/* Auto-classification status */}
       {autoClassifying && (
         <Alert variant="info">
@@ -89,6 +149,13 @@ export default function TransactionsPage() {
           {autoClassificationResults.pendingReview > 0 && (
             <span>, {autoClassificationResults.pendingReview} en attente de révision</span>
           )}
+        </Alert>
+      )}
+
+      {/* Auto-tagging error */}
+      {autoTaggingError && (
+        <Alert variant="error">
+          ❌ Erreur auto-tagging: {autoTaggingError}
         </Alert>
       )}
 
@@ -145,6 +212,18 @@ export default function TransactionsPage() {
           />
         )}
       </Card>
+
+      {/* Auto-tagging progress modal */}
+      <AutoTaggingProgress
+        isOpen={showProgressModal}
+        stats={autoTaggingStats}
+        progressPercentage={autoTaggingProgress}
+        isCompleted={!isAutoTagging && autoTaggingProgress === 100}
+        hasError={!!autoTaggingError}
+        errorMessage={autoTaggingError || undefined}
+        onCancel={cancelAutoTagging}
+        onClose={handleCloseProgressModal}
+      />
     </div>
   );
 }

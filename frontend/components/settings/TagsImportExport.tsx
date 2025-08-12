@@ -1,12 +1,13 @@
 'use client';
 
 import { useState, useRef } from 'react';
-import { Card, Button, Alert, Modal } from '../ui';
+import { Card, Button, Alert, Modal, ErrorBoundary } from '../ui';
 import { useTagsManagement, TagInfo, TagEditData } from '../../hooks/useTagsManagement';
 import { ExpenseTypeBadge } from '../transactions/ExpenseTypeBadge';
+import { safeArray, safeSlice, validateRequiredProps } from '../../types/defensive-programming';
 
 interface TagsImportExportProps {
-  tags: TagInfo[];
+  tags: TagInfo[] | undefined;
   isLoading: boolean;
 }
 
@@ -50,6 +51,11 @@ const TEMPLATE_TAGS = [
 ];
 
 export function TagsImportExport({ tags, isLoading }: TagsImportExportProps) {
+  // DEFENSIVE PROGRAMMING: Validate critical props
+  if (!validateRequiredProps({ isLoading }, ['isLoading'], 'TagsImportExport')) {
+    return null;
+  }
+  
   const { createTag } = useTagsManagement();
   const [importPreview, setImportPreview] = useState<ImportPreview | null>(null);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
@@ -59,14 +65,20 @@ export function TagsImportExport({ tags, isLoading }: TagsImportExportProps) {
 
   const handleExportTags = () => {
     try {
+      // Vérifier que tags existe et n'est pas vide
+      if (!tags || tags.length === 0) {
+        setImportError('Aucun tag à exporter');
+        return;
+      }
+
       // Préparer les données pour l'export
       const exportData = tags.map(tag => ({
         name: tag.name,
         expense_type: tag.expense_type,
-        associated_labels: tag.associated_labels,
+        associated_labels: tag.associated_labels || [],
         category: tag.category || '',
-        transaction_count: tag.transaction_count,
-        total_amount: tag.total_amount
+        transaction_count: tag.transaction_count || 0,
+        total_amount: tag.total_amount || 0
       }));
 
       // Créer le fichier CSV
@@ -143,7 +155,7 @@ export function TagsImportExport({ tags, isLoading }: TagsImportExportProps) {
     const valid: TagEditData[] = [];
     const invalid: Array<{ line: number; data: any; error: string }> = [];
     const duplicates: string[] = [];
-    const existingNames = new Set(tags.map(t => t.name.toLowerCase()));
+    const existingNames = new Set((tags || []).map(t => t.name.toLowerCase()));
     const newNames = new Set<string>();
 
     for (let i = 1; i < lines.length; i++) {
@@ -251,34 +263,36 @@ export function TagsImportExport({ tags, isLoading }: TagsImportExportProps) {
                 📤 Exporter vos tags
               </h4>
               <p className="text-sm text-gray-600 mb-3">
-                Sauvegardez vos {tags.length} tag(s) actuel(s) dans un fichier CSV.
+                Sauvegardez vos {tags?.length || 0} tag(s) actuel(s) dans un fichier CSV.
               </p>
               <Button
                 onClick={handleExportTags}
-                disabled={tags.length === 0}
+                disabled={!tags || tags.length === 0}
                 className="flex items-center gap-2"
               >
                 <span>📥</span>
-                Exporter ({tags.length} tags)
+                Exporter ({tags?.length || 0} tags)
               </Button>
             </div>
 
             {/* Aperçu des données à exporter */}
-            {tags.length > 0 && (
+            {tags && tags.length > 0 && (
               <div className="bg-gray-50 p-3 rounded-lg">
                 <div className="text-xs text-gray-500 mb-2">Aperçu de l'export :</div>
                 <div className="space-y-1 max-h-32 overflow-y-auto">
-                  {tags.slice(0, 5).map((tag) => (
+                  {safeSlice(tags, 0, 5).map((tag) => (
                     <div key={tag.name} className="flex items-center gap-2 text-sm">
                       <span className="font-mono text-xs bg-white px-1 rounded">{tag.name}</span>
-                      <ExpenseTypeBadge type={tag.expense_type} size="sm" />
+                      <ErrorBoundary componentName="ExpenseTypeBadge" fallback={<span className="text-red-500">❌</span>}>
+                        <ExpenseTypeBadge type={tag.expense_type} size="sm" />
+                      </ErrorBoundary>
                       <span className="text-gray-500 text-xs">
-                        ({tag.associated_labels.length} libellés)
+                        ({tag.associated_labels?.length || 0} libellés)
                       </span>
                     </div>
                   ))}
-                  {tags.length > 5 && (
-                    <div className="text-xs text-gray-500">... et {tags.length - 5} autres</div>
+                  {(tags?.length || 0) > 5 && (
+                    <div className="text-xs text-gray-500">... et {(tags?.length || 0) - 5} autres</div>
                   )}
                 </div>
               </div>

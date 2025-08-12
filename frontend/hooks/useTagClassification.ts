@@ -158,11 +158,14 @@ export function useTagClassification(): UseTagClassificationReturn {
         ? pendingClassification.suggested_type 
         : pendingClassification.suggested_type; // Pour le moment, même comportement
 
-      console.log(`🎯 Accepting suggestion: ${suggestedType} for transaction ${currentTransaction.id}`);
+      // Normaliser le type pour l'API (backend attend lowercase)
+      const normalizedType = suggestedType?.toLowerCase() === 'fixed' ? 'fixed' : 'variable';
+
+      console.log(`🎯 Accepting suggestion: ${suggestedType} -> ${normalizedType} for transaction ${currentTransaction.id}`);
 
       await expenseClassificationApi.updateTransactionType(
         currentTransaction.id,
-        suggestedType,
+        normalizedType,
         !useAIsuggestion // Si l'utilisateur choisit explicitement, c'est un override manuel
       );
 
@@ -218,11 +221,14 @@ export function useTagClassification(): UseTagClassificationReturn {
     try {
       setState(prev => ({ ...prev, isLoading: true }));
 
-      console.log(`🔧 Force classification: ${expenseType} for transaction ${currentTransaction.id}`);
+      // Normaliser le type pour l'API (backend attend lowercase)
+      const normalizedType = expenseType?.toLowerCase() === 'fixed' ? 'fixed' : 'variable';
+
+      console.log(`🔧 Force classification: ${expenseType} -> ${normalizedType} for transaction ${currentTransaction.id}`);
 
       await expenseClassificationApi.updateTransactionType(
         currentTransaction.id,
-        expenseType,
+        normalizedType,
         true // C'est un override manuel explicite
       );
 

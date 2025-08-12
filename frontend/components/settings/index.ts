@@ -1,4 +1,12 @@
 export { BudgetConfiguration } from './BudgetConfiguration';
 export { TagsManagement } from './TagsManagement';
 export { TagEditModal } from './TagEditModal';
+export { TagsStatsDashboard } from './TagsStatsDashboard';
+export { TagRulesConfig } from './TagRulesConfig';
+export { TagMergeDialog } from './TagMergeDialog';
+export { TagsImportExport } from './TagsImportExport';
 export { ExpenseClassificationSettings } from './ExpenseClassificationSettings';
+export { SettingsLayout } from './SettingsLayout';
+export { ExpenseManagement } from './ExpenseManagement';
+export { AdvancedConfiguration } from './AdvancedConfiguration';
+export { AdministrationPanel } from './AdministrationPanel';

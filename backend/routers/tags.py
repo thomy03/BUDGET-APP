@@ -80,8 +80,10 @@ def get_tag_expense_type(tag_stats: Dict[str, Any]) -> str:
     if not expense_types:
         return 'VARIABLE'
     
-    # Return the most common expense type
-    return expense_types.most_common(1)[0][0]
+    # Return the most common expense type and normalize case
+    most_common_type = expense_types.most_common(1)[0][0]
+    # Normalize to uppercase to handle case inconsistencies
+    return most_common_type.upper() if most_common_type else 'VARIABLE'
 
 
 def get_tag_patterns(db: Session, tag_name: str) -> List[str]:
@@ -165,8 +167,8 @@ async def list_tags(
         elif sort_by == "last_used":
             tags_list.sort(key=lambda x: x.last_used or datetime.min, reverse=True)
         
-        # Apply limit
-        if limit:
+        # Apply limit (ensure limit is an integer)
+        if limit and isinstance(limit, int) and limit > 0:
             tags_list = tags_list[:limit]
         
         # Calculate global stats
@@ -839,10 +841,15 @@ async def get_tags_stats(
         most_used_tags = [{"name": tag, "count": stats['transaction_count']} for tag, stats in most_used]
         
         # Expense type distribution
-        expense_type_dist = {"FIXED": 0, "VARIABLE": 0}
+        expense_type_dist = {"FIXED": 0, "VARIABLE": 0, "PROVISION": 0}
         for stats in tags_data.values():
             primary_type = get_tag_expense_type(stats)
-            expense_type_dist[primary_type] += 1
+            # Ensure we handle any unexpected expense types gracefully
+            if primary_type in expense_type_dist:
+                expense_type_dist[primary_type] += 1
+            else:
+                # If we encounter an unknown type, default to VARIABLE
+                expense_type_dist["VARIABLE"] += 1
         
         # Tag usage distribution (by usage frequency)
         usage_distribution = {

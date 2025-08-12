@@ -1,0 +1,79 @@
+{
+  "overall_success": true,
+  "summary": {
+    "total_tests": 9,
+    "passed": 9,
+    "failed": 0,
+    "success_rate": 100.0
+  },
+  "test_results": [
+    {
+      "test_name": "Health Check Endpoint",
+      "success": true,
+      "details": "Health endpoint working correctly, status: healthy",
+      "response_time_ms": 17.03,
+      "timestamp": "2025-08-13T00:37:14.424743"
+    },
+    {
+      "test_name": "JWT Authentication",
+      "success": true,
+      "details": "Token obtained successfully",
+      "response_time_ms": 303.19,
+      "timestamp": "2025-08-13T00:37:14.728328"
+    },
+    {
+      "test_name": "CORS Configuration",
+      "success": true,
+      "details": "CORS headers present: {'Access-Control-Allow-Origin': 'http://localhost:3000', 'Access-Control-Allow-Methods': 'GET, POST, PATCH, DELETE, PUT, OPTIONS', 'Access-Control-Allow-Headers': 'Accept, Accept-Language, Authorization, Content-Language, Content-Type, X-Requested-With', 'Access-Control-Allow-Credentials': 'true'}",
+      "response_time_ms": 3.71,
+      "timestamp": "2025-08-13T00:37:14.732193"
+    },
+    {
+      "test_name": "Authentication Required",
+      "success": true,
+      "details": "Properly requires authentication for protected endpoints (HTTP 403)",
+      "response_time_ms": 5.7,
+      "timestamp": "2025-08-13T00:37:14.738052"
+    },
+    {
+      "test_name": "Service Statistics",
+      "success": true,
+      "details": "Statistics available: active=0, total=1",
+      "response_time_ms": 6.96,
+      "timestamp": "2025-08-13T00:37:14.745344"
+    },
+    {
+      "test_name": "ML Tagging Engine",
+      "success": true,
+      "details": "ML engine accessible (no transactions to process)",
+      "response_time_ms": 15.63,
+      "timestamp": "2025-08-13T00:37:14.761160"
+    },
+    {
+      "test_name": "Batch Processing Endpoint",
+      "success": true,
+      "details": "Batch initiated successfully: 4a39137a-ce04-4321-bdab-bbe18cd77dd4, 120 transactions",
+      "response_time_ms": 34.44,
+      "timestamp": "2025-08-13T00:37:14.795898"
+    },
+    {
+      "test_name": "Progress Tracking Endpoint",
+      "success": true,
+      "details": "Progress data: 10.0%, status: processing",
+      "response_time_ms": 19.1,
+      "timestamp": "2025-08-13T00:37:14.815284"
+    },
+    {
+      "test_name": "Error Handling",
+      "success": true,
+      "details": "Properly returns 404 for invalid batch ID",
+      "response_time_ms": 19.94,
+      "timestamp": "2025-08-13T00:37:14.835420"
+    }
+  ],
+  "recommendations": [
+    "\u2705 All tests passed! Backend is ready for frontend integration."
+  ],
+  "backend_ready": true,
+  "timestamp": "2025-08-13T00:37:14.835792"
+}

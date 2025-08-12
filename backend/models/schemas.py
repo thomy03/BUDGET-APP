@@ -647,3 +647,206 @@ class SummaryOut(BaseModel):
     transaction_count: Optional[int] = None      # Nombre total de transactions
     active_fixed_lines: Optional[int] = None     # Nombre de lignes fixes actives
     active_provisions: Optional[int] = None      # Nombre de provisions actives
+
+# Batch Auto-Tagging Schemas
+
+class BatchAutoTagRequest(BaseModel):
+    """Request schema for batch auto-tagging operations"""
+    month: str = Field(description="Month to process in YYYY-MM format", pattern=r"^\d{4}-\d{2}$")
+    confidence_threshold: float = Field(default=0.5, ge=0.0, le=1.0, description="Minimum confidence threshold for auto-tagging")
+    force_retag: bool = Field(default=False, description="Re-tag already tagged transactions")
+    include_fixed_variable: bool = Field(default=True, description="Include expense type classification")
+    use_web_research: bool = Field(default=False, description="Enable web research for unknown merchants")
+    max_concurrent: int = Field(default=5, ge=1, le=20, description="Maximum concurrent processing tasks")
+    
+    class Config:
+        schema_extra = {
+            "example": {
+                "month": "2025-07",
+                "confidence_threshold": 0.5,
+                "force_retag": False,
+                "include_fixed_variable": True,
+                "use_web_research": False,
+                "max_concurrent": 5
+            }
+        }
+
+class BatchAutoTagResponse(BaseModel):
+    """Response schema for batch auto-tagging initiation"""
+    batch_id: str = Field(description="Unique identifier for this batch operation")
+    status: str = Field(description="Initial status", default="initiated")
+    message: str = Field(description="Human-readable status message")
+    total_transactions: int = Field(description="Total transactions to process")
+    estimated_duration_minutes: float = Field(description="Estimated processing time in minutes")
+    
+    class Config:
+        schema_extra = {
+            "example": {
+                "batch_id": "550e8400-e29b-41d4-a716-446655440000",
+                "status": "initiated",
+                "message": "Batch auto-tagging initiated successfully",
+                "total_transactions": 150,
+                "estimated_duration_minutes": 2.5
+            }
+        }
+
+class BatchProgressResponse(BaseModel):
+    """Response schema for batch operation progress tracking"""
+    batch_id: str = Field(description="Batch operation identifier")
+    status: str = Field(description="Current processing status")
+    progress: float = Field(ge=0.0, le=100.0, description="Progress percentage (0-100)")
+    total_transactions: int = Field(description="Total transactions to process")
+    processed_transactions: int = Field(description="Number of transactions processed")
+    tagged_transactions: int = Field(description="Number of transactions successfully tagged")
+    skipped_low_confidence: int = Field(description="Transactions skipped due to low confidence")
+    errors_count: int = Field(default=0, description="Number of processing errors")
+    current_operation: Optional[str] = Field(None, description="Current operation being performed")
+    estimated_completion: Optional[str] = Field(None, description="Estimated completion time (ISO format)")
+    started_at: str = Field(description="Batch start time (ISO format)")
+    
+    class Config:
+        schema_extra = {
+            "example": {
+                "batch_id": "550e8400-e29b-41d4-a716-446655440000",
+                "status": "processing",
+                "progress": 75.0,
+                "total_transactions": 150,
+                "processed_transactions": 112,
+                "tagged_transactions": 89,
+                "skipped_low_confidence": 23,
+                "errors_count": 0,
+                "current_operation": "Processing transaction 113/150",
+                "estimated_completion": "2025-08-12T14:35:00Z",
+                "started_at": "2025-08-12T14:30:00Z"
+            }
+        }
+
+class BatchTransactionResult(BaseModel):
+    """Result for individual transaction processing"""
+    transaction_id: int = Field(description="Transaction ID")
+    original_label: str = Field(description="Original transaction label")
+    suggested_tag: Optional[str] = Field(None, description="AI-suggested tag")
+    tag_confidence: Optional[float] = Field(None, description="Tag suggestion confidence")
+    expense_type: Optional[str] = Field(None, description="Suggested expense type (FIXED/VARIABLE)")
+    expense_type_confidence: Optional[float] = Field(None, description="Expense type confidence")
+    action_taken: str = Field(description="Action taken (tagged, skipped, error)")
+    skipped_reason: Optional[str] = Field(None, description="Reason for skipping")
+    error_message: Optional[str] = Field(None, description="Error message if processing failed")
+    processing_time_ms: int = Field(description="Processing time in milliseconds")
+    web_research_used: bool = Field(default=False, description="Whether web research was used")
+    
+    class Config:
+        schema_extra = {
+            "example": {
+                "transaction_id": 1234,
+                "original_label": "NETFLIX SARL 12.99",
+                "suggested_tag": "streaming",
+                "tag_confidence": 0.92,
+                "expense_type": "FIXED",
+                "expense_type_confidence": 0.85,
+                "action_taken": "tagged",
+                "skipped_reason": None,
+                "error_message": None,
+                "processing_time_ms": 250,
+                "web_research_used": True
+            }
+        }
+
+class BatchResultsSummary(BaseModel):
+    """Summary statistics for batch processing results"""
+    total_processed: int = Field(description="Total transactions processed")
+    successfully_tagged: int = Field(description="Transactions successfully tagged")
+    skipped_low_confidence: int = Field(description="Transactions skipped (low confidence)")
+    skipped_already_tagged: int = Field(default=0, description="Transactions skipped (already tagged)")
+    errors: int = Field(description="Transactions with processing errors")
+    fixed_classified: int = Field(description="Transactions classified as FIXED")
+    variable_classified: int = Field(description="Transactions classified as VARIABLE")
+    new_tags_created: int = Field(description="Number of new unique tags created")
+    web_research_count: int = Field(default=0, description="Number of transactions using web research")
+    average_confidence: float = Field(description="Average confidence score")
+    processing_time_seconds: float = Field(description="Total processing time in seconds")
+    
+    class Config:
+        schema_extra = {
+            "example": {
+                "total_processed": 150,
+                "successfully_tagged": 89,
+                "skipped_low_confidence": 23,
+                "skipped_already_tagged": 35,
+                "errors": 3,
+                "fixed_classified": 45,
+                "variable_classified": 105,
+                "new_tags_created": 12,
+                "web_research_count": 15,
+                "average_confidence": 0.78,
+                "processing_time_seconds": 125.5
+            }
+        }
+
+class BatchResultsResponse(BaseModel):
+    """Complete results response for batch operation"""
+    batch_id: str = Field(description="Batch operation identifier")
+    status: str = Field(description="Final batch status (completed, failed, partial)")
+    completed_at: str = Field(description="Completion time (ISO format)")
+    summary: BatchResultsSummary = Field(description="Processing summary statistics")
+    transactions: List[BatchTransactionResult] = Field(description="Detailed results for each transaction")
+    errors: List[str] = Field(default_factory=list, description="Global processing errors")
+    performance_metrics: Dict[str, Any] = Field(default_factory=dict, description="Performance and timing metrics")
+    
+    class Config:
+        schema_extra = {
+            "example": {
+                "batch_id": "550e8400-e29b-41d4-a716-446655440000",
+                "status": "completed",
+                "completed_at": "2025-08-12T14:35:30Z",
+                "summary": {
+                    "total_processed": 150,
+                    "successfully_tagged": 89,
+                    "skipped_low_confidence": 23,
+                    "errors": 3,
+                    "fixed_classified": 45,
+                    "variable_classified": 105,
+                    "new_tags_created": 12,
+                    "average_confidence": 0.78,
+                    "processing_time_seconds": 125.5
+                },
+                "transactions": [],
+                "errors": [],
+                "performance_metrics": {
+                    "avg_transaction_time_ms": 150,
+                    "peak_memory_mb": 45,
+                    "cache_hit_rate": 0.65
+                }
+            }
+        }
+
+class BatchOperationStatus:
+    """Enumeration of possible batch operation statuses"""
+    INITIATED: str = "initiated"
+    PROCESSING: str = "processing"
+    COMPLETED: str = "completed"
+    FAILED: str = "failed"
+    CANCELLED: str = "cancelled"
+    PARTIAL: str = "partial"
+
+class BatchErrorResponse(BaseModel):
+    """Error response for batch operations"""
+    batch_id: Optional[str] = Field(None, description="Batch ID if available")
+    error_code: str = Field(description="Error code for programmatic handling")
+    error_message: str = Field(description="Human-readable error message")
+    details: Dict[str, Any] = Field(default_factory=dict, description="Additional error details")
+    timestamp: str = Field(description="Error timestamp (ISO format)")
+    
+    class Config:
+        schema_extra = {
+            "example": {
+                "batch_id": "550e8400-e29b-41d4-a716-446655440000",
+                "error_code": "INSUFFICIENT_TRANSACTIONS",
+                "error_message": "No transactions found for the specified month",
+                "details": {
+                    "month": "2025-07",
+                    "transaction_count": 0
+                },
+                "timestamp": "2025-08-12T14:30:00Z"
+            }
+        }

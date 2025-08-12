@@ -385,8 +385,11 @@ from routers.analytics import router as analytics_router
 from routers.tag_automation import router as tag_automation_router
 from routers.tags import router as tags_router
 from routers.classification import router as classification_router
+from routers.intelligent_tags import router as intelligent_tags_router  # New intelligent tag system
+from routers.auto_tagging import router as auto_tagging_router  # Batch auto-tagging system
 # from routers.intelligence import router as intelligence_router  # Temporarily disabled due to syntax error
 from routers.research import router as research_router
+from routers.ml_tagging import router as ml_tagging_router  # ML-based tagging with confidence scoring
 
 # Include routers with their prefixes
 app.include_router(auth_router, tags=["authentication"])
@@ -400,8 +403,11 @@ app.include_router(analytics_router, tags=["analytics"])
 app.include_router(tag_automation_router, tags=["tag-automation"])
 app.include_router(tags_router, tags=["tags"])
 app.include_router(classification_router, prefix="/expense-classification", tags=["intelligent-classification"])
+app.include_router(intelligent_tags_router, tags=["intelligent-tags"])  # New intelligent tag system
+app.include_router(auto_tagging_router, tags=["auto-tagging"])  # Batch auto-tagging system
 # app.include_router(intelligence_router, tags=["intelligence"])  # Temporarily disabled
 app.include_router(research_router, tags=["web-research"])
+app.include_router(ml_tagging_router, tags=["ml-tagging"])  # ML-based tagging with confidence scoring
 
 # Configure CORS middleware after all routes are defined
 # This ensures CORS preflight requests are handled correctly for all endpoints

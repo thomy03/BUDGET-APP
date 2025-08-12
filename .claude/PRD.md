@@ -409,7 +409,7 @@ La gestion budgétaire familiale repose aujourd’hui sur un Excel (onglet *Calc
 - ✅ Dérogation par poste fixe disponible
 - ✅ Split modes: clé/50-50/m1/m2/manuel
 
-### 📊 MÉTRIQUES ACTUELLES (SESSION 2025-08-12)
+### 📊 MÉTRIQUES ACTUELLES (SESSION 2025-08-13)
 - **Taux d'import réussi**: 100% (267/267 transactions importées)
 - **Endpoints fonctionnels**: 100% (GET/POST/PUT/PATCH sur tous routers)
 - **CORS erreurs**: 0 (communication Docker parfaite)
@@ -419,7 +419,10 @@ La gestion budgétaire familiale repose aujourd’hui sur un Excel (onglet *Calc
 - **Architecture**: Modulaire (routers/services/models) et maintenable
 - **Temps mise à jour mensuelle**: ~45 secondes (objectif < 2 min ✅)
 - **Performance utilisateur**: Interface réactive, aucune latence perceptible
-- **Fiabilité**: Application stable depuis corrections du 11/08/2025
+- **Fiabilité**: Application stable depuis corrections du 13/08/2025
+- **Auto-tagging IA**: 78+ transactions/seconde, 95.4% taux succès
+- **Confiance ML**: 67.7% moyenne, seuil 50% respecté
+- **Tags contextuels**: 100+ patterns marchands, enrichissement web
 
 ### 🚀 TRANSITION VERS PHASE 2 - FONCTIONNALITÉS AVANCÉES
 

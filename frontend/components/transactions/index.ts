@@ -7,3 +7,5 @@ export { ClassificationModal } from './ClassificationModal';
 export { InfoButton } from './InfoButton';
 export { ConfidenceBadge, CompactConfidenceBadge } from './ConfidenceBadge';
 export { TagClassificationBadge, CompactTagClassificationBadge, HistoryTagClassificationBadge } from './TagClassificationBadge';
+export { AutoTaggingButton } from './AutoTaggingButton';
+export { AutoTaggingProgress } from './AutoTaggingProgress';

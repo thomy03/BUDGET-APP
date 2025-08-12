@@ -30,6 +30,10 @@ def parse_tags_to_array(tags_string: str) -> List[str]:
 
 def tx_to_response(tx: Transaction) -> TxOut:
     """Convert Transaction model to TxOut response with proper tags array"""
+    # Normalize expense_type to uppercase to match TxOut validation pattern
+    raw_expense_type = getattr(tx, 'expense_type', 'VARIABLE')
+    normalized_expense_type = raw_expense_type.upper() if raw_expense_type else 'VARIABLE'
+    
     return TxOut(
         id=tx.id,
         month=tx.month,
@@ -41,7 +45,7 @@ def tx_to_response(tx: Transaction) -> TxOut:
         subcategory=getattr(tx, 'subcategory', ''),
         is_expense=tx.is_expense,
         exclude=tx.exclude,
-        expense_type=getattr(tx, 'expense_type', 'VARIABLE'),
+        expense_type=normalized_expense_type,
         tags=parse_tags_to_array(tx.tags or "")
     )
 
