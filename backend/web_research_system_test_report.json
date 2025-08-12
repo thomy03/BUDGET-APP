@@ -1,0 +1,359 @@
+{
+  "test_execution_date": "2025-08-12T13:01:48.210287",
+  "system_status": "operational",
+  "overall_success_rate": 100.0,
+  "test_summary": {
+    "total_tests": 4,
+    "successful_tests": 4,
+    "failed_tests": 0,
+    "test_details": [
+      {
+        "test_name": "merchant_name_extraction",
+        "success": true,
+        "timestamp": "2025-08-12T13:01:10.766202",
+        "details": {
+          "success_rate": 100.0,
+          "successful_extractions": 15,
+          "total_transactions": 15,
+          "results": [
+            {
+              "transaction_label": "CB CARREFOUR VILLENEUVE 15/12 17H45",
+              "extracted_merchant": "CARREFOUR VILLENEUVE 15/12",
+              "extraction_successful": true
+            },
+            {
+              "transaction_label": "VIR NETFLIX ABONNEMENT MENSUEL",
+              "extracted_merchant": "NETFLIX ABONNEMENT MENSUEL",
+              "extraction_successful": true
+            },
+            {
+              "transaction_label": "PRLV EDF FACTURE ELECTRICITE",
+              "extracted_merchant": "EDF FACTURE ELECTRICITE",
+              "extraction_successful": true
+            },
+            {
+              "transaction_label": "CB PHARMACIE CENTRALE PARIS 12/12",
+              "extracted_merchant": "PHARMACIE CENTRALE PARIS 12/12",
+              "extraction_successful": true
+            },
+            {
+              "transaction_label": "CB TOTAL ACCESS LYON A6 14/12",
+              "extracted_merchant": "TOTAL ACCESS LYON A6 14/12",
+              "extraction_successful": true
+            },
+            {
+              "transaction_label": "VIR SFR MOBILE FORFAIT",
+              "extracted_merchant": "SFR MOBILE FORFAIT",
+              "extraction_successful": true
+            },
+            {
+              "transaction_label": "CB BOULANGER ELECTROMENAGER",
+              "extracted_merchant": "BOULANGER ELECTROMENAGER",
+              "extraction_successful": true
+            },
+            {
+              "transaction_label": "PRLV AXA ASSURANCE AUTO",
+              "extracted_merchant": "AXA ASSURANCE AUTO",
+              "extraction_successful": true
+            },
+            {
+              "transaction_label": "CB RESTAURANT LE PETIT PARIS",
+              "extracted_merchant": "RESTAURANT LE PETIT PARIS",
+              "extraction_successful": true
+            },
+            {
+              "transaction_label": "CB FNAC LIVRE COMMANDE WEB",
+              "extracted_merchant": "FNAC LIVRE COMMANDE WEB",
+              "extraction_successful": true
+            },
+            {
+              "transaction_label": "VIR SPOTIFY PREMIUM FAMILLE",
+              "extracted_merchant": "SPOTIFY PREMIUM FAMILLE",
+              "extraction_successful": true
+            },
+            {
+              "transaction_label": "CB LECLERC COURSES SEMAINE",
+              "extracted_merchant": "LECLERC COURSES SEMAINE",
+              "extraction_successful": true
+            },
+            {
+              "transaction_label": "PRLV ORANGE INTERNET FIBRE",
+              "extracted_merchant": "ORANGE INTERNET FIBRE",
+              "extraction_successful": true
+            },
+            {
+              "transaction_label": "CB ZARA VETEMENTS FEMME",
+              "extracted_merchant": "ZARA VETEMENTS FEMME",
+              "extraction_successful": true
+            },
+            {
+              "transaction_label": "CB DECATHLON SPORT OUTDOOR",
+              "extracted_merchant": "DECATHLON SPORT OUTDOOR",
+              "extraction_successful": true
+            }
+          ]
+        }
+      },
+      {
+        "test_name": "web_research_service",
+        "success": true,
+        "timestamp": "2025-08-12T13:01:28.483603",
+        "details": {
+          "success_rate": 100.0,
+          "successful_research": 5,
+          "total_merchants": 5,
+          "research_results": [
+            {
+              "merchant_name": "CARREFOUR VILLENEUVE",
+              "business_type": "supermarket",
+              "confidence_score": 0.09722222222222222,
+              "suggested_expense_type": "VARIABLE",
+              "suggested_tags": [
+                "alimentation",
+                "courses",
+                "nécessaire"
+              ],
+              "data_sources": [
+                "keyword_pattern"
+              ],
+              "research_duration_ms": 1673.0177402496338,
+              "classification_successful": true
+            },
+            {
+              "merchant_name": "NETFLIX",
+              "business_type": "streaming",
+              "confidence_score": 0.2391608391608392,
+              "suggested_expense_type": "FIXED",
+              "suggested_tags": [
+                "abonnement",
+                "streaming",
+                "divertissement"
+              ],
+              "data_sources": [
+                "openstreetmap"
+              ],
+              "research_duration_ms": 2203.7901878356934,
+              "classification_successful": true
+            },
+            {
+              "merchant_name": "PHARMACIE CENTRALE",
+              "business_type": "pharmacy",
+              "confidence_score": 0.6322574132176607,
+              "suggested_expense_type": "VARIABLE",
+              "suggested_tags": [
+                "santé",
+                "médicaments",
+                "nécessaire"
+              ],
+              "data_sources": [
+                "openstreetmap"
+              ],
+              "research_duration_ms": 2871.9422817230225,
+              "classification_successful": true
+            },
+            {
+              "merchant_name": "TOTAL ACCESS",
+              "business_type": "gas_station",
+              "confidence_score": 0.125,
+              "suggested_expense_type": "VARIABLE",
+              "suggested_tags": [
+                "transport",
+                "carburant",
+                "voiture"
+              ],
+              "data_sources": [
+                "keyword_pattern"
+              ],
+              "research_duration_ms": 3118.976831436157,
+              "classification_successful": true
+            },
+            {
+              "merchant_name": "RESTAURANT LE PETIT PARIS",
+              "business_type": "restaurant",
+              "confidence_score": 0.5509371438257933,
+              "suggested_expense_type": "VARIABLE",
+              "suggested_tags": [
+                "alimentation",
+                "sortie",
+                "restaurant"
+              ],
+              "data_sources": [
+                "openstreetmap"
+              ],
+              "research_duration_ms": 2840.5752182006836,
+              "classification_successful": true
+            }
+          ]
+        }
+      },
+      {
+        "test_name": "knowledge_base_operations",
+        "success": true,
+        "timestamp": "2025-08-12T13:01:28.639899",
+        "details": {
+          "merchant_created": 7,
+          "fuzzy_search_results": 1,
+          "stats": {
+            "total_merchants": 7,
+            "verified_merchants": 1,
+            "needs_review": 0,
+            "confidence_distribution": {
+              "high": 1,
+              "medium": 2,
+              "low": 4
+            },
+            "business_type_distribution": [
+              {
+                "business_type": "bank",
+                "count": 1
+              },
+              {
+                "business_type": "pharmacy",
+                "count": 1
+              },
+              {
+                "business_type": "restaurant",
+                "count": 2
+              },
+              {
+                "business_type": "transport",
+                "count": 3
+              }
+            ],
+            "expense_type_distribution": [
+              {
+                "expense_type": "VARIABLE",
+                "count": 7
+              }
+            ],
+            "top_merchants": [
+              {
+                "id": 6,
+                "name": "RESTAURANT MACDO PARIS",
+                "usage_count": 1,
+                "confidence_score": 0.075
+              },
+              {
+                "id": 5,
+                "name": "BNP PARIBAS FRAIS BANCAIRES",
+                "usage_count": 1,
+                "confidence_score": 0.125
+              },
+              {
+                "id": 4,
+                "name": "TOTAL ACCESS MARSEILLE",
+                "usage_count": 1,
+                "confidence_score": 0.6282740783847554
+              },
+              {
+                "id": 3,
+                "name": "PHARMACIE CENTRALE LYON",
+                "usage_count": 1,
+                "confidence_score": 0.7289610688901795
+              },
+              {
+                "id": 2,
+                "name": "CARREFOUR VILLENEUVE LA GARENNE",
+                "usage_count": 1,
+                "confidence_score": 0.3578231292517007
+              },
+              {
+                "id": 1,
+                "name": "RESTAURANT LE PETIT PARIS PARIS",
+                "usage_count": 1,
+                "confidence_score": 0.38975638740344626
+              },
+              {
+                "id": 7,
+                "name": "TEST RESTAURANT DEMO",
+                "usage_count": 1,
+                "confidence_score": 0.85
+              }
+            ],
+            "average_metrics": {
+              "confidence": 0.4506878091328689,
+              "accuracy": 0.9928571428571429,
+              "success_rate": 1.0
+            }
+          }
+        }
+      },
+      {
+        "test_name": "transaction_enrichment_pipeline",
+        "success": true,
+        "timestamp": "2025-08-12T13:01:48.208901",
+        "details": {
+          "success_rate": 80.0,
+          "successful_enrichments": 4,
+          "total_transactions": 5,
+          "enrichment_results": [
+            {
+              "transaction_label": "CB CARREFOUR VILLENEUVE 15/12 17H45",
+              "merchant_name": "CARREFOUR VILLENEUVE 15/12",
+              "business_type": "supermarket",
+              "suggested_expense_type": "VARIABLE",
+              "suggested_tags": [
+                "alimentation",
+                "courses",
+                "nécessaire"
+              ],
+              "confidence_score": 0.09722222222222222,
+              "enrichment_successful": true
+            },
+            {
+              "transaction_label": "VIR NETFLIX ABONNEMENT MENSUEL",
+              "merchant_name": "NETFLIX ABONNEMENT MENSUEL",
+              "business_type": "streaming",
+              "suggested_expense_type": "FIXED",
+              "suggested_tags": [
+                "abonnement",
+                "streaming",
+                "divertissement"
+              ],
+              "confidence_score": 0.1346153846153846,
+              "enrichment_successful": true
+            },
+            {
+              "transaction_label": "PRLV EDF FACTURE ELECTRICITE",
+              "merchant_name": "EDF FACTURE ELECTRICITE",
+              "business_type": null,
+              "suggested_expense_type": null,
+              "suggested_tags": [],
+              "confidence_score": 0.0,
+              "enrichment_successful": false
+            },
+            {
+              "transaction_label": "CB PHARMACIE CENTRALE PARIS 12/12",
+              "merchant_name": "PHARMACIE CENTRALE PARIS 12/12",
+              "business_type": "pharmacy",
+              "suggested_expense_type": "VARIABLE",
+              "suggested_tags": [
+                "santé",
+                "médicaments",
+                "nécessaire"
+              ],
+              "confidence_score": 0.25,
+              "enrichment_successful": true
+            },
+            {
+              "transaction_label": "CB TOTAL ACCESS LYON A6 14/12",
+              "merchant_name": "TOTAL ACCESS LYON A6 14/12",
+              "business_type": "gas_station",
+              "suggested_expense_type": "VARIABLE",
+              "suggested_tags": [
+                "transport",
+                "carburant",
+                "voiture"
+              ],
+              "confidence_score": 0.19642857142857142,
+              "enrichment_successful": true
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "recommendations": [
+    "Système fonctionnel - continuer le monitoring en production"
+  ]
+}

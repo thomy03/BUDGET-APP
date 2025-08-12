@@ -48,6 +48,7 @@ class TxOut(BaseModel):
     subcategory: Optional[str]
     is_expense: Optional[bool]
     exclude: bool
+    expense_type: str = Field(default="VARIABLE", pattern="^(FIXED|VARIABLE|PROVISION)$", description="Type de dépense pour séparation stricte")
     tags: List[str] = []
 
     class Config:
@@ -57,7 +58,80 @@ class ExcludeIn(BaseModel):
     exclude: bool
 
 class TagsIn(BaseModel):
-    tags: str
+    tags: Union[str, List[str]] = Field(
+        description="Tags à associer à la transaction - accepte une string avec virgules ou un array de strings",
+        example="urgent,personnel,impôts"
+    )
+    
+    @validator('tags', pre=True)
+    def normalize_tags(cls, v):
+        """Normalize tags input to string format"""
+        if isinstance(v, list):
+            # Convert list to comma-separated string
+            return ','.join([str(tag).strip() for tag in v if str(tag).strip()])
+        elif isinstance(v, str):
+            # Clean up the string
+            return v.strip()
+        elif v is None:
+            return ""
+        else:
+            raise ValueError("Tags must be either a string or a list of strings")
+
+# Schéma unifié pour PATCH /transactions/{id}
+class TransactionUpdate(BaseModel):
+    """Schéma unifié pour mettre à jour une transaction (exclude, tags, expense_type, ou combinaison)"""
+    exclude: Optional[bool] = Field(
+        None,
+        description="Nouvelle valeur d'exclusion - true pour exclure la transaction des calculs"
+    )
+    tags: Optional[Union[str, List[str]]] = Field(
+        None,
+        description="Tags à associer à la transaction - accepte une string avec virgules ou un array de strings",
+        example="urgent,personnel,impôts"
+    )
+    expense_type: Optional[str] = Field(
+        None,
+        pattern="^(FIXED|VARIABLE|PROVISION)$",
+        description="Type de dépense - FIXED pour charges fixes, VARIABLE pour dépenses variables, PROVISION pour épargne"
+    )
+    
+    @validator('tags', pre=True)
+    def normalize_tags(cls, v):
+        """Normalize tags input to string format"""
+        if v is None:
+            return None
+        if isinstance(v, list):
+            # Convert list to comma-separated string
+            return ','.join([str(tag).strip() for tag in v if str(tag).strip()])
+        elif isinstance(v, str):
+            # Clean up the string
+            return v.strip()
+        else:
+            raise ValueError("Tags must be either a string or a list of strings")
+    
+    class Config:
+        schema_extra = {
+            "example": {
+                "exclude": False,
+                "tags": "urgent,famille,alimentation",
+                "expense_type": "VARIABLE"
+            }
+        }
+
+# Schéma spécifique pour conversion de type de dépense
+class ExpenseTypeConversion(BaseModel):
+    """Schéma pour convertir le type d'une dépense entre FIXED, VARIABLE, PROVISION"""
+    expense_type: str = Field(
+        pattern="^(FIXED|VARIABLE|PROVISION)$",
+        description="Nouveau type de dépense"
+    )
+    
+    class Config:
+        schema_extra = {
+            "example": {
+                "expense_type": "FIXED"
+            }
+        }
 
 # Fixed Lines Schemas
 class FixedLineIn(BaseModel):
@@ -261,6 +335,173 @@ class BudgetComparison(BaseModel):
     actual_amount: float
     variance: float
     variance_percentage: float
+
+# Tag-to-Fixed Line Mapping Schemas
+class TagFixedLineMappingBase(BaseModel):
+    tag_name: str = Field(min_length=1, max_length=100, description="Nom du tag")
+    fixed_line_id: int = Field(description="ID de la ligne fixe associée")
+    label_pattern: Optional[str] = Field(None, max_length=200, description="Motif pour reconnaître les libellés")
+    is_active: bool = Field(default=True, description="Mapping actif")
+
+class TagFixedLineMappingCreate(TagFixedLineMappingBase):
+    auto_created: Optional[bool] = Field(default=True, description="Créé automatiquement")
+    created_by: Optional[str] = Field(None, max_length=50, description="Utilisateur créateur")
+
+class TagFixedLineMappingUpdate(BaseModel):
+    tag_name: Optional[str] = Field(None, min_length=1, max_length=100)
+    fixed_line_id: Optional[int] = None
+    label_pattern: Optional[str] = Field(None, max_length=200)
+    is_active: Optional[bool] = None
+
+class TagFixedLineMappingResponse(TagFixedLineMappingBase):
+    id: int
+    auto_created: bool
+    created_at: dt.datetime
+    created_by: Optional[str]
+    usage_count: int = Field(default=0, description="Nombre d'utilisations du mapping")
+    last_used: Optional[dt.datetime] = Field(None, description="Dernière utilisation")
+    
+    # Include related fixed line information
+    fixed_line: Optional[FixedLineOut] = None
+    
+    class Config:
+        from_attributes = True
+
+class TagAutomationStats(BaseModel):
+    """Statistics for tag automation system"""
+    total_mappings: int = Field(description="Nombre total de mappings actifs")
+    auto_created_mappings: int = Field(description="Mappings créés automatiquement")
+    manual_mappings: int = Field(description="Mappings créés manuellement")
+    total_usage_count: int = Field(description="Nombre total d'utilisations")
+    most_used_tags: List[dict] = Field(description="Tags les plus utilisés")
+    recent_mappings: List[TagFixedLineMappingResponse] = Field(description="Mappings récents")
+
+# Merchant Knowledge Base Schemas
+class MerchantKnowledgeBaseCreate(BaseModel):
+    merchant_name: str = Field(min_length=1, max_length=200, description="Nom du marchand")
+    business_type: Optional[str] = Field(None, max_length=100, description="Type d'entreprise")
+    category: Optional[str] = Field(None, max_length=100, description="Catégorie spécifique")
+    sub_category: Optional[str] = Field(None, max_length=100, description="Sous-catégorie")
+    expense_type: str = Field(default="VARIABLE", pattern="^(FIXED|VARIABLE|PROVISION)$")
+    city: Optional[str] = Field(None, max_length=100, description="Ville")
+    country: str = Field(default="France", max_length=50)
+    confidence_score: float = Field(default=0.5, ge=0.0, le=1.0, description="Score de confiance")
+    suggested_tags: Optional[str] = Field(None, max_length=500, description="Tags suggérés")
+    description: Optional[str] = Field(None, description="Description du marchand")
+
+class MerchantKnowledgeBaseUpdate(BaseModel):
+    merchant_name: Optional[str] = Field(None, min_length=1, max_length=200)
+    business_type: Optional[str] = Field(None, max_length=100)
+    category: Optional[str] = Field(None, max_length=100)
+    sub_category: Optional[str] = Field(None, max_length=100)
+    expense_type: Optional[str] = Field(None, pattern="^(FIXED|VARIABLE|PROVISION)$")
+    city: Optional[str] = Field(None, max_length=100)
+    country: Optional[str] = Field(None, max_length=50)
+    confidence_score: Optional[float] = Field(None, ge=0.0, le=1.0)
+    suggested_tags: Optional[str] = Field(None, max_length=500)
+    description: Optional[str] = Field(None)
+    is_active: Optional[bool] = None
+    is_verified: Optional[bool] = None
+
+class MerchantKnowledgeBaseResponse(BaseModel):
+    id: int
+    merchant_name: str
+    normalized_name: str
+    business_type: Optional[str]
+    category: Optional[str]
+    sub_category: Optional[str]
+    expense_type: str
+    city: Optional[str]
+    country: str
+    confidence_score: float
+    data_sources: Optional[Dict[str, Any]] = None
+    usage_count: int
+    last_updated: dt.datetime
+    last_used: Optional[dt.datetime]
+    accuracy_rating: float
+    user_corrections: int
+    success_rate: float
+    suggested_tags: Optional[str]
+    description: Optional[str]
+    created_at: dt.datetime
+    created_by: str
+    is_active: bool
+    is_verified: bool
+    needs_review: bool
+
+    class Config:
+        from_attributes = True
+
+class MerchantSearchResult(BaseModel):
+    id: int
+    merchant_name: str
+    normalized_name: str
+    business_type: Optional[str]
+    category: Optional[str]
+    expense_type: str
+    confidence_score: float
+    similarity_score: float
+    combined_score: float
+    usage_count: int
+    is_verified: bool
+    last_used: Optional[str]
+    suggested_tags: Optional[str]
+    data_sources: Dict[str, Any] = {}
+    accuracy_rating: float
+    needs_review: bool
+
+class MerchantValidationFeedback(BaseModel):
+    type: str = Field(default="validation", description="Type de feedback")
+    is_correct: bool = Field(description="La classification est-elle correcte?")
+    corrections: Dict[str, Any] = Field(default_factory=dict, description="Corrections à apporter")
+    
+    class Config:
+        schema_extra = {
+            "example": {
+                "type": "validation",
+                "is_correct": False,
+                "corrections": {
+                    "business_type": "restaurant",
+                    "expense_type": "VARIABLE"
+                }
+            }
+        }
+
+class MerchantKnowledgeStats(BaseModel):
+    total_merchants: int
+    verified_merchants: int
+    needs_review: int
+    confidence_distribution: Dict[str, int]
+    business_type_distribution: List[Dict[str, Any]]
+    expense_type_distribution: List[Dict[str, Any]]
+    top_merchants: List[Dict[str, Any]]
+    average_metrics: Dict[str, float]
+
+class MerchantBulkImport(BaseModel):
+    merchants: List[Dict[str, Any]] = Field(description="Liste des marchands à importer")
+    source: str = Field(default="bulk_import", description="Source de l'import")
+
+class MerchantBulkImportResponse(BaseModel):
+    created: int
+    updated: int
+    errors: int
+    total_processed: int
+    message: str
+
+# Research Cache Schemas
+class ResearchCacheResponse(BaseModel):
+    search_term: str
+    research_results: Dict[str, Any]
+    confidence_score: float
+    result_quality: float
+    sources_count: int
+    created_at: dt.datetime
+    last_used: Optional[dt.datetime]
+    usage_count: int
+    is_valid: bool
+    
+    class Config:
+        from_attributes = True
 
 # Summary Schema - Compatible with frontend Dashboard
 class SummaryOut(BaseModel):
