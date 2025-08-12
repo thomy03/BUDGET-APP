@@ -1,0 +1,3711 @@
+{
+  "schema": {
+    "config": [
+      {
+        "name": "id",
+        "type": "INTEGER",
+        "not_null": true,
+        "default": null,
+        "primary_key": true
+      },
+      {
+        "name": "member1",
+        "type": "VARCHAR",
+        "not_null": false,
+        "default": null,
+        "primary_key": false
+      },
+      {
+        "name": "member2",
+        "type": "VARCHAR",
+        "not_null": false,
+        "default": null,
+        "primary_key": false
+      },
+      {
+        "name": "rev1",
+        "type": "FLOAT",
+        "not_null": false,
+        "default": null,
+        "primary_key": false
+      },
+      {
+        "name": "rev2",
+        "type": "FLOAT",
+        "not_null": false,
+        "default": null,
+        "primary_key": false
+      },
+      {
+        "name": "split_mode",
+        "type": "VARCHAR",
+        "not_null": false,
+        "default": null,
+        "primary_key": false
+      },
+      {
+        "name": "split1",
+        "type": "FLOAT",
+        "not_null": false,
+        "default": null,
+        "primary_key": false
+      },
+      {
+        "name": "split2",
+        "type": "FLOAT",
+        "not_null": false,
+        "default": null,
+        "primary_key": false
+      },
+      {
+        "name": "loan_equal",
+        "type": "BOOLEAN",
+        "not_null": false,
+        "default": null,
+        "primary_key": false
+      },
+      {
+        "name": "loan_amount",
+        "type": "FLOAT",
+        "not_null": false,
+        "default": null,
+        "primary_key": false
+      },
+      {
+        "name": "other_fixed_simple",
+        "type": "BOOLEAN",
+        "not_null": false,
+        "default": null,
+        "primary_key": false
+      },
+      {
+        "name": "other_fixed_monthly",
+        "type": "FLOAT",
+        "not_null": false,
+        "default": null,
+        "primary_key": false
+      },
+      {
+        "name": "taxe_fonciere_ann",
+        "type": "FLOAT",
+        "not_null": false,
+        "default": null,
+        "primary_key": false
+      },
+      {
+        "name": "copro_montant",
+        "type": "FLOAT",
+        "not_null": false,
+        "default": null,
+        "primary_key": false
+      },
+      {
+        "name": "copro_freq",
+        "type": "VARCHAR",
+        "not_null": false,
+        "default": null,
+        "primary_key": false
+      },
+      {
+        "name": "other_split_mode",
+        "type": "VARCHAR",
+        "not_null": false,
+        "default": null,
+        "primary_key": false
+      },
+      {
+        "name": "vac_percent",
+        "type": "FLOAT",
+        "not_null": false,
+        "default": null,
+        "primary_key": false
+      },
+      {
+        "name": "vac_base",
+        "type": "VARCHAR",
+        "not_null": false,
+        "default": null,
+        "primary_key": false
+      },
+      {
+        "name": "var_percent",
+        "type": "FLOAT",
+        "not_null": false,
+        "default": "30.0",
+        "primary_key": false
+      },
+      {
+        "name": "max_var",
+        "type": "FLOAT",
+        "not_null": false,
+        "default": "0.0",
+        "primary_key": false
+      },
+      {
+        "name": "min_fixed",
+        "type": "FLOAT",
+        "not_null": false,
+        "default": "0.0",
+        "primary_key": false
+      },
+      {
+        "name": "updated_at",
+        "type": "DATETIME",
+        "not_null": false,
+        "default": null,
+        "primary_key": false
+      },
+      {
+        "name": "created_at",
+        "type": "DATETIME",
+        "not_null": false,
+        "default": null,
+        "primary_key": false
+      }
+    ],
+    "transactions": [
+      {
+        "name": "id",
+        "type": "INTEGER",
+        "not_null": true,
+        "default": null,
+        "primary_key": true
+      },
+      {
+        "name": "month",
+        "type": "VARCHAR",
+        "not_null": false,
+        "default": null,
+        "primary_key": false
+      },
+      {
+        "name": "date_op",
+        "type": "DATE",
+        "not_null": false,
+        "default": null,
+        "primary_key": false
+      },
+      {
+        "name": "label",
+        "type": "TEXT",
+        "not_null": false,
+        "default": null,
+        "primary_key": false
+      },
+      {
+        "name": "category",
+        "type": "TEXT",
+        "not_null": false,
+        "default": null,
+        "primary_key": false
+      },
+      {
+        "name": "category_parent",
+        "type": "TEXT",
+        "not_null": false,
+        "default": null,
+        "primary_key": false
+      },
+      {
+        "name": "amount",
+        "type": "FLOAT",
+        "not_null": false,
+        "default": null,
+        "primary_key": false
+      },
+      {
+        "name": "account_label",
+        "type": "TEXT",
+        "not_null": false,
+        "default": null,
+        "primary_key": false
+      },
+      {
+        "name": "is_expense",
+        "type": "BOOLEAN",
+        "not_null": false,
+        "default": null,
+        "primary_key": false
+      },
+      {
+        "name": "exclude",
+        "type": "BOOLEAN",
+        "not_null": false,
+        "default": null,
+        "primary_key": false
+      },
+      {
+        "name": "row_id",
+        "type": "VARCHAR",
+        "not_null": false,
+        "default": null,
+        "primary_key": false
+      },
+      {
+        "name": "tags",
+        "type": "TEXT",
+        "not_null": false,
+        "default": null,
+        "primary_key": false
+      },
+      {
+        "name": "import_id",
+        "type": "TEXT",
+        "not_null": false,
+        "default": null,
+        "primary_key": false
+      }
+    ],
+    "fixed_lines": [
+      {
+        "name": "id",
+        "type": "INTEGER",
+        "not_null": true,
+        "default": null,
+        "primary_key": true
+      },
+      {
+        "name": "label",
+        "type": "VARCHAR",
+        "not_null": false,
+        "default": null,
+        "primary_key": false
+      },
+      {
+        "name": "amount",
+        "type": "FLOAT",
+        "not_null": false,
+        "default": null,
+        "primary_key": false
+      },
+      {
+        "name": "freq",
+        "type": "VARCHAR",
+        "not_null": false,
+        "default": null,
+        "primary_key": false
+      },
+      {
+        "name": "split_mode",
+        "type": "VARCHAR",
+        "not_null": false,
+        "default": null,
+        "primary_key": false
+      },
+      {
+        "name": "split1",
+        "type": "FLOAT",
+        "not_null": false,
+        "default": null,
+        "primary_key": false
+      },
+      {
+        "name": "split2",
+        "type": "FLOAT",
+        "not_null": false,
+        "default": null,
+        "primary_key": false
+      },
+      {
+        "name": "active",
+        "type": "BOOLEAN",
+        "not_null": false,
+        "default": null,
+        "primary_key": false
+      },
+      {
+        "name": "category",
+        "type": "VARCHAR",
+        "not_null": false,
+        "default": "'autres'",
+        "primary_key": false
+      }
+    ],
+    "tx": [
+      {
+        "name": "id",
+        "type": "INTEGER",
+        "not_null": true,
+        "default": null,
+        "primary_key": true
+      },
+      {
+        "name": "date",
+        "type": "DATE",
+        "not_null": false,
+        "default": null,
+        "primary_key": false
+      },
+      {
+        "name": "description",
+        "type": "VARCHAR",
+        "not_null": false,
+        "default": null,
+        "primary_key": false
+      },
+      {
+        "name": "montant",
+        "type": "FLOAT",
+        "not_null": false,
+        "default": null,
+        "primary_key": false
+      },
+      {
+        "name": "compte",
+        "type": "VARCHAR",
+        "not_null": false,
+        "default": null,
+        "primary_key": false
+      },
+      {
+        "name": "tag",
+        "type": "VARCHAR",
+        "not_null": false,
+        "default": null,
+        "primary_key": false
+      },
+      {
+        "name": "month",
+        "type": "VARCHAR",
+        "not_null": false,
+        "default": null,
+        "primary_key": false
+      },
+      {
+        "name": "import_id",
+        "type": "TEXT",
+        "not_null": false,
+        "default": null,
+        "primary_key": false
+      }
+    ],
+    "fixed_line": [
+      {
+        "name": "id",
+        "type": "INTEGER",
+        "not_null": true,
+        "default": null,
+        "primary_key": true
+      },
+      {
+        "name": "title",
+        "type": "VARCHAR",
+        "not_null": false,
+        "default": null,
+        "primary_key": false
+      },
+      {
+        "name": "amount",
+        "type": "FLOAT",
+        "not_null": false,
+        "default": null,
+        "primary_key": false
+      },
+      {
+        "name": "frequency",
+        "type": "VARCHAR",
+        "not_null": false,
+        "default": null,
+        "primary_key": false
+      },
+      {
+        "name": "split_mode",
+        "type": "VARCHAR",
+        "not_null": false,
+        "default": null,
+        "primary_key": false
+      },
+      {
+        "name": "split1",
+        "type": "FLOAT",
+        "not_null": false,
+        "default": null,
+        "primary_key": false
+      },
+      {
+        "name": "split2",
+        "type": "FLOAT",
+        "not_null": false,
+        "default": null,
+        "primary_key": false
+      }
+    ],
+    "global_month": [
+      {
+        "name": "id",
+        "type": "INTEGER",
+        "not_null": true,
+        "default": null,
+        "primary_key": true
+      },
+      {
+        "name": "month",
+        "type": "VARCHAR",
+        "not_null": false,
+        "default": null,
+        "primary_key": false
+      }
+    ],
+    "import_metadata": [
+      {
+        "name": "id",
+        "type": "VARCHAR",
+        "not_null": true,
+        "default": null,
+        "primary_key": true
+      },
+      {
+        "name": "filename",
+        "type": "VARCHAR",
+        "not_null": true,
+        "default": null,
+        "primary_key": false
+      },
+      {
+        "name": "created_at",
+        "type": "DATE",
+        "not_null": true,
+        "default": null,
+        "primary_key": false
+      },
+      {
+        "name": "user_id",
+        "type": "VARCHAR",
+        "not_null": false,
+        "default": null,
+        "primary_key": false
+      },
+      {
+        "name": "months_detected",
+        "type": "TEXT",
+        "not_null": false,
+        "default": null,
+        "primary_key": false
+      },
+      {
+        "name": "duplicates_count",
+        "type": "INTEGER",
+        "not_null": false,
+        "default": null,
+        "primary_key": false
+      },
+      {
+        "name": "warnings",
+        "type": "TEXT",
+        "not_null": false,
+        "default": null,
+        "primary_key": false
+      },
+      {
+        "name": "processing_ms",
+        "type": "INTEGER",
+        "not_null": false,
+        "default": null,
+        "primary_key": false
+      }
+    ],
+    "export_history": [
+      {
+        "name": "id",
+        "type": "VARCHAR",
+        "not_null": true,
+        "default": null,
+        "primary_key": true
+      },
+      {
+        "name": "user_id",
+        "type": "VARCHAR",
+        "not_null": true,
+        "default": null,
+        "primary_key": false
+      },
+      {
+        "name": "format",
+        "type": "VARCHAR",
+        "not_null": true,
+        "default": null,
+        "primary_key": false
+      },
+      {
+        "name": "scope",
+        "type": "VARCHAR",
+        "not_null": true,
+        "default": null,
+        "primary_key": false
+      },
+      {
+        "name": "created_at",
+        "type": "DATE",
+        "not_null": true,
+        "default": null,
+        "primary_key": false
+      },
+      {
+        "name": "filename",
+        "type": "VARCHAR",
+        "not_null": false,
+        "default": null,
+        "primary_key": false
+      },
+      {
+        "name": "file_size",
+        "type": "INTEGER",
+        "not_null": false,
+        "default": null,
+        "primary_key": false
+      },
+      {
+        "name": "download_count",
+        "type": "INTEGER",
+        "not_null": false,
+        "default": null,
+        "primary_key": false
+      },
+      {
+        "name": "filters_applied",
+        "type": "TEXT",
+        "not_null": false,
+        "default": null,
+        "primary_key": false
+      },
+      {
+        "name": "processing_ms",
+        "type": "INTEGER",
+        "not_null": false,
+        "default": null,
+        "primary_key": false
+      },
+      {
+        "name": "status",
+        "type": "VARCHAR",
+        "not_null": false,
+        "default": null,
+        "primary_key": false
+      },
+      {
+        "name": "error_message",
+        "type": "TEXT",
+        "not_null": false,
+        "default": null,
+        "primary_key": false
+      }
+    ],
+    "custom_provisions": [
+      {
+        "name": "id",
+        "type": "INTEGER",
+        "not_null": true,
+        "default": null,
+        "primary_key": true
+      },
+      {
+        "name": "name",
+        "type": "VARCHAR(100)",
+        "not_null": true,
+        "default": null,
+        "primary_key": false
+      },
+      {
+        "name": "description",
+        "type": "VARCHAR(500)",
+        "not_null": false,
+        "default": null,
+        "primary_key": false
+      },
+      {
+        "name": "percentage",
+        "type": "FLOAT",
+        "not_null": true,
+        "default": null,
+        "primary_key": false
+      },
+      {
+        "name": "base_calculation",
+        "type": "VARCHAR(20)",
+        "not_null": false,
+        "default": null,
+        "primary_key": false
+      },
+      {
+        "name": "fixed_amount",
+        "type": "FLOAT",
+        "not_null": false,
+        "default": null,
+        "primary_key": false
+      },
+      {
+        "name": "split_mode",
+        "type": "VARCHAR(20)",
+        "not_null": false,
+        "default": null,
+        "primary_key": false
+      },
+      {
+        "name": "split_member1",
+        "type": "FLOAT",
+        "not_null": false,
+        "default": null,
+        "primary_key": false
+      },
+      {
+        "name": "split_member2",
+        "type": "FLOAT",
+        "not_null": false,
+        "default": null,
+        "primary_key": false
+      },
+      {
+        "name": "icon",
+        "type": "VARCHAR(50)",
+        "not_null": false,
+        "default": null,
+        "primary_key": false
+      },
+      {
+        "name": "color",
+        "type": "VARCHAR(7)",
+        "not_null": false,
+        "default": null,
+        "primary_key": false
+      },
+      {
+        "name": "display_order",
+        "type": "INTEGER",
+        "not_null": false,
+        "default": null,
+        "primary_key": false
+      },
+      {
+        "name": "is_active",
+        "type": "BOOLEAN",
+        "not_null": false,
+        "default": null,
+        "primary_key": false
+      },
+      {
+        "name": "is_temporary",
+        "type": "BOOLEAN",
+        "not_null": false,
+        "default": null,
+        "primary_key": false
+      },
+      {
+        "name": "start_date",
+        "type": "DATETIME",
+        "not_null": false,
+        "default": null,
+        "primary_key": false
+      },
+      {
+        "name": "end_date",
+        "type": "DATETIME",
+        "not_null": false,
+        "default": null,
+        "primary_key": false
+      },
+      {
+        "name": "target_amount",
+        "type": "FLOAT",
+        "not_null": false,
+        "default": null,
+        "primary_key": false
+      },
+      {
+        "name": "current_amount",
+        "type": "FLOAT",
+        "not_null": false,
+        "default": null,
+        "primary_key": false
+      },
+      {
+        "name": "created_at",
+        "type": "DATETIME",
+        "not_null": false,
+        "default": "CURRENT_TIMESTAMP",
+        "primary_key": false
+      },
+      {
+        "name": "updated_at",
+        "type": "DATETIME",
+        "not_null": false,
+        "default": null,
+        "primary_key": false
+      },
+      {
+        "name": "created_by",
+        "type": "VARCHAR(100)",
+        "not_null": false,
+        "default": null,
+        "primary_key": false
+      },
+      {
+        "name": "category",
+        "type": "VARCHAR(50)",
+        "not_null": false,
+        "default": null,
+        "primary_key": false
+      }
+    ],
+    "config_obsolete_fields_backup": [
+      {
+        "name": "id",
+        "type": "INT",
+        "not_null": false,
+        "default": null,
+        "primary_key": false
+      },
+      {
+        "name": "vac_percent",
+        "type": "REAL",
+        "not_null": false,
+        "default": null,
+        "primary_key": false
+      },
+      {
+        "name": "vac_base",
+        "type": "TEXT",
+        "not_null": false,
+        "default": null,
+        "primary_key": false
+      },
+      {
+        "name": "loan_amount",
+        "type": "REAL",
+        "not_null": false,
+        "default": null,
+        "primary_key": false
+      },
+      {
+        "name": "loan_equal",
+        "type": "NUM",
+        "not_null": false,
+        "default": null,
+        "primary_key": false
+      },
+      {
+        "name": "other_fixed_simple",
+        "type": "NUM",
+        "not_null": false,
+        "default": null,
+        "primary_key": false
+      },
+      {
+        "name": "other_fixed_monthly",
+        "type": "REAL",
+        "not_null": false,
+        "default": null,
+        "primary_key": false
+      },
+      {
+        "name": "taxe_fonciere_ann",
+        "type": "REAL",
+        "not_null": false,
+        "default": null,
+        "primary_key": false
+      },
+      {
+        "name": "copro_montant",
+        "type": "REAL",
+        "not_null": false,
+        "default": null,
+        "primary_key": false
+      },
+      {
+        "name": "copro_freq",
+        "type": "TEXT",
+        "not_null": false,
+        "default": null,
+        "primary_key": false
+      },
+      {
+        "name": "backup_date",
+        "type": "",
+        "not_null": false,
+        "default": null,
+        "primary_key": false
+      }
+    ],
+    "sqlite_stat1": [
+      {
+        "name": "tbl",
+        "type": "",
+        "not_null": false,
+        "default": null,
+        "primary_key": false
+      },
+      {
+        "name": "idx",
+        "type": "",
+        "not_null": false,
+        "default": null,
+        "primary_key": false
+      },
+      {
+        "name": "stat",
+        "type": "",
+        "not_null": false,
+        "default": null,
+        "primary_key": false
+      }
+    ],
+    "users": [
+      {
+        "name": "id",
+        "type": "INTEGER",
+        "not_null": true,
+        "default": null,
+        "primary_key": true
+      },
+      {
+        "name": "username",
+        "type": "VARCHAR(50)",
+        "not_null": true,
+        "default": null,
+        "primary_key": false
+      },
+      {
+        "name": "email",
+        "type": "VARCHAR(100)",
+        "not_null": false,
+        "default": null,
+        "primary_key": false
+      },
+      {
+        "name": "full_name",
+        "type": "VARCHAR(100)",
+        "not_null": false,
+        "default": null,
+        "primary_key": false
+      },
+      {
+        "name": "hashed_password",
+        "type": "VARCHAR(255)",
+        "not_null": true,
+        "default": null,
+        "primary_key": false
+      },
+      {
+        "name": "is_active",
+        "type": "BOOLEAN",
+        "not_null": false,
+        "default": null,
+        "primary_key": false
+      },
+      {
+        "name": "is_admin",
+        "type": "BOOLEAN",
+        "not_null": false,
+        "default": null,
+        "primary_key": false
+      },
+      {
+        "name": "last_login",
+        "type": "DATETIME",
+        "not_null": false,
+        "default": null,
+        "primary_key": false
+      },
+      {
+        "name": "failed_login_attempts",
+        "type": "INTEGER",
+        "not_null": false,
+        "default": null,
+        "primary_key": false
+      },
+      {
+        "name": "locked_until",
+        "type": "DATETIME",
+        "not_null": false,
+        "default": null,
+        "primary_key": false
+      },
+      {
+        "name": "created_at",
+        "type": "DATETIME",
+        "not_null": false,
+        "default": "CURRENT_TIMESTAMP",
+        "primary_key": false
+      },
+      {
+        "name": "updated_at",
+        "type": "DATETIME",
+        "not_null": false,
+        "default": null,
+        "primary_key": false
+      },
+      {
+        "name": "created_by",
+        "type": "VARCHAR(50)",
+        "not_null": false,
+        "default": null,
+        "primary_key": false
+      }
+    ]
+  },
+  "stats": {
+    "total_transactions": 131,
+    "date_range": {
+      "earliest": "2024-01-01",
+      "latest": "2024-01-24",
+      "count": 131
+    },
+    "amounts": {
+      "average": 482.18,
+      "min": -825.91,
+      "max": 3200.0,
+      "negative_count": 104,
+      "positive_count": 27
+    },
+    "tags": [
+      {
+        "tag": "courses",
+        "count": 1,
+        "avg_amount": -45.67
+      }
+    ]
+  },
+  "recurring_patterns": {
+    "COURSES LECLERC": {
+      "count": 13,
+      "transactions": [
+        {
+          "id": 1,
+          "date": "2024-01-15",
+          "amount": -45.67,
+          "original_description": "Courses Leclerc",
+          "tag": "courses",
+          "category": null
+        },
+        {
+          "id": 11,
+          "date": "2024-01-15",
+          "amount": -45.67,
+          "original_description": "Courses Leclerc",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 21,
+          "date": "2024-01-15",
+          "amount": -45.67,
+          "original_description": "Courses Leclerc",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 31,
+          "date": "2024-01-15",
+          "amount": -45.67,
+          "original_description": "Courses Leclerc",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 41,
+          "date": "2024-01-15",
+          "amount": -45.67,
+          "original_description": "Courses Leclerc",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 51,
+          "date": "2024-01-15",
+          "amount": -45.67,
+          "original_description": "Courses Leclerc",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 61,
+          "date": "2024-01-15",
+          "amount": -45.67,
+          "original_description": "Courses Leclerc",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 71,
+          "date": "2024-01-15",
+          "amount": -45.67,
+          "original_description": "Courses Leclerc",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 81,
+          "date": "2024-01-15",
+          "amount": -45.67,
+          "original_description": "Courses Leclerc",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 91,
+          "date": "2024-01-15",
+          "amount": -45.67,
+          "original_description": "Courses Leclerc",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 101,
+          "date": "2024-01-15",
+          "amount": -45.67,
+          "original_description": "Courses Leclerc",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 111,
+          "date": "2024-01-15",
+          "amount": -45.67,
+          "original_description": "Courses Leclerc",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 121,
+          "date": "2024-01-15",
+          "amount": -45.67,
+          "original_description": "Courses Leclerc",
+          "tag": "",
+          "category": null
+        }
+      ],
+      "amount_stats": {
+        "min": -45.67,
+        "max": -45.67,
+        "avg": -45.67,
+        "variation": 0.0
+      },
+      "date_intervals": {
+        "intervals": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "avg_interval": 0.0,
+        "first_date": "2024-01-15",
+        "last_date": "2024-01-15"
+      }
+    },
+    "SALAIRE THOMAS": {
+      "count": 13,
+      "transactions": [
+        {
+          "id": 2,
+          "date": "2024-01-16",
+          "amount": 2800.0,
+          "original_description": "Salaire Thomas",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 12,
+          "date": "2024-01-16",
+          "amount": 2800.0,
+          "original_description": "Salaire Thomas",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 22,
+          "date": "2024-01-16",
+          "amount": 2800.0,
+          "original_description": "Salaire Thomas",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 32,
+          "date": "2024-01-16",
+          "amount": 2800.0,
+          "original_description": "Salaire Thomas",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 42,
+          "date": "2024-01-16",
+          "amount": 2800.0,
+          "original_description": "Salaire Thomas",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 52,
+          "date": "2024-01-16",
+          "amount": 2800.0,
+          "original_description": "Salaire Thomas",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 62,
+          "date": "2024-01-16",
+          "amount": 2800.0,
+          "original_description": "Salaire Thomas",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 72,
+          "date": "2024-01-16",
+          "amount": 2800.0,
+          "original_description": "Salaire Thomas",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 82,
+          "date": "2024-01-16",
+          "amount": 2800.0,
+          "original_description": "Salaire Thomas",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 92,
+          "date": "2024-01-16",
+          "amount": 2800.0,
+          "original_description": "Salaire Thomas",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 102,
+          "date": "2024-01-16",
+          "amount": 2800.0,
+          "original_description": "Salaire Thomas",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 112,
+          "date": "2024-01-16",
+          "amount": 2800.0,
+          "original_description": "Salaire Thomas",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 122,
+          "date": "2024-01-16",
+          "amount": 2800.0,
+          "original_description": "Salaire Thomas",
+          "tag": "",
+          "category": null
+        }
+      ],
+      "amount_stats": {
+        "min": 2800.0,
+        "max": 2800.0,
+        "avg": 2800.0,
+        "variation": 0.0
+      },
+      "date_intervals": {
+        "intervals": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "avg_interval": 0.0,
+        "first_date": "2024-01-16",
+        "last_date": "2024-01-16"
+      }
+    },
+    "RESTAURANT PIZZA": {
+      "count": 13,
+      "transactions": [
+        {
+          "id": 3,
+          "date": "2024-01-17",
+          "amount": -28.5,
+          "original_description": "Restaurant Pizza",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 13,
+          "date": "2024-01-17",
+          "amount": -28.5,
+          "original_description": "Restaurant Pizza",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 23,
+          "date": "2024-01-17",
+          "amount": -28.5,
+          "original_description": "Restaurant Pizza",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 33,
+          "date": "2024-01-17",
+          "amount": -28.5,
+          "original_description": "Restaurant Pizza",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 43,
+          "date": "2024-01-17",
+          "amount": -28.5,
+          "original_description": "Restaurant Pizza",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 53,
+          "date": "2024-01-17",
+          "amount": -28.5,
+          "original_description": "Restaurant Pizza",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 63,
+          "date": "2024-01-17",
+          "amount": -28.5,
+          "original_description": "Restaurant Pizza",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 73,
+          "date": "2024-01-17",
+          "amount": -28.5,
+          "original_description": "Restaurant Pizza",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 83,
+          "date": "2024-01-17",
+          "amount": -28.5,
+          "original_description": "Restaurant Pizza",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 93,
+          "date": "2024-01-17",
+          "amount": -28.5,
+          "original_description": "Restaurant Pizza",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 103,
+          "date": "2024-01-17",
+          "amount": -28.5,
+          "original_description": "Restaurant Pizza",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 113,
+          "date": "2024-01-17",
+          "amount": -28.5,
+          "original_description": "Restaurant Pizza",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 123,
+          "date": "2024-01-17",
+          "amount": -28.5,
+          "original_description": "Restaurant Pizza",
+          "tag": "",
+          "category": null
+        }
+      ],
+      "amount_stats": {
+        "min": -28.5,
+        "max": -28.5,
+        "avg": -28.5,
+        "variation": 0.0
+      },
+      "date_intervals": {
+        "intervals": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "avg_interval": 0.0,
+        "first_date": "2024-01-17",
+        "last_date": "2024-01-17"
+      }
+    },
+    "FACTURE ÉLECTRICITÉ": {
+      "count": 13,
+      "transactions": [
+        {
+          "id": 4,
+          "date": "2024-01-18",
+          "amount": -89.2,
+          "original_description": "Facture Électricité",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 14,
+          "date": "2024-01-18",
+          "amount": -89.2,
+          "original_description": "Facture Électricité",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 24,
+          "date": "2024-01-18",
+          "amount": -89.2,
+          "original_description": "Facture Électricité",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 34,
+          "date": "2024-01-18",
+          "amount": -89.2,
+          "original_description": "Facture Électricité",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 44,
+          "date": "2024-01-18",
+          "amount": -89.2,
+          "original_description": "Facture Électricité",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 54,
+          "date": "2024-01-18",
+          "amount": -89.2,
+          "original_description": "Facture Électricité",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 64,
+          "date": "2024-01-18",
+          "amount": -89.2,
+          "original_description": "Facture Électricité",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 74,
+          "date": "2024-01-18",
+          "amount": -89.2,
+          "original_description": "Facture Électricité",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 84,
+          "date": "2024-01-18",
+          "amount": -89.2,
+          "original_description": "Facture Électricité",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 94,
+          "date": "2024-01-18",
+          "amount": -89.2,
+          "original_description": "Facture Électricité",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 104,
+          "date": "2024-01-18",
+          "amount": -89.2,
+          "original_description": "Facture Électricité",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 114,
+          "date": "2024-01-18",
+          "amount": -89.2,
+          "original_description": "Facture Électricité",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 124,
+          "date": "2024-01-18",
+          "amount": -89.2,
+          "original_description": "Facture Électricité",
+          "tag": "",
+          "category": null
+        }
+      ],
+      "amount_stats": {
+        "min": -89.2,
+        "max": -89.2,
+        "avg": -89.20000000000003,
+        "variation": 0.0
+      },
+      "date_intervals": {
+        "intervals": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "avg_interval": 0.0,
+        "first_date": "2024-01-18",
+        "last_date": "2024-01-18"
+      }
+    },
+    "ESSENCE TOTAL": {
+      "count": 13,
+      "transactions": [
+        {
+          "id": 5,
+          "date": "2024-01-19",
+          "amount": -52.8,
+          "original_description": "Essence Total",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 15,
+          "date": "2024-01-19",
+          "amount": -52.8,
+          "original_description": "Essence Total",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 25,
+          "date": "2024-01-19",
+          "amount": -52.8,
+          "original_description": "Essence Total",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 35,
+          "date": "2024-01-19",
+          "amount": -52.8,
+          "original_description": "Essence Total",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 45,
+          "date": "2024-01-19",
+          "amount": -52.8,
+          "original_description": "Essence Total",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 55,
+          "date": "2024-01-19",
+          "amount": -52.8,
+          "original_description": "Essence Total",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 65,
+          "date": "2024-01-19",
+          "amount": -52.8,
+          "original_description": "Essence Total",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 75,
+          "date": "2024-01-19",
+          "amount": -52.8,
+          "original_description": "Essence Total",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 85,
+          "date": "2024-01-19",
+          "amount": -52.8,
+          "original_description": "Essence Total",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 95,
+          "date": "2024-01-19",
+          "amount": -52.8,
+          "original_description": "Essence Total",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 105,
+          "date": "2024-01-19",
+          "amount": -52.8,
+          "original_description": "Essence Total",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 115,
+          "date": "2024-01-19",
+          "amount": -52.8,
+          "original_description": "Essence Total",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 125,
+          "date": "2024-01-19",
+          "amount": -52.8,
+          "original_description": "Essence Total",
+          "tag": "",
+          "category": null
+        }
+      ],
+      "amount_stats": {
+        "min": -52.8,
+        "max": -52.8,
+        "avg": -52.79999999999999,
+        "variation": 0.0
+      },
+      "date_intervals": {
+        "intervals": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "avg_interval": 0.0,
+        "first_date": "2024-01-19",
+        "last_date": "2024-01-19"
+      }
+    },
+    "SALAIRE DIANA": {
+      "count": 13,
+      "transactions": [
+        {
+          "id": 6,
+          "date": "2024-01-20",
+          "amount": 3200.0,
+          "original_description": "Salaire Diana",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 16,
+          "date": "2024-01-20",
+          "amount": 3200.0,
+          "original_description": "Salaire Diana",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 26,
+          "date": "2024-01-20",
+          "amount": 3200.0,
+          "original_description": "Salaire Diana",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 36,
+          "date": "2024-01-20",
+          "amount": 3200.0,
+          "original_description": "Salaire Diana",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 46,
+          "date": "2024-01-20",
+          "amount": 3200.0,
+          "original_description": "Salaire Diana",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 56,
+          "date": "2024-01-20",
+          "amount": 3200.0,
+          "original_description": "Salaire Diana",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 66,
+          "date": "2024-01-20",
+          "amount": 3200.0,
+          "original_description": "Salaire Diana",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 76,
+          "date": "2024-01-20",
+          "amount": 3200.0,
+          "original_description": "Salaire Diana",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 86,
+          "date": "2024-01-20",
+          "amount": 3200.0,
+          "original_description": "Salaire Diana",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 96,
+          "date": "2024-01-20",
+          "amount": 3200.0,
+          "original_description": "Salaire Diana",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 106,
+          "date": "2024-01-20",
+          "amount": 3200.0,
+          "original_description": "Salaire Diana",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 116,
+          "date": "2024-01-20",
+          "amount": 3200.0,
+          "original_description": "Salaire Diana",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 126,
+          "date": "2024-01-20",
+          "amount": 3200.0,
+          "original_description": "Salaire Diana",
+          "tag": "",
+          "category": null
+        }
+      ],
+      "amount_stats": {
+        "min": 3200.0,
+        "max": 3200.0,
+        "avg": 3200.0,
+        "variation": 0.0
+      },
+      "date_intervals": {
+        "intervals": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "avg_interval": 0.0,
+        "first_date": "2024-01-20",
+        "last_date": "2024-01-20"
+      }
+    },
+    "CINEMA UGC": {
+      "count": 13,
+      "transactions": [
+        {
+          "id": 7,
+          "date": "2024-01-21",
+          "amount": -24.0,
+          "original_description": "Cinema UGC",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 17,
+          "date": "2024-01-21",
+          "amount": -24.0,
+          "original_description": "Cinema UGC",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 27,
+          "date": "2024-01-21",
+          "amount": -24.0,
+          "original_description": "Cinema UGC",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 37,
+          "date": "2024-01-21",
+          "amount": -24.0,
+          "original_description": "Cinema UGC",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 47,
+          "date": "2024-01-21",
+          "amount": -24.0,
+          "original_description": "Cinema UGC",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 57,
+          "date": "2024-01-21",
+          "amount": -24.0,
+          "original_description": "Cinema UGC",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 67,
+          "date": "2024-01-21",
+          "amount": -24.0,
+          "original_description": "Cinema UGC",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 77,
+          "date": "2024-01-21",
+          "amount": -24.0,
+          "original_description": "Cinema UGC",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 87,
+          "date": "2024-01-21",
+          "amount": -24.0,
+          "original_description": "Cinema UGC",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 97,
+          "date": "2024-01-21",
+          "amount": -24.0,
+          "original_description": "Cinema UGC",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 107,
+          "date": "2024-01-21",
+          "amount": -24.0,
+          "original_description": "Cinema UGC",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 117,
+          "date": "2024-01-21",
+          "amount": -24.0,
+          "original_description": "Cinema UGC",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 127,
+          "date": "2024-01-21",
+          "amount": -24.0,
+          "original_description": "Cinema UGC",
+          "tag": "",
+          "category": null
+        }
+      ],
+      "amount_stats": {
+        "min": -24.0,
+        "max": -24.0,
+        "avg": -24.0,
+        "variation": 0.0
+      },
+      "date_intervals": {
+        "intervals": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "avg_interval": 0.0,
+        "first_date": "2024-01-21",
+        "last_date": "2024-01-21"
+      }
+    },
+    "COURSES CAR": {
+      "count": 13,
+      "transactions": [
+        {
+          "id": 8,
+          "date": "2024-01-22",
+          "amount": -67.45,
+          "original_description": "Courses Carrefour",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 18,
+          "date": "2024-01-22",
+          "amount": -67.45,
+          "original_description": "Courses Carrefour",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 28,
+          "date": "2024-01-22",
+          "amount": -67.45,
+          "original_description": "Courses Carrefour",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 38,
+          "date": "2024-01-22",
+          "amount": -67.45,
+          "original_description": "Courses Carrefour",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 48,
+          "date": "2024-01-22",
+          "amount": -67.45,
+          "original_description": "Courses Carrefour",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 58,
+          "date": "2024-01-22",
+          "amount": -67.45,
+          "original_description": "Courses Carrefour",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 68,
+          "date": "2024-01-22",
+          "amount": -67.45,
+          "original_description": "Courses Carrefour",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 78,
+          "date": "2024-01-22",
+          "amount": -67.45,
+          "original_description": "Courses Carrefour",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 88,
+          "date": "2024-01-22",
+          "amount": -67.45,
+          "original_description": "Courses Carrefour",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 98,
+          "date": "2024-01-22",
+          "amount": -67.45,
+          "original_description": "Courses Carrefour",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 108,
+          "date": "2024-01-22",
+          "amount": -67.45,
+          "original_description": "Courses Carrefour",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 118,
+          "date": "2024-01-22",
+          "amount": -67.45,
+          "original_description": "Courses Carrefour",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 128,
+          "date": "2024-01-22",
+          "amount": -67.45,
+          "original_description": "Courses Carrefour",
+          "tag": "",
+          "category": null
+        }
+      ],
+      "amount_stats": {
+        "min": -67.45,
+        "max": -67.45,
+        "avg": -67.45000000000002,
+        "variation": 0.0
+      },
+      "date_intervals": {
+        "intervals": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "avg_interval": 0.0,
+        "first_date": "2024-01-22",
+        "last_date": "2024-01-22"
+      }
+    },
+    "PHARMACIE": {
+      "count": 13,
+      "transactions": [
+        {
+          "id": 9,
+          "date": "2024-01-23",
+          "amount": -15.3,
+          "original_description": "Pharmacie",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 19,
+          "date": "2024-01-23",
+          "amount": -15.3,
+          "original_description": "Pharmacie",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 29,
+          "date": "2024-01-23",
+          "amount": -15.3,
+          "original_description": "Pharmacie",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 39,
+          "date": "2024-01-23",
+          "amount": -15.3,
+          "original_description": "Pharmacie",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 49,
+          "date": "2024-01-23",
+          "amount": -15.3,
+          "original_description": "Pharmacie",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 59,
+          "date": "2024-01-23",
+          "amount": -15.3,
+          "original_description": "Pharmacie",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 69,
+          "date": "2024-01-23",
+          "amount": -15.3,
+          "original_description": "Pharmacie",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 79,
+          "date": "2024-01-23",
+          "amount": -15.3,
+          "original_description": "Pharmacie",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 89,
+          "date": "2024-01-23",
+          "amount": -15.3,
+          "original_description": "Pharmacie",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 99,
+          "date": "2024-01-23",
+          "amount": -15.3,
+          "original_description": "Pharmacie",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 109,
+          "date": "2024-01-23",
+          "amount": -15.3,
+          "original_description": "Pharmacie",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 119,
+          "date": "2024-01-23",
+          "amount": -15.3,
+          "original_description": "Pharmacie",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 129,
+          "date": "2024-01-23",
+          "amount": -15.3,
+          "original_description": "Pharmacie",
+          "tag": "",
+          "category": null
+        }
+      ],
+      "amount_stats": {
+        "min": -15.3,
+        "max": -15.3,
+        "avg": -15.300000000000002,
+        "variation": 0.0
+      },
+      "date_intervals": {
+        "intervals": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "avg_interval": 0.0,
+        "first_date": "2024-01-23",
+        "last_date": "2024-01-23"
+      }
+    },
+    "LOYER": {
+      "count": 13,
+      "transactions": [
+        {
+          "id": 10,
+          "date": "2024-01-24",
+          "amount": -825.91,
+          "original_description": "Loyer",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 20,
+          "date": "2024-01-24",
+          "amount": -825.91,
+          "original_description": "Loyer",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 30,
+          "date": "2024-01-24",
+          "amount": -825.91,
+          "original_description": "Loyer",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 40,
+          "date": "2024-01-24",
+          "amount": -825.91,
+          "original_description": "Loyer",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 50,
+          "date": "2024-01-24",
+          "amount": -825.91,
+          "original_description": "Loyer",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 60,
+          "date": "2024-01-24",
+          "amount": -825.91,
+          "original_description": "Loyer",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 70,
+          "date": "2024-01-24",
+          "amount": -825.91,
+          "original_description": "Loyer",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 80,
+          "date": "2024-01-24",
+          "amount": -825.91,
+          "original_description": "Loyer",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 90,
+          "date": "2024-01-24",
+          "amount": -825.91,
+          "original_description": "Loyer",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 100,
+          "date": "2024-01-24",
+          "amount": -825.91,
+          "original_description": "Loyer",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 110,
+          "date": "2024-01-24",
+          "amount": -825.91,
+          "original_description": "Loyer",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 120,
+          "date": "2024-01-24",
+          "amount": -825.91,
+          "original_description": "Loyer",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 130,
+          "date": "2024-01-24",
+          "amount": -825.91,
+          "original_description": "Loyer",
+          "tag": "",
+          "category": null
+        }
+      ],
+      "amount_stats": {
+        "min": -825.91,
+        "max": -825.91,
+        "avg": -825.91,
+        "variation": 0.0
+      },
+      "date_intervals": {
+        "intervals": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "avg_interval": 0.0,
+        "first_date": "2024-01-24",
+        "last_date": "2024-01-24"
+      }
+    }
+  },
+  "subscription_candidates": {
+    "COURSES LECLERC": {
+      "count": 13,
+      "transactions": [
+        {
+          "id": 1,
+          "date": "2024-01-15",
+          "amount": -45.67,
+          "original_description": "Courses Leclerc",
+          "tag": "courses",
+          "category": null
+        },
+        {
+          "id": 11,
+          "date": "2024-01-15",
+          "amount": -45.67,
+          "original_description": "Courses Leclerc",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 21,
+          "date": "2024-01-15",
+          "amount": -45.67,
+          "original_description": "Courses Leclerc",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 31,
+          "date": "2024-01-15",
+          "amount": -45.67,
+          "original_description": "Courses Leclerc",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 41,
+          "date": "2024-01-15",
+          "amount": -45.67,
+          "original_description": "Courses Leclerc",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 51,
+          "date": "2024-01-15",
+          "amount": -45.67,
+          "original_description": "Courses Leclerc",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 61,
+          "date": "2024-01-15",
+          "amount": -45.67,
+          "original_description": "Courses Leclerc",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 71,
+          "date": "2024-01-15",
+          "amount": -45.67,
+          "original_description": "Courses Leclerc",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 81,
+          "date": "2024-01-15",
+          "amount": -45.67,
+          "original_description": "Courses Leclerc",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 91,
+          "date": "2024-01-15",
+          "amount": -45.67,
+          "original_description": "Courses Leclerc",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 101,
+          "date": "2024-01-15",
+          "amount": -45.67,
+          "original_description": "Courses Leclerc",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 111,
+          "date": "2024-01-15",
+          "amount": -45.67,
+          "original_description": "Courses Leclerc",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 121,
+          "date": "2024-01-15",
+          "amount": -45.67,
+          "original_description": "Courses Leclerc",
+          "tag": "",
+          "category": null
+        }
+      ],
+      "amount_stats": {
+        "min": -45.67,
+        "max": -45.67,
+        "avg": -45.67,
+        "variation": 0.0
+      },
+      "date_intervals": {
+        "intervals": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "avg_interval": 0.0,
+        "first_date": "2024-01-15",
+        "last_date": "2024-01-15"
+      },
+      "subscription_score": 25,
+      "reasons": [
+        "Stable amount (variation: 0.0%)",
+        "Multiple occurrences (13)"
+      ],
+      "suggested_monthly_amount": 45.67
+    },
+    "SALAIRE THOMAS": {
+      "count": 13,
+      "transactions": [
+        {
+          "id": 2,
+          "date": "2024-01-16",
+          "amount": 2800.0,
+          "original_description": "Salaire Thomas",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 12,
+          "date": "2024-01-16",
+          "amount": 2800.0,
+          "original_description": "Salaire Thomas",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 22,
+          "date": "2024-01-16",
+          "amount": 2800.0,
+          "original_description": "Salaire Thomas",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 32,
+          "date": "2024-01-16",
+          "amount": 2800.0,
+          "original_description": "Salaire Thomas",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 42,
+          "date": "2024-01-16",
+          "amount": 2800.0,
+          "original_description": "Salaire Thomas",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 52,
+          "date": "2024-01-16",
+          "amount": 2800.0,
+          "original_description": "Salaire Thomas",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 62,
+          "date": "2024-01-16",
+          "amount": 2800.0,
+          "original_description": "Salaire Thomas",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 72,
+          "date": "2024-01-16",
+          "amount": 2800.0,
+          "original_description": "Salaire Thomas",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 82,
+          "date": "2024-01-16",
+          "amount": 2800.0,
+          "original_description": "Salaire Thomas",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 92,
+          "date": "2024-01-16",
+          "amount": 2800.0,
+          "original_description": "Salaire Thomas",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 102,
+          "date": "2024-01-16",
+          "amount": 2800.0,
+          "original_description": "Salaire Thomas",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 112,
+          "date": "2024-01-16",
+          "amount": 2800.0,
+          "original_description": "Salaire Thomas",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 122,
+          "date": "2024-01-16",
+          "amount": 2800.0,
+          "original_description": "Salaire Thomas",
+          "tag": "",
+          "category": null
+        }
+      ],
+      "amount_stats": {
+        "min": 2800.0,
+        "max": 2800.0,
+        "avg": 2800.0,
+        "variation": 0.0
+      },
+      "date_intervals": {
+        "intervals": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "avg_interval": 0.0,
+        "first_date": "2024-01-16",
+        "last_date": "2024-01-16"
+      },
+      "subscription_score": 25,
+      "reasons": [
+        "Stable amount (variation: 0.0%)",
+        "Multiple occurrences (13)"
+      ],
+      "suggested_monthly_amount": 2800.0
+    },
+    "RESTAURANT PIZZA": {
+      "count": 13,
+      "transactions": [
+        {
+          "id": 3,
+          "date": "2024-01-17",
+          "amount": -28.5,
+          "original_description": "Restaurant Pizza",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 13,
+          "date": "2024-01-17",
+          "amount": -28.5,
+          "original_description": "Restaurant Pizza",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 23,
+          "date": "2024-01-17",
+          "amount": -28.5,
+          "original_description": "Restaurant Pizza",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 33,
+          "date": "2024-01-17",
+          "amount": -28.5,
+          "original_description": "Restaurant Pizza",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 43,
+          "date": "2024-01-17",
+          "amount": -28.5,
+          "original_description": "Restaurant Pizza",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 53,
+          "date": "2024-01-17",
+          "amount": -28.5,
+          "original_description": "Restaurant Pizza",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 63,
+          "date": "2024-01-17",
+          "amount": -28.5,
+          "original_description": "Restaurant Pizza",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 73,
+          "date": "2024-01-17",
+          "amount": -28.5,
+          "original_description": "Restaurant Pizza",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 83,
+          "date": "2024-01-17",
+          "amount": -28.5,
+          "original_description": "Restaurant Pizza",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 93,
+          "date": "2024-01-17",
+          "amount": -28.5,
+          "original_description": "Restaurant Pizza",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 103,
+          "date": "2024-01-17",
+          "amount": -28.5,
+          "original_description": "Restaurant Pizza",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 113,
+          "date": "2024-01-17",
+          "amount": -28.5,
+          "original_description": "Restaurant Pizza",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 123,
+          "date": "2024-01-17",
+          "amount": -28.5,
+          "original_description": "Restaurant Pizza",
+          "tag": "",
+          "category": null
+        }
+      ],
+      "amount_stats": {
+        "min": -28.5,
+        "max": -28.5,
+        "avg": -28.5,
+        "variation": 0.0
+      },
+      "date_intervals": {
+        "intervals": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "avg_interval": 0.0,
+        "first_date": "2024-01-17",
+        "last_date": "2024-01-17"
+      },
+      "subscription_score": 25,
+      "reasons": [
+        "Stable amount (variation: 0.0%)",
+        "Multiple occurrences (13)"
+      ],
+      "suggested_monthly_amount": 28.5
+    },
+    "FACTURE ÉLECTRICITÉ": {
+      "count": 13,
+      "transactions": [
+        {
+          "id": 4,
+          "date": "2024-01-18",
+          "amount": -89.2,
+          "original_description": "Facture Électricité",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 14,
+          "date": "2024-01-18",
+          "amount": -89.2,
+          "original_description": "Facture Électricité",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 24,
+          "date": "2024-01-18",
+          "amount": -89.2,
+          "original_description": "Facture Électricité",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 34,
+          "date": "2024-01-18",
+          "amount": -89.2,
+          "original_description": "Facture Électricité",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 44,
+          "date": "2024-01-18",
+          "amount": -89.2,
+          "original_description": "Facture Électricité",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 54,
+          "date": "2024-01-18",
+          "amount": -89.2,
+          "original_description": "Facture Électricité",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 64,
+          "date": "2024-01-18",
+          "amount": -89.2,
+          "original_description": "Facture Électricité",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 74,
+          "date": "2024-01-18",
+          "amount": -89.2,
+          "original_description": "Facture Électricité",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 84,
+          "date": "2024-01-18",
+          "amount": -89.2,
+          "original_description": "Facture Électricité",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 94,
+          "date": "2024-01-18",
+          "amount": -89.2,
+          "original_description": "Facture Électricité",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 104,
+          "date": "2024-01-18",
+          "amount": -89.2,
+          "original_description": "Facture Électricité",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 114,
+          "date": "2024-01-18",
+          "amount": -89.2,
+          "original_description": "Facture Électricité",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 124,
+          "date": "2024-01-18",
+          "amount": -89.2,
+          "original_description": "Facture Électricité",
+          "tag": "",
+          "category": null
+        }
+      ],
+      "amount_stats": {
+        "min": -89.2,
+        "max": -89.2,
+        "avg": -89.20000000000003,
+        "variation": 0.0
+      },
+      "date_intervals": {
+        "intervals": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "avg_interval": 0.0,
+        "first_date": "2024-01-18",
+        "last_date": "2024-01-18"
+      },
+      "subscription_score": 25,
+      "reasons": [
+        "Stable amount (variation: 0.0%)",
+        "Multiple occurrences (13)"
+      ],
+      "suggested_monthly_amount": 89.20000000000003
+    },
+    "ESSENCE TOTAL": {
+      "count": 13,
+      "transactions": [
+        {
+          "id": 5,
+          "date": "2024-01-19",
+          "amount": -52.8,
+          "original_description": "Essence Total",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 15,
+          "date": "2024-01-19",
+          "amount": -52.8,
+          "original_description": "Essence Total",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 25,
+          "date": "2024-01-19",
+          "amount": -52.8,
+          "original_description": "Essence Total",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 35,
+          "date": "2024-01-19",
+          "amount": -52.8,
+          "original_description": "Essence Total",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 45,
+          "date": "2024-01-19",
+          "amount": -52.8,
+          "original_description": "Essence Total",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 55,
+          "date": "2024-01-19",
+          "amount": -52.8,
+          "original_description": "Essence Total",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 65,
+          "date": "2024-01-19",
+          "amount": -52.8,
+          "original_description": "Essence Total",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 75,
+          "date": "2024-01-19",
+          "amount": -52.8,
+          "original_description": "Essence Total",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 85,
+          "date": "2024-01-19",
+          "amount": -52.8,
+          "original_description": "Essence Total",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 95,
+          "date": "2024-01-19",
+          "amount": -52.8,
+          "original_description": "Essence Total",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 105,
+          "date": "2024-01-19",
+          "amount": -52.8,
+          "original_description": "Essence Total",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 115,
+          "date": "2024-01-19",
+          "amount": -52.8,
+          "original_description": "Essence Total",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 125,
+          "date": "2024-01-19",
+          "amount": -52.8,
+          "original_description": "Essence Total",
+          "tag": "",
+          "category": null
+        }
+      ],
+      "amount_stats": {
+        "min": -52.8,
+        "max": -52.8,
+        "avg": -52.79999999999999,
+        "variation": 0.0
+      },
+      "date_intervals": {
+        "intervals": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "avg_interval": 0.0,
+        "first_date": "2024-01-19",
+        "last_date": "2024-01-19"
+      },
+      "subscription_score": 25,
+      "reasons": [
+        "Stable amount (variation: 0.0%)",
+        "Multiple occurrences (13)"
+      ],
+      "suggested_monthly_amount": 52.79999999999999
+    },
+    "SALAIRE DIANA": {
+      "count": 13,
+      "transactions": [
+        {
+          "id": 6,
+          "date": "2024-01-20",
+          "amount": 3200.0,
+          "original_description": "Salaire Diana",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 16,
+          "date": "2024-01-20",
+          "amount": 3200.0,
+          "original_description": "Salaire Diana",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 26,
+          "date": "2024-01-20",
+          "amount": 3200.0,
+          "original_description": "Salaire Diana",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 36,
+          "date": "2024-01-20",
+          "amount": 3200.0,
+          "original_description": "Salaire Diana",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 46,
+          "date": "2024-01-20",
+          "amount": 3200.0,
+          "original_description": "Salaire Diana",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 56,
+          "date": "2024-01-20",
+          "amount": 3200.0,
+          "original_description": "Salaire Diana",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 66,
+          "date": "2024-01-20",
+          "amount": 3200.0,
+          "original_description": "Salaire Diana",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 76,
+          "date": "2024-01-20",
+          "amount": 3200.0,
+          "original_description": "Salaire Diana",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 86,
+          "date": "2024-01-20",
+          "amount": 3200.0,
+          "original_description": "Salaire Diana",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 96,
+          "date": "2024-01-20",
+          "amount": 3200.0,
+          "original_description": "Salaire Diana",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 106,
+          "date": "2024-01-20",
+          "amount": 3200.0,
+          "original_description": "Salaire Diana",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 116,
+          "date": "2024-01-20",
+          "amount": 3200.0,
+          "original_description": "Salaire Diana",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 126,
+          "date": "2024-01-20",
+          "amount": 3200.0,
+          "original_description": "Salaire Diana",
+          "tag": "",
+          "category": null
+        }
+      ],
+      "amount_stats": {
+        "min": 3200.0,
+        "max": 3200.0,
+        "avg": 3200.0,
+        "variation": 0.0
+      },
+      "date_intervals": {
+        "intervals": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "avg_interval": 0.0,
+        "first_date": "2024-01-20",
+        "last_date": "2024-01-20"
+      },
+      "subscription_score": 25,
+      "reasons": [
+        "Stable amount (variation: 0.0%)",
+        "Multiple occurrences (13)"
+      ],
+      "suggested_monthly_amount": 3200.0
+    },
+    "CINEMA UGC": {
+      "count": 13,
+      "transactions": [
+        {
+          "id": 7,
+          "date": "2024-01-21",
+          "amount": -24.0,
+          "original_description": "Cinema UGC",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 17,
+          "date": "2024-01-21",
+          "amount": -24.0,
+          "original_description": "Cinema UGC",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 27,
+          "date": "2024-01-21",
+          "amount": -24.0,
+          "original_description": "Cinema UGC",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 37,
+          "date": "2024-01-21",
+          "amount": -24.0,
+          "original_description": "Cinema UGC",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 47,
+          "date": "2024-01-21",
+          "amount": -24.0,
+          "original_description": "Cinema UGC",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 57,
+          "date": "2024-01-21",
+          "amount": -24.0,
+          "original_description": "Cinema UGC",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 67,
+          "date": "2024-01-21",
+          "amount": -24.0,
+          "original_description": "Cinema UGC",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 77,
+          "date": "2024-01-21",
+          "amount": -24.0,
+          "original_description": "Cinema UGC",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 87,
+          "date": "2024-01-21",
+          "amount": -24.0,
+          "original_description": "Cinema UGC",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 97,
+          "date": "2024-01-21",
+          "amount": -24.0,
+          "original_description": "Cinema UGC",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 107,
+          "date": "2024-01-21",
+          "amount": -24.0,
+          "original_description": "Cinema UGC",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 117,
+          "date": "2024-01-21",
+          "amount": -24.0,
+          "original_description": "Cinema UGC",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 127,
+          "date": "2024-01-21",
+          "amount": -24.0,
+          "original_description": "Cinema UGC",
+          "tag": "",
+          "category": null
+        }
+      ],
+      "amount_stats": {
+        "min": -24.0,
+        "max": -24.0,
+        "avg": -24.0,
+        "variation": 0.0
+      },
+      "date_intervals": {
+        "intervals": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "avg_interval": 0.0,
+        "first_date": "2024-01-21",
+        "last_date": "2024-01-21"
+      },
+      "subscription_score": 25,
+      "reasons": [
+        "Stable amount (variation: 0.0%)",
+        "Multiple occurrences (13)"
+      ],
+      "suggested_monthly_amount": 24.0
+    },
+    "COURSES CAR": {
+      "count": 13,
+      "transactions": [
+        {
+          "id": 8,
+          "date": "2024-01-22",
+          "amount": -67.45,
+          "original_description": "Courses Carrefour",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 18,
+          "date": "2024-01-22",
+          "amount": -67.45,
+          "original_description": "Courses Carrefour",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 28,
+          "date": "2024-01-22",
+          "amount": -67.45,
+          "original_description": "Courses Carrefour",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 38,
+          "date": "2024-01-22",
+          "amount": -67.45,
+          "original_description": "Courses Carrefour",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 48,
+          "date": "2024-01-22",
+          "amount": -67.45,
+          "original_description": "Courses Carrefour",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 58,
+          "date": "2024-01-22",
+          "amount": -67.45,
+          "original_description": "Courses Carrefour",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 68,
+          "date": "2024-01-22",
+          "amount": -67.45,
+          "original_description": "Courses Carrefour",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 78,
+          "date": "2024-01-22",
+          "amount": -67.45,
+          "original_description": "Courses Carrefour",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 88,
+          "date": "2024-01-22",
+          "amount": -67.45,
+          "original_description": "Courses Carrefour",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 98,
+          "date": "2024-01-22",
+          "amount": -67.45,
+          "original_description": "Courses Carrefour",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 108,
+          "date": "2024-01-22",
+          "amount": -67.45,
+          "original_description": "Courses Carrefour",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 118,
+          "date": "2024-01-22",
+          "amount": -67.45,
+          "original_description": "Courses Carrefour",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 128,
+          "date": "2024-01-22",
+          "amount": -67.45,
+          "original_description": "Courses Carrefour",
+          "tag": "",
+          "category": null
+        }
+      ],
+      "amount_stats": {
+        "min": -67.45,
+        "max": -67.45,
+        "avg": -67.45000000000002,
+        "variation": 0.0
+      },
+      "date_intervals": {
+        "intervals": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "avg_interval": 0.0,
+        "first_date": "2024-01-22",
+        "last_date": "2024-01-22"
+      },
+      "subscription_score": 25,
+      "reasons": [
+        "Stable amount (variation: 0.0%)",
+        "Multiple occurrences (13)"
+      ],
+      "suggested_monthly_amount": 67.45000000000002
+    },
+    "PHARMACIE": {
+      "count": 13,
+      "transactions": [
+        {
+          "id": 9,
+          "date": "2024-01-23",
+          "amount": -15.3,
+          "original_description": "Pharmacie",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 19,
+          "date": "2024-01-23",
+          "amount": -15.3,
+          "original_description": "Pharmacie",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 29,
+          "date": "2024-01-23",
+          "amount": -15.3,
+          "original_description": "Pharmacie",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 39,
+          "date": "2024-01-23",
+          "amount": -15.3,
+          "original_description": "Pharmacie",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 49,
+          "date": "2024-01-23",
+          "amount": -15.3,
+          "original_description": "Pharmacie",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 59,
+          "date": "2024-01-23",
+          "amount": -15.3,
+          "original_description": "Pharmacie",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 69,
+          "date": "2024-01-23",
+          "amount": -15.3,
+          "original_description": "Pharmacie",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 79,
+          "date": "2024-01-23",
+          "amount": -15.3,
+          "original_description": "Pharmacie",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 89,
+          "date": "2024-01-23",
+          "amount": -15.3,
+          "original_description": "Pharmacie",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 99,
+          "date": "2024-01-23",
+          "amount": -15.3,
+          "original_description": "Pharmacie",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 109,
+          "date": "2024-01-23",
+          "amount": -15.3,
+          "original_description": "Pharmacie",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 119,
+          "date": "2024-01-23",
+          "amount": -15.3,
+          "original_description": "Pharmacie",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 129,
+          "date": "2024-01-23",
+          "amount": -15.3,
+          "original_description": "Pharmacie",
+          "tag": "",
+          "category": null
+        }
+      ],
+      "amount_stats": {
+        "min": -15.3,
+        "max": -15.3,
+        "avg": -15.300000000000002,
+        "variation": 0.0
+      },
+      "date_intervals": {
+        "intervals": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "avg_interval": 0.0,
+        "first_date": "2024-01-23",
+        "last_date": "2024-01-23"
+      },
+      "subscription_score": 25,
+      "reasons": [
+        "Stable amount (variation: 0.0%)",
+        "Multiple occurrences (13)"
+      ],
+      "suggested_monthly_amount": 15.300000000000002
+    },
+    "LOYER": {
+      "count": 13,
+      "transactions": [
+        {
+          "id": 10,
+          "date": "2024-01-24",
+          "amount": -825.91,
+          "original_description": "Loyer",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 20,
+          "date": "2024-01-24",
+          "amount": -825.91,
+          "original_description": "Loyer",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 30,
+          "date": "2024-01-24",
+          "amount": -825.91,
+          "original_description": "Loyer",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 40,
+          "date": "2024-01-24",
+          "amount": -825.91,
+          "original_description": "Loyer",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 50,
+          "date": "2024-01-24",
+          "amount": -825.91,
+          "original_description": "Loyer",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 60,
+          "date": "2024-01-24",
+          "amount": -825.91,
+          "original_description": "Loyer",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 70,
+          "date": "2024-01-24",
+          "amount": -825.91,
+          "original_description": "Loyer",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 80,
+          "date": "2024-01-24",
+          "amount": -825.91,
+          "original_description": "Loyer",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 90,
+          "date": "2024-01-24",
+          "amount": -825.91,
+          "original_description": "Loyer",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 100,
+          "date": "2024-01-24",
+          "amount": -825.91,
+          "original_description": "Loyer",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 110,
+          "date": "2024-01-24",
+          "amount": -825.91,
+          "original_description": "Loyer",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 120,
+          "date": "2024-01-24",
+          "amount": -825.91,
+          "original_description": "Loyer",
+          "tag": "",
+          "category": null
+        },
+        {
+          "id": 130,
+          "date": "2024-01-24",
+          "amount": -825.91,
+          "original_description": "Loyer",
+          "tag": "",
+          "category": null
+        }
+      ],
+      "amount_stats": {
+        "min": -825.91,
+        "max": -825.91,
+        "avg": -825.91,
+        "variation": 0.0
+      },
+      "date_intervals": {
+        "intervals": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "avg_interval": 0.0,
+        "first_date": "2024-01-24",
+        "last_date": "2024-01-24"
+      },
+      "subscription_score": 25,
+      "reasons": [
+        "Stable amount (variation: 0.0%)",
+        "Multiple occurrences (13)"
+      ],
+      "suggested_monthly_amount": 825.91
+    }
+  }
+}

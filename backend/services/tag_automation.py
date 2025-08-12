@@ -15,7 +15,7 @@ from models.schemas import (
     TagFixedLineMappingCreate, TagFixedLineMappingResponse,
     FixedLineIn, FixedLineOut, TagAutomationStats
 )
-from services.expense_classification import ExpenseClassificationService, ExpenseType
+from services.expense_classification import get_expense_classification_service, ClassificationResult
 
 logger = logging.getLogger(__name__)
 
@@ -25,7 +25,7 @@ class TagAutomationService:
     
     def __init__(self, db: Session):
         self.db = db
-        self.classifier = ExpenseClassificationService()
+        self.classification_service = get_expense_classification_service(db)
     
     def process_tag_creation(self, tag_name: str, transaction: Transaction, username: str) -> Optional[TagFixedLineMappingResponse]:
         """
@@ -84,40 +84,54 @@ class TagAutomationService:
             self.db.rollback()
             return None
     
-    def classify_transaction_type(self, transaction: Transaction) -> Dict[str, Any]:
+    def classify_transaction_type(self, transaction: Transaction, tag_name: str = "") -> Dict[str, Any]:
         """
-        Classify transaction as Fixed or Variable using intelligent classification
+        Classify transaction as Fixed or Variable using intelligent ML classification
         
         Args:
             transaction: Transaction to classify
+            tag_name: Tag name for additional context
             
         Returns:
             Dictionary with classification results
         """
         try:
-            classification = self.classifier.classify_expense(
-                label=transaction.label or "",
-                amount=abs(transaction.amount) if transaction.amount else None,
-                category=transaction.category
+            # Get historical transactions for pattern analysis
+            history = []
+            if tag_name:
+                history = self.classification_service.get_historical_transactions(tag_name)
+            
+            # Perform intelligent classification
+            result = self.classification_service.classify_expense(
+                tag_name=tag_name or "unknown",
+                transaction_amount=abs(transaction.amount) if transaction.amount else 0.0,
+                transaction_description=transaction.label or "",
+                transaction_history=history
             )
             
             return {
-                "expense_type": classification.expense_type.value,
-                "confidence_score": classification.confidence_score,
-                "matching_patterns": classification.matching_patterns,
-                "reasoning": classification.reasoning,
+                "expense_type": result.expense_type,
+                "confidence_score": result.confidence,
+                "primary_reason": result.primary_reason,
+                "contributing_factors": result.contributing_factors,
+                "keyword_matches": result.keyword_matches,
+                "stability_score": result.stability_score,
+                "frequency_score": result.frequency_score,
                 "should_create_fixed_line": (
-                    classification.expense_type == ExpenseType.FIXED and 
-                    classification.confidence_score >= 0.6
+                    result.expense_type == "FIXED" and 
+                    result.confidence >= 0.6
                 )
             }
         except Exception as e:
             logger.error(f"Error classifying transaction: {e}")
             return {
-                "expense_type": "variable",
+                "expense_type": "VARIABLE",
                 "confidence_score": 0.1,
-                "matching_patterns": [],
-                "reasoning": f"Classification error: {str(e)}",
+                "primary_reason": f"Classification error: {str(e)}",
+                "contributing_factors": [],
+                "keyword_matches": [],
+                "stability_score": None,
+                "frequency_score": None,
                 "should_create_fixed_line": False
             }
     
@@ -135,12 +149,12 @@ class TagAutomationService:
         """
         try:
             # Use intelligent classification to determine if this should be a fixed line
-            classification_result = self.classify_transaction_type(transaction)
+            classification_result = self.classify_transaction_type(transaction, tag_name)
             
             # Only create fixed line if classified as FIXED with sufficient confidence
             if not classification_result["should_create_fixed_line"]:
                 logger.info(
-                    f"Transaction '{transaction.label}' classified as {classification_result['expense_type']} "
+                    f"Tag '{tag_name}' classified as {classification_result['expense_type']} "
                     f"(confidence: {classification_result['confidence_score']:.2f}) - skipping fixed line creation"
                 )
                 return None
@@ -153,7 +167,7 @@ class TagAutomationService:
             
             # Determine category based on transaction category with intelligent mapping
             category = self._map_transaction_category_to_fixed_line_category(
-                transaction.category or "", classification_result["matching_patterns"]
+                transaction.category or "", classification_result["keyword_matches"]
             )
             
             # Create fixed line with intelligent defaults
@@ -175,7 +189,8 @@ class TagAutomationService:
             logger.info(
                 f"✅ Created intelligent fixed line: '{label}' ({amount}€, {category}) - "
                 f"Classification: {classification_result['expense_type']} "
-                f"(confidence: {classification_result['confidence_score']:.2f})"
+                f"(confidence: {classification_result['confidence_score']:.2f}) "
+                f"Reason: {classification_result['primary_reason']}"
             )
             return fixed_line
             
@@ -280,13 +295,13 @@ class TagAutomationService:
         return None
     
     def _map_transaction_category_to_fixed_line_category(self, transaction_category: str, 
-                                                        matching_patterns: List[str] = None) -> str:
+                                                        keyword_matches: List[str] = None) -> str:
         """
         Map transaction category to fixed line category with intelligent pattern analysis
         
         Args:
             transaction_category: Original transaction category
-            matching_patterns: Classification patterns that matched
+            keyword_matches: Classification keyword matches
             
         Returns:
             Mapped fixed line category
@@ -321,27 +336,24 @@ class TagAutomationService:
             'médecin': 'santé',
         }
         
-        # Use pattern-based classification for more accurate categorization
-        if matching_patterns:
-            for pattern in matching_patterns:
-                if ':' in pattern:
-                    pattern_category = pattern.split(':')[0]
-                    
-                    # Map classification patterns to fixed line categories
-                    if pattern_category == 'abonnements':
-                        return 'loisirs'  # Subscriptions go to entertainment
-                    elif pattern_category == 'utilities':
-                        return 'logement'  # Utilities go to housing
-                    elif pattern_category == 'telecom':
-                        return 'services'  # Telecom goes to services
-                    elif pattern_category == 'insurance':
-                        return 'services'  # Insurance goes to services
-                    elif pattern_category == 'banking':
-                        return 'services'  # Banking goes to services
-                    elif pattern_category == 'housing':
-                        return 'logement'  # Housing stays housing
-                    elif pattern_category == 'transport_fixed':
-                        return 'transport'  # Fixed transport stays transport
+        # Use keyword matches for intelligent categorization
+        if keyword_matches:
+            for match in keyword_matches:
+                match_lower = match.lower()
+                
+                # Map specific keywords to categories
+                if any(keyword in match_lower for keyword in ['netflix', 'spotify', 'disney', 'abonnement']):
+                    return 'loisirs'
+                elif any(keyword in match_lower for keyword in ['edf', 'engie', 'electricite', 'gaz', 'eau']):
+                    return 'logement'
+                elif any(keyword in match_lower for keyword in ['orange', 'sfr', 'free', 'internet', 'mobile']):
+                    return 'services'
+                elif any(keyword in match_lower for keyword in ['assurance', 'mutuelle', 'banque']):
+                    return 'services'
+                elif any(keyword in match_lower for keyword in ['navigo', 'transport']):
+                    return 'transport'
+                elif any(keyword in match_lower for keyword in ['pharmacie', 'medical', 'medecin']):
+                    return 'santé'
         
         # Fallback to traditional category mapping
         if transaction_category:

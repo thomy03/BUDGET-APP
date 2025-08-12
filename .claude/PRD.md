@@ -1,8 +1,8 @@
 # PRD — Budget Famille (v3 vision)
 
-**Version**: 0.1 (brouillon)
+**Version**: 0.3 (Intelligence Artificielle)
 
-**Date**: 09/08/2025
+**Date**: 12/08/2025 - Mise à jour majeure IA
 
 **Owner**: à définir (vous)
 
@@ -54,7 +54,10 @@ La gestion budgétaire familiale repose aujourd’hui sur un Excel (onglet *Calc
 * **Peu de champs, bien nommés**: réglages rapides sur le Dashboard.
 * **Éditable in-line**: moins d’allers-retours Paramètres ⇄ Dashboard.
 * **Sélecteur de mois global** persistant.
-* **Sans magie opaque**: les automatisations/ML proposent, l’utilisateur décide.
+* **Sans magie opaque**: les automatisations/ML proposent, l'utilisateur décide.
+* **Intelligence artificielle intégrée** (12/08/2025): Classification automatique des dépenses avec apprentissage continu
+* **Recherche web autonome** (12/08/2025): Enrichissement automatique des commerces via API ouvertes  
+* **Gestion complète des tags** (12/08/2025): Interface Settings pour modification Fixe ↔ Variable
 
 ---
 

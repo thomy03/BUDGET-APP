@@ -2,12 +2,15 @@
 
 ## 📋 Description
 
-Application web sécurisée de gestion de budget familial permettant de :
-- Gérer les transactions financières de deux membres
-- Calculer automatiquement la répartition des dépenses
-- Importer des données via CSV
-- Analyser les dépenses par catégories
+Application web sécurisée de gestion de budget familial avec **Intelligence Artificielle** permettant de :
+- Gérer les transactions financières de deux membres avec **tags intelligents**
+- Calculer automatiquement la répartition des dépenses 
+- Importer des données via CSV avec **classification automatique**
+- **Recherche web automatique** pour enrichir les commerces
+- **Apprentissage continu** des habitudes de consommation
+- Analyser les dépenses par catégories avec **500+ règles ML**
 - Configurer les revenus et modes de partage
+- **Interface Settings complète** pour gestion des tags
 
 ## 🏗️ Architecture
 

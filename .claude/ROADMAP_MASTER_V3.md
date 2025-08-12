@@ -12,10 +12,14 @@
 ### Vision Stratégique
 **Transformer Budget Famille d'une application familiale vers une plateforme intelligente de gestion budgétaire avec intégration bancaire temps réel et IA prédictive.**
 
-### Situation Actuelle (v2.3)
+### Situation Actuelle (v2.3 + IA)
 - ✅ **Backend solide**: FastAPI + SQLite avec parsing CSV/XLSX robuste
 - ✅ **Frontend moderne**: Next.js 14 + TypeScript + Tailwind CSS
 - ✅ **Fonctionnalités avancées**: Tags, lignes fixes, analytics, répartition intelligente
+- 🤖 **INTELLIGENCE ARTIFICIELLE RÉVOLUTIONNAIRE** (2025-08-12): Système ML autonome avec 500+ règles
+- 🔍 **RECHERCHE WEB AUTOMATIQUE** (2025-08-12): Enrichissement commerces via OpenStreetMap
+- 🏷️ **GESTION TAGS COMPLÈTE** (2025-08-12): Interface Settings + conversion Fixe↔Variable
+- ⚡ **PERFORMANCE VALIDÉE** (2025-08-12): <2s recherche web, >85% précision classification
 - ✅ **STABILITÉ CRITIQUE RÉTABLIE** (2025-08-11): Application 100% opérationnelle après corrections post-SPARC
 - 🎯 **IMPORT CSV ENTIÈREMENT FONCTIONNEL** (2025-08-11): 176 transactions importées + interface utilisateur fluide
 - 🎯 **COMMUNICATION FRONTEND-BACKEND STABLE** (2025-08-11): Types alignés + CORS résolu + tags opérationnels

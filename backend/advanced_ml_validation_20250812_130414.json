@@ -1,0 +1,310 @@
+{
+  "test_date": "2025-08-12T13:04:14.562331",
+  "total_cases": 30,
+  "correct_predictions": 17,
+  "accuracy": 0.5666666666666667,
+  "target_accuracy": 0.9,
+  "grade": "C",
+  "detailed_results": [
+    {
+      "test_case": 1,
+      "tag": "Netflix",
+      "amount": 9.99,
+      "expected": "FIXED",
+      "predicted": "VARIABLE",
+      "correct": false,
+      "confidence": 0.5468999999999999,
+      "primary_reason": "Uncertain classification - defaulting to variable"
+    },
+    {
+      "test_case": 2,
+      "tag": "Spotify",
+      "amount": 9.99,
+      "expected": "FIXED",
+      "predicted": "VARIABLE",
+      "correct": false,
+      "confidence": 0.5468999999999999,
+      "primary_reason": "Uncertain classification - defaulting to variable"
+    },
+    {
+      "test_case": 3,
+      "tag": "Disney+",
+      "amount": 8.99,
+      "expected": "FIXED",
+      "predicted": "VARIABLE",
+      "correct": false,
+      "confidence": 0.52155,
+      "primary_reason": "Uncertain classification - defaulting to variable"
+    },
+    {
+      "test_case": 4,
+      "tag": "Orange Forfait",
+      "amount": 39.99,
+      "expected": "FIXED",
+      "predicted": "FIXED",
+      "correct": true,
+      "confidence": 0.6145,
+      "primary_reason": "Identified as recurring fixed expense"
+    },
+    {
+      "test_case": 5,
+      "tag": "Free Box",
+      "amount": 29.99,
+      "expected": "FIXED",
+      "predicted": "VARIABLE",
+      "correct": false,
+      "confidence": 0.5524,
+      "primary_reason": "Uncertain classification - defaulting to variable"
+    },
+    {
+      "test_case": 6,
+      "tag": "SFR Internet",
+      "amount": 49.99,
+      "expected": "FIXED",
+      "predicted": "VARIABLE",
+      "correct": false,
+      "confidence": 0.5498470588235294,
+      "primary_reason": "Uncertain classification - defaulting to variable"
+    },
+    {
+      "test_case": 7,
+      "tag": "EDF Electricite",
+      "amount": 89.45,
+      "expected": "FIXED",
+      "predicted": "VARIABLE",
+      "correct": false,
+      "confidence": 0.531058024691358,
+      "primary_reason": "Uncertain classification - defaulting to variable"
+    },
+    {
+      "test_case": 8,
+      "tag": "Engie Gaz",
+      "amount": 67.23,
+      "expected": "FIXED",
+      "predicted": "VARIABLE",
+      "correct": false,
+      "confidence": 0.5369,
+      "primary_reason": "Uncertain classification - defaulting to variable"
+    },
+    {
+      "test_case": 9,
+      "tag": "Veolia Eau",
+      "amount": 45.67,
+      "expected": "FIXED",
+      "predicted": "VARIABLE",
+      "correct": false,
+      "confidence": 0.5327999999999999,
+      "primary_reason": "Uncertain classification - defaulting to variable"
+    },
+    {
+      "test_case": 10,
+      "tag": "AXA Assurance",
+      "amount": 145.0,
+      "expected": "FIXED",
+      "predicted": "VARIABLE",
+      "correct": false,
+      "confidence": 0.5557,
+      "primary_reason": "Uncertain classification - defaulting to variable"
+    },
+    {
+      "test_case": 11,
+      "tag": "MAIF Habitation",
+      "amount": 67.5,
+      "expected": "FIXED",
+      "predicted": "VARIABLE",
+      "correct": false,
+      "confidence": 0.5512,
+      "primary_reason": "Uncertain classification - defaulting to variable"
+    },
+    {
+      "test_case": 12,
+      "tag": "Credit BNP",
+      "amount": 1250.0,
+      "expected": "FIXED",
+      "predicted": "FIXED",
+      "correct": true,
+      "confidence": 0.6234999999999999,
+      "primary_reason": "Identified as recurring fixed expense"
+    },
+    {
+      "test_case": 13,
+      "tag": "Loyer",
+      "amount": 1500.0,
+      "expected": "FIXED",
+      "predicted": "VARIABLE",
+      "correct": false,
+      "confidence": 0.55475,
+      "primary_reason": "Uncertain classification - defaulting to variable"
+    },
+    {
+      "test_case": 14,
+      "tag": "Syndic",
+      "amount": 180.0,
+      "expected": "FIXED",
+      "predicted": "VARIABLE",
+      "correct": false,
+      "confidence": 0.5524,
+      "primary_reason": "Uncertain classification - defaulting to variable"
+    },
+    {
+      "test_case": 15,
+      "tag": "Basic Fit",
+      "amount": 19.99,
+      "expected": "FIXED",
+      "predicted": "VARIABLE",
+      "correct": false,
+      "confidence": 0.5352769230769231,
+      "primary_reason": "Uncertain classification - defaulting to variable"
+    },
+    {
+      "test_case": 16,
+      "tag": "Courses Carrefour",
+      "amount": 87.45,
+      "expected": "VARIABLE",
+      "predicted": "VARIABLE",
+      "correct": true,
+      "confidence": 0.531,
+      "primary_reason": "Uncertain classification - defaulting to variable"
+    },
+    {
+      "test_case": 17,
+      "tag": "Leclerc",
+      "amount": 156.78,
+      "expected": "VARIABLE",
+      "predicted": "VARIABLE",
+      "correct": true,
+      "confidence": 0.5298,
+      "primary_reason": "Uncertain classification - defaulting to variable"
+    },
+    {
+      "test_case": 18,
+      "tag": "Lidl Courses",
+      "amount": 42.15,
+      "expected": "VARIABLE",
+      "predicted": "VARIABLE",
+      "correct": true,
+      "confidence": 0.5342,
+      "primary_reason": "Uncertain classification - defaulting to variable"
+    },
+    {
+      "test_case": 19,
+      "tag": "McDonald's",
+      "amount": 12.5,
+      "expected": "VARIABLE",
+      "predicted": "VARIABLE",
+      "correct": true,
+      "confidence": 0.539,
+      "primary_reason": "Uncertain classification - defaulting to variable"
+    },
+    {
+      "test_case": 20,
+      "tag": "Restaurant",
+      "amount": 67.8,
+      "expected": "VARIABLE",
+      "predicted": "VARIABLE",
+      "correct": true,
+      "confidence": 0.5294,
+      "primary_reason": "Uncertain classification - defaulting to variable"
+    },
+    {
+      "test_case": 21,
+      "tag": "Deliveroo",
+      "amount": 24.9,
+      "expected": "VARIABLE",
+      "predicted": "VARIABLE",
+      "correct": true,
+      "confidence": 0.5258,
+      "primary_reason": "Uncertain classification - defaulting to variable"
+    },
+    {
+      "test_case": 22,
+      "tag": "Essence Total",
+      "amount": 65.4,
+      "expected": "VARIABLE",
+      "predicted": "VARIABLE",
+      "correct": true,
+      "confidence": 0.5306,
+      "primary_reason": "Uncertain classification - defaulting to variable"
+    },
+    {
+      "test_case": 23,
+      "tag": "Uber",
+      "amount": 18.75,
+      "expected": "VARIABLE",
+      "predicted": "VARIABLE",
+      "correct": true,
+      "confidence": 0.5246,
+      "primary_reason": "Uncertain classification - defaulting to variable"
+    },
+    {
+      "test_case": 24,
+      "tag": "SNCF Billet",
+      "amount": 45.2,
+      "expected": "VARIABLE",
+      "predicted": "VARIABLE",
+      "correct": true,
+      "confidence": 0.5015282051282052,
+      "primary_reason": "Uncertain classification - defaulting to variable"
+    },
+    {
+      "test_case": 25,
+      "tag": "Zara",
+      "amount": 89.95,
+      "expected": "VARIABLE",
+      "predicted": "VARIABLE",
+      "correct": true,
+      "confidence": 0.5058597014925373,
+      "primary_reason": "Uncertain classification - defaulting to variable"
+    },
+    {
+      "test_case": 26,
+      "tag": "Decathlon",
+      "amount": 134.5,
+      "expected": "VARIABLE",
+      "predicted": "VARIABLE",
+      "correct": true,
+      "confidence": 0.5186,
+      "primary_reason": "Uncertain classification - defaulting to variable"
+    },
+    {
+      "test_case": 27,
+      "tag": "IKEA",
+      "amount": 267.3,
+      "expected": "VARIABLE",
+      "predicted": "VARIABLE",
+      "correct": true,
+      "confidence": 0.5161,
+      "primary_reason": "Uncertain classification - defaulting to variable"
+    },
+    {
+      "test_case": 28,
+      "tag": "Cinema UGC",
+      "amount": 22.0,
+      "expected": "VARIABLE",
+      "predicted": "VARIABLE",
+      "correct": true,
+      "confidence": 0.53005,
+      "primary_reason": "Uncertain classification - defaulting to variable"
+    },
+    {
+      "test_case": 29,
+      "tag": "Pharmacie",
+      "amount": 15.67,
+      "expected": "VARIABLE",
+      "predicted": "VARIABLE",
+      "correct": true,
+      "confidence": 0.5175,
+      "primary_reason": "Uncertain classification - defaulting to variable"
+    },
+    {
+      "test_case": 30,
+      "tag": "Retrait",
+      "amount": 50.0,
+      "expected": "VARIABLE",
+      "predicted": "VARIABLE",
+      "correct": true,
+      "confidence": 0.51245,
+      "primary_reason": "Uncertain classification - defaulting to variable"
+    }
+  ]
+}

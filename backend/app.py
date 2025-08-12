@@ -261,7 +261,7 @@ app = FastAPI(
     ],
     contact={
         "name": "Budget Famille Support",
-        "email": "support@budget-famille.local"
+        "email": "support@budget-famille.com"
     },
     license_info={
         "name": "Propriétaire", 
@@ -278,15 +278,6 @@ app = FastAPI(
 # CORS configuration - Import centralized settings
 from config.settings import settings
 from models.schemas import SummaryOut
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=settings.cors.allowed_origins,
-    allow_credentials=settings.cors.allow_credentials,
-    allow_methods=settings.cors.allow_methods,
-    allow_headers=settings.cors.allow_headers,
-    max_age=settings.cors.max_age,
-)
 
 # Database Models (keeping essential models here for compatibility)
 class Config(Base):
@@ -391,6 +382,11 @@ from routers.provisions import router as provisions_router
 from routers.transactions import router as transactions_router
 from routers.import_export import router as import_export_router
 from routers.analytics import router as analytics_router
+from routers.tag_automation import router as tag_automation_router
+from routers.tags import router as tags_router
+from routers.classification import router as classification_router
+# from routers.intelligence import router as intelligence_router  # Temporarily disabled due to syntax error
+from routers.research import router as research_router
 
 # Include routers with their prefixes
 app.include_router(auth_router, tags=["authentication"])
@@ -401,6 +397,23 @@ app.include_router(provisions_router, tags=["provisions"])
 app.include_router(transactions_router, tags=["transactions"])
 app.include_router(import_export_router, tags=["import-export"])
 app.include_router(analytics_router, tags=["analytics"])
+app.include_router(tag_automation_router, tags=["tag-automation"])
+app.include_router(tags_router, tags=["tags"])
+app.include_router(classification_router, prefix="/expense-classification", tags=["intelligent-classification"])
+# app.include_router(intelligence_router, tags=["intelligence"])  # Temporarily disabled
+app.include_router(research_router, tags=["web-research"])
+
+# Configure CORS middleware after all routes are defined
+# This ensures CORS preflight requests are handled correctly for all endpoints
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=settings.cors.allowed_origins,
+    allow_credentials=settings.cors.allow_credentials,
+    allow_methods=settings.cors.allow_methods,
+    allow_headers=settings.cors.allow_headers,
+    max_age=settings.cors.max_age,
+    expose_headers=["*"],  # Expose all headers for debugging
+)
 
 # Add compatibility routes for existing endpoints that don't have prefixes
 @app.post("/token", response_model=Token)
@@ -653,13 +666,300 @@ def get_summary(month: str, current_user = Depends(get_current_user), db: Sessio
 
 @app.get("/summary/enhanced")
 def get_enhanced_summary(month: str, current_user = Depends(get_current_user), db: Session = Depends(get_db)):
-    """Enhanced summary with provisions integration"""
-    # This would integrate with the analytics and provisions services
-    return {
-        "message": "Enhanced summary endpoint - integration with modular services",
-        "month": month,
-        "modules": ["analytics", "provisions", "fixed-expenses"]
-    }
+    """
+    Enhanced summary with detailed variables breakdown by tags
+    
+    This endpoint provides:
+    - Provisions (savings) separated from expenses
+    - Variables detailed by tags with individual amounts
+    - Untagged transactions total
+    - Clear separation between savings and expenses
+    """
+    from models.database import Config, Transaction, FixedLine, CustomProvision, ensure_default_config
+    from services.calculations import get_split, split_amount, calculate_provision_amount
+    from collections import defaultdict
+    
+    try:
+        logger.info(f"📊 Enhanced Summary requested for month {month} by user {current_user.username}")
+        
+        # Get configuration
+        cfg = ensure_default_config(db)
+        r1, r2 = get_split(cfg)
+        
+        # === PROVISIONS (ÉPARGNE) ===
+        custom_provisions = db.query(CustomProvision).filter(
+            CustomProvision.created_by == current_user.username,
+            CustomProvision.is_active == True
+        ).order_by(CustomProvision.display_order, CustomProvision.name).all()
+        
+        provisions_total = 0.0
+        provisions_detail = []
+        provisions_p1_total = 0.0
+        provisions_p2_total = 0.0
+        
+        for provision in custom_provisions:
+            monthly_amount, member1_amount, member2_amount = calculate_provision_amount(provision, cfg)
+            provisions_total += monthly_amount
+            provisions_p1_total += member1_amount
+            provisions_p2_total += member2_amount
+            provisions_detail.append({
+                "name": provision.name,
+                "icon": provision.icon,
+                "color": provision.color,
+                "monthly_amount": round(monthly_amount, 2),
+                "member1_amount": round(member1_amount, 2),
+                "member2_amount": round(member2_amount, 2),
+                "type": "provision"
+            })
+        
+        # === CHARGES FIXES ===
+        # Inclut DEUX sources :
+        # 1. Charges manuelles (fixed_lines)
+        # 2. Transactions automatiquement classées FIXED par l'IA
+        
+        fixed_total = 0.0
+        fixed_detail = []
+        fixed_p1_total = 0.0
+        fixed_p2_total = 0.0
+        
+        # 1. Charges fixes manuelles
+        lines = db.query(FixedLine).filter(FixedLine.active == True).all()
+        for ln in lines:
+            if ln.freq == "mensuelle":
+                mval = ln.amount
+            elif ln.freq == "trimestrielle":
+                mval = (ln.amount or 0.0) / 3.0
+            else:
+                mval = (ln.amount or 0.0) / 12.0
+            
+            p1, p2 = split_amount(mval, ln.split_mode, r1, r2, ln.split1, ln.split2)
+            fixed_total += mval
+            fixed_p1_total += p1
+            fixed_p2_total += p2
+            fixed_detail.append({
+                "name": ln.label or "Fixe",
+                "monthly_amount": round(mval, 2),
+                "member1_amount": round(p1, 2),
+                "member2_amount": round(p2, 2),
+                "category": ln.category,
+                "type": "fixed",
+                "source": "manual",
+                "icon": "⚙️"  # Icône pour charges manuelles
+            })
+        
+        # 2. Transactions automatiquement classées FIXED par l'IA
+        fixed_txs = db.query(Transaction).filter(
+            Transaction.month == month,
+            Transaction.is_expense == True,
+            Transaction.exclude == False,
+            Transaction.expense_type == 'FIXED'
+        ).all()
+        
+        # Grouper par tags pour les transactions FIXED
+        fixed_tag_amounts = defaultdict(float)
+        fixed_untagged_amount = 0.0
+        
+        for tx in fixed_txs:
+            amount = abs(tx.amount or 0)
+            
+            if tx.tags and tx.tags.strip():
+                tags = [t.strip() for t in tx.tags.split(',') if t.strip()]
+                if tags:
+                    amount_per_tag = amount / len(tags)
+                    for tag in tags:
+                        fixed_tag_amounts[tag] += amount_per_tag
+                else:
+                    fixed_untagged_amount += amount
+            else:
+                fixed_untagged_amount += amount
+        
+        # Ajouter les charges fixes untagged
+        if fixed_untagged_amount > 0:
+            untagged_p1 = fixed_untagged_amount * r1
+            untagged_p2 = fixed_untagged_amount * r2
+            fixed_total += fixed_untagged_amount
+            fixed_p1_total += untagged_p1
+            fixed_p2_total += untagged_p2
+            fixed_detail.append({
+                "name": "Charges fixes non-taggées",
+                "monthly_amount": round(fixed_untagged_amount, 2),
+                "member1_amount": round(untagged_p1, 2),
+                "member2_amount": round(untagged_p2, 2),
+                "category": "auto",
+                "type": "fixed",
+                "source": "ai_classified",
+                "icon": "🤖"  # Icône pour IA
+            })
+        
+        # Ajouter les charges fixes par tags (triées par montant décroissant)
+        for tag, amount in sorted(fixed_tag_amounts.items(), key=lambda x: x[1], reverse=True):
+            tag_p1 = amount * r1
+            tag_p2 = amount * r2
+            fixed_total += amount
+            fixed_p1_total += tag_p1
+            fixed_p2_total += tag_p2
+            
+            fixed_detail.append({
+                "name": f"{tag}",
+                "monthly_amount": round(amount, 2),
+                "member1_amount": round(tag_p1, 2),
+                "member2_amount": round(tag_p2, 2),
+                "category": "auto",
+                "type": "fixed",
+                "source": "ai_classified",
+                "icon": "🤖",  # Icône pour IA
+                "tag": tag
+            })
+        
+        # === VARIABLES (DÉPENSES) - FILTRAGE STRICT PAR TYPE ===
+        # NOTE: Séparation stricte implémentée pour éviter le double comptage
+        # - Les charges fixes viennent de fixed_lines ET des transactions FIXED
+        # - Les variables viennent UNIQUEMENT des transactions avec expense_type='VARIABLE'  
+        # - Plus de double affichage possible entre Fixed et Variable
+        
+        txs = db.query(Transaction).filter(
+            Transaction.month == month,
+            Transaction.is_expense == True,
+            Transaction.exclude == False,
+            Transaction.expense_type == 'VARIABLE'  # Filtrage strict pour éviter duplication
+        ).all()
+        
+        # Group by tags
+        tag_amounts = defaultdict(float)
+        untagged_amount = 0.0
+        tagged_transactions = 0
+        untagged_transactions = 0
+        
+        for tx in txs:
+            amount = abs(tx.amount or 0)
+            
+            if tx.tags and tx.tags.strip():
+                # Transaction avec tags
+                tags = [t.strip() for t in tx.tags.split(',') if t.strip()]
+                if tags:
+                    # Répartir le montant entre tous les tags
+                    amount_per_tag = amount / len(tags)
+                    for tag in tags:
+                        tag_amounts[tag] += amount_per_tag
+                    tagged_transactions += 1
+                else:
+                    untagged_amount += amount
+                    untagged_transactions += 1
+            else:
+                # Transaction sans tags
+                untagged_amount += amount
+                untagged_transactions += 1
+        
+        # Préparer le détail des variables par tags
+        variables_detail = []
+        variables_p1_total = 0.0
+        variables_p2_total = 0.0
+        
+        # Transactions non-taggées
+        if untagged_amount > 0:
+            untagged_p1 = untagged_amount * r1
+            untagged_p2 = untagged_amount * r2
+            variables_p1_total += untagged_p1
+            variables_p2_total += untagged_p2
+            variables_detail.append({
+                "name": "Dépenses non-taggées",
+                "tag": None,
+                "amount": round(untagged_amount, 2),
+                "member1_amount": round(untagged_p1, 2),
+                "member2_amount": round(untagged_p2, 2),
+                "transaction_count": untagged_transactions,
+                "type": "untagged_variable"
+            })
+        
+        # Transactions par tags (triées par montant décroissant)
+        for tag, amount in sorted(tag_amounts.items(), key=lambda x: x[1], reverse=True):
+            tag_p1 = amount * r1
+            tag_p2 = amount * r2
+            variables_p1_total += tag_p1
+            variables_p2_total += tag_p2
+            
+            # Compter les transactions pour ce tag
+            tag_tx_count = sum(1 for tx in txs 
+                              if tx.tags and tag in [t.strip() for t in tx.tags.split(',') if t.strip()])
+            
+            variables_detail.append({
+                "name": f"Tag: {tag}",
+                "tag": tag,
+                "amount": round(amount, 2),
+                "member1_amount": round(tag_p1, 2),
+                "member2_amount": round(tag_p2, 2),
+                "transaction_count": tag_tx_count,
+                "type": "tagged_variable"
+            })
+        
+        variables_total = variables_p1_total + variables_p2_total
+        
+        # === TOTAUX GÉNÉRAUX ===
+        grand_total_p1 = provisions_p1_total + fixed_p1_total + variables_p1_total
+        grand_total_p2 = provisions_p2_total + fixed_p2_total + variables_p2_total
+        grand_total = grand_total_p1 + grand_total_p2
+        
+        # === RÉPONSE STRUCTURÉE ===
+        response = {
+            "month": month,
+            "member1": cfg.member1,
+            "member2": cfg.member2,
+            "split_ratio": {"member1": round(r1, 4), "member2": round(r2, 4)},
+            
+            # ÉPARGNE (PROVISIONS)
+            "savings": {
+                "total": round(provisions_total, 2),
+                "member1_total": round(provisions_p1_total, 2),
+                "member2_total": round(provisions_p2_total, 2),
+                "count": len(provisions_detail),
+                "detail": provisions_detail
+            },
+            
+            # CHARGES FIXES
+            "fixed_expenses": {
+                "total": round(fixed_total, 2),
+                "member1_total": round(fixed_p1_total, 2),
+                "member2_total": round(fixed_p2_total, 2),
+                "count": len(fixed_detail),
+                "detail": fixed_detail
+            },
+            
+            # DÉPENSES VARIABLES (DÉTAILLÉES PAR TAGS)
+            "variables": {
+                "total": round(variables_total, 2),
+                "member1_total": round(variables_p1_total, 2),
+                "member2_total": round(variables_p2_total, 2),
+                "tagged_count": len([d for d in variables_detail if d["type"] == "tagged_variable"]),
+                "untagged_count": untagged_transactions,
+                "total_transactions": tagged_transactions + untagged_transactions,
+                "detail": variables_detail
+            },
+            
+            # TOTAUX GÉNÉRAUX
+            "totals": {
+                "grand_total": round(grand_total, 2),
+                "member1_total": round(grand_total_p1, 2),
+                "member2_total": round(grand_total_p2, 2)
+            },
+            
+            # MÉTADONNÉES
+            "metadata": {
+                "active_provisions": len(custom_provisions),
+                "active_fixed_expenses": len(lines),
+                "unique_tags": len(tag_amounts),
+                "calculation_timestamp": dt.datetime.now().isoformat()
+            }
+        }
+        
+        logger.info(f"✅ Enhanced Summary calculated: provisions={provisions_total:.2f}, fixed={fixed_total:.2f}, variables={variables_total:.2f}")
+        return response
+        
+    except Exception as e:
+        logger.error(f"❌ Error in enhanced summary endpoint: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Enhanced summary calculation failed: {str(e)}"
+        )
 
 # Root endpoint
 @app.get("/")

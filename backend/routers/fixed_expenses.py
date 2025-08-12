@@ -178,16 +178,46 @@ async def delete_fixed_line(lid: int, current_user = Depends(get_current_user), 
     """
     Delete a fixed expense line
     
-    Permanently removes the specified fixed expense line.
+    Permanently removes the specified fixed expense line and handles related mappings.
     """
     logger.info(f"Suppression ligne fixe {lid} par utilisateur: {current_user.username}")
     f = db.query(FixedLine).filter(FixedLine.id == lid).first()
     if not f: 
         raise HTTPException(status_code=404, detail="Ligne fixe introuvable")
     
-    logger.info(f"Suppression confirmée: '{f.label}' - {f.category}")
-    db.delete(f); db.commit()
-    return {"ok": True, "message": f"Ligne fixe '{f.label}' supprimée"}
+    # Import TagFixedLineMapping locally to avoid circular imports
+    try:
+        from models.database import TagFixedLineMapping
+        
+        # First, handle related tag mappings
+        related_mappings = db.query(TagFixedLineMapping).filter(
+            TagFixedLineMapping.fixed_line_id == lid
+        ).all()
+        
+        if related_mappings:
+            logger.info(f"Trouvé {len(related_mappings)} mappings liés à supprimer")
+            for mapping in related_mappings:
+                logger.info(f"Suppression mapping tag '{mapping.tag_name}' -> ligne fixe {lid}")
+                db.delete(mapping)
+        
+        # Now delete the fixed line
+        logger.info(f"Suppression confirmée: '{f.label}' - {f.category}")
+        db.delete(f)
+        db.commit()
+        
+        return {
+            "ok": True, 
+            "message": f"Ligne fixe '{f.label}' supprimée",
+            "related_mappings_deleted": len(related_mappings)
+        }
+        
+    except Exception as e:
+        logger.error(f"Erreur lors de la suppression de la ligne fixe {lid}: {str(e)}")
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Erreur lors de la suppression: {str(e)}"
+        )
 
 @router.get("/stats/by-category")
 async def get_fixed_lines_stats_by_category(current_user = Depends(get_current_user), db: Session = Depends(get_db)):

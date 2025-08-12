@@ -1,0 +1,156 @@
+{
+  "execution_time": "2025-08-12T10:58:34.957516",
+  "summary": {
+    "total_tests": 17,
+    "passed": 9,
+    "failed": 7,
+    "warnings": 1,
+    "success_rate": 52.94117647058824,
+    "release_status": "NOT READY FOR RELEASE"
+  },
+  "test_results": [
+    {
+      "test": "Server Health Check",
+      "status": "PASS",
+      "details": "Response time: 13.78ms",
+      "timestamp": "2025-08-12T10:58:30.181999"
+    },
+    {
+      "test": "Legacy Token Endpoint (/token)",
+      "status": "FAIL",
+      "details": "HTTP 401: {\"detail\":\"Incorrect username or password\"}",
+      "timestamp": "2025-08-12T10:58:30.928913"
+    },
+    {
+      "test": "API Token Endpoint (/api/v1/auth/token)",
+      "status": "FAIL",
+      "details": "HTTP 401",
+      "timestamp": "2025-08-12T10:58:31.212092"
+    },
+    {
+      "test": "CORS Origin Header",
+      "status": "FAIL",
+      "details": "Header missing",
+      "timestamp": "2025-08-12T10:58:31.716326"
+    },
+    {
+      "test": "CORS Methods Header",
+      "status": "FAIL",
+      "details": "Header missing",
+      "timestamp": "2025-08-12T10:58:31.716354"
+    },
+    {
+      "test": "CORS Headers Header",
+      "status": "FAIL",
+      "details": "Header missing",
+      "timestamp": "2025-08-12T10:58:31.716359"
+    },
+    {
+      "test": "Configuration Test",
+      "status": "FAIL",
+      "details": "No authentication token available",
+      "timestamp": "2025-08-12T10:58:32.216955"
+    },
+    {
+      "test": "Database File Exists",
+      "status": "PASS",
+      "details": "Found at budget.db",
+      "timestamp": "2025-08-12T10:58:32.718207"
+    },
+    {
+      "test": "Database Connection",
+      "status": "PASS",
+      "details": "Found 12 tables: config, transactions, fixed_lines, tx, fixed_line",
+      "timestamp": "2025-08-12T10:58:32.734723"
+    },
+    {
+      "test": "Table: config",
+      "status": "PASS",
+      "details": "1 records",
+      "timestamp": "2025-08-12T10:58:32.735993"
+    },
+    {
+      "test": "Table: transactions",
+      "status": "PASS",
+      "details": "267 records",
+      "timestamp": "2025-08-12T10:58:32.738782"
+    },
+    {
+      "test": "Table: fixed_lines",
+      "status": "PASS",
+      "details": "5 records",
+      "timestamp": "2025-08-12T10:58:32.739790"
+    },
+    {
+      "test": "Table: custom_provisions",
+      "status": "PASS",
+      "details": "9 records",
+      "timestamp": "2025-08-12T10:58:32.741150"
+    },
+    {
+      "test": "404 Error Handling",
+      "status": "PASS",
+      "details": "Proper 404 response",
+      "timestamp": "2025-08-12T10:58:33.401901"
+    },
+    {
+      "test": "401 Unauthorized Handling",
+      "status": "WARN",
+      "details": "Got 403 instead of 401",
+      "timestamp": "2025-08-12T10:58:33.452167"
+    },
+    {
+      "test": "Performance Tests",
+      "status": "FAIL",
+      "details": "No authentication token",
+      "timestamp": "2025-08-12T10:58:33.952837"
+    },
+    {
+      "test": "JSON Response Format",
+      "status": "PASS",
+      "details": "Valid JSON with message field",
+      "timestamp": "2025-08-12T10:58:34.456829"
+    }
+  ],
+  "performance_metrics": [
+    {
+      "operation": "health_check",
+      "duration_ms": 13.78,
+      "timestamp": "2025-08-12T10:58:30.181826",
+      "status_code": 200
+    },
+    {
+      "operation": "legacy_token_login",
+      "duration_ms": 246.19,
+      "timestamp": "2025-08-12T10:58:30.928875",
+      "status_code": 401
+    },
+    {
+      "operation": "api_token_login",
+      "duration_ms": 283.12,
+      "timestamp": "2025-08-12T10:58:31.212057",
+      "status_code": 401
+    },
+    {
+      "operation": "db_connection",
+      "duration_ms": 16.31,
+      "timestamp": "2025-08-12T10:58:32.734657",
+      "table_count": 12
+    }
+  ],
+  "recommendations": [
+    "🔧 Fix all failed tests before release",
+    "📈 Improve overall system reliability to reach 80%+ success rate",
+    "🔐 Critical: Fix authentication system before release"
+  ],
+  "suite_results": {
+    "Server Health": true,
+    "Authentication": false,
+    "CORS Headers": false,
+    "Configuration": false,
+    "Database": true,
+    "Error Handling": false,
+    "Performance": false,
+    "Frontend Compatibility": true
+  }
+}

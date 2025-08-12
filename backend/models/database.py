@@ -165,6 +165,7 @@ class Transaction(Base):
     account_label = Column(Text, default="")
     is_expense = Column(Boolean, default=False)
     exclude = Column(Boolean, default=False, index=True)
+    expense_type = Column(String, default="VARIABLE", index=True)  # FIXED, VARIABLE, PROVISION - for strict separation
     row_id = Column(String, index=True)  # stable hash
     tags = Column(Text, default="")      # CSV of tags
     import_id = Column(String, nullable=True, index=True)  # UUID of the import that created this transaction
@@ -173,6 +174,7 @@ class Transaction(Base):
     __table_args__ = (
         # Core filtering indexes for dashboard and analytics
         Index('idx_transactions_month_exclude_expense', 'month', 'exclude', 'is_expense'),
+        Index('idx_transactions_month_expense_type', 'month', 'expense_type', 'exclude'),  # New index for strict separation
         Index('idx_transactions_month_category', 'month', 'category'),
         Index('idx_transactions_date_exclude', 'date_op', 'exclude'),
         Index('idx_transactions_category_amount', 'category', 'amount'),
@@ -188,6 +190,7 @@ class Transaction(Base):
         # Performance critical compound indexes
         Index('idx_transactions_month_date_exclude', 'month', 'date_op', 'exclude'),
         Index('idx_transactions_expense_category_month', 'is_expense', 'category', 'month'),
+        Index('idx_transactions_expense_type_month', 'expense_type', 'is_expense', 'month'),  # New index for filtering by type
     )
 
 
@@ -310,6 +313,244 @@ class CustomProvision(Base):
     )
 
 
+class TagFixedLineMapping(Base):
+    """Mapping table for automatic tag to fixed line conversion"""
+    __tablename__ = "tag_fixed_line_mappings"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    tag_name = Column(String(100), nullable=False, index=True)  # Tag from transaction
+    fixed_line_id = Column(Integer, ForeignKey("fixed_lines.id"), nullable=False)
+    
+    # Automatic creation settings
+    auto_created = Column(Boolean, default=True)  # Was this mapping created automatically?
+    created_at = Column(DateTime, server_default=func.now())
+    created_by = Column(String(50), nullable=True)  # Username who created the mapping
+    
+    # Label recognition settings
+    label_pattern = Column(String(200), nullable=True)  # Pattern to match in transaction labels
+    is_active = Column(Boolean, default=True, index=True)
+    
+    # Usage statistics
+    usage_count = Column(Integer, default=0)  # How many times this mapping was used
+    last_used = Column(DateTime, nullable=True)
+    
+    # Relationship to fixed line
+    fixed_line = relationship("FixedLine", back_populates="tag_mappings")
+    
+    # Performance indexes
+    __table_args__ = (
+        Index('idx_tag_mappings_tag_active', 'tag_name', 'is_active'),
+        Index('idx_tag_mappings_fixed_line_active', 'fixed_line_id', 'is_active'),
+        Index('idx_tag_mappings_auto_created', 'auto_created', 'created_at'),
+        Index('idx_tag_mappings_usage', 'usage_count', 'last_used'),
+        Index('idx_tag_mappings_pattern', 'label_pattern', 'is_active'),
+    )
+
+
+# Add relationship to FixedLine
+FixedLine.tag_mappings = relationship("TagFixedLineMapping", back_populates="fixed_line")
+
+
+class LabelTagMapping(Base):
+    """
+    Mapping table for automatic label to tag suggestions
+    
+    This table stores learned associations between transaction labels and tags
+    to provide intelligent tagging suggestions for future transactions.
+    """
+    __tablename__ = "label_tag_mappings"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    label_pattern = Column(String(200), nullable=False, index=True)  # Transaction label pattern
+    suggested_tags = Column(String(500), nullable=False)  # Comma-separated tags to suggest
+    
+    # Learning and confidence metrics
+    confidence_score = Column(Float, default=1.0)  # How confident we are in this mapping (0-1)
+    usage_count = Column(Integer, default=1, index=True)  # How many times this mapping was used
+    success_rate = Column(Float, default=1.0)  # % of times user accepted this suggestion
+    
+    # Pattern matching settings  
+    match_type = Column(String(20), default="exact")  # "exact", "contains", "starts_with", "regex"
+    case_sensitive = Column(Boolean, default=False)
+    is_active = Column(Boolean, default=True, index=True)
+    
+    # Metadata
+    created_at = Column(DateTime, server_default=func.now())
+    created_by = Column(String(50), nullable=True)  # Username who created the mapping
+    last_used = Column(DateTime, nullable=True)
+    last_suggested = Column(DateTime, nullable=True)
+    
+    # Statistics tracking
+    accepted_count = Column(Integer, default=0)  # How many times user accepted suggestion
+    rejected_count = Column(Integer, default=0)  # How many times user rejected suggestion
+    modified_count = Column(Integer, default=0)  # How many times user modified suggestion
+    
+    # Performance indexes
+    __table_args__ = (
+        Index('idx_label_mappings_pattern_active', 'label_pattern', 'is_active'),
+        Index('idx_label_mappings_confidence', 'confidence_score', 'usage_count'),
+        Index('idx_label_mappings_success_rate', 'success_rate', 'is_active'),
+        Index('idx_label_mappings_usage', 'usage_count', 'last_used'),
+        Index('idx_label_mappings_match_type', 'match_type', 'case_sensitive'),
+    )
+
+
+class MerchantKnowledgeBase(Base):
+    """
+    Dynamic knowledge base for merchants that learns from web research and user corrections
+    
+    This table stores intelligent merchant information with confidence scoring and 
+    machine learning capabilities to improve expense classification over time.
+    """
+    __tablename__ = "merchant_knowledge_base"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    
+    # Merchant identification
+    merchant_name = Column(String(200), nullable=False, index=True)  # Original merchant name from transaction
+    normalized_name = Column(String(200), nullable=False, index=True)  # Normalized merchant name for matching
+    
+    # Business intelligence
+    business_type = Column(String(100), nullable=True)  # e.g., "restaurant", "supermarket", "gas_station"
+    category = Column(String(100), nullable=True)  # More specific: fast_food, grocery, electronics, etc.
+    sub_category = Column(String(100), nullable=True)  # Even more specific: chinese_restaurant, clothing_store, etc.
+    expense_type = Column(String(10), default="VARIABLE", index=True)  # FIXED/VARIABLE classification
+    
+    # Location information (if detected)
+    city = Column(String(100), nullable=True)
+    country = Column(String(50), default="France")
+    address = Column(String(500), nullable=True)
+    location_data = Column(Text, nullable=True)  # JSON: comprehensive location info from research
+    
+    # Machine learning and confidence
+    confidence_score = Column(Float, default=0.5, index=True)  # Overall confidence (0.0-1.0)
+    data_sources = Column(Text, nullable=True)  # JSON: {"web": 0.8, "user": 0.9, "osm": 0.7}
+    research_keywords = Column(String(500), nullable=True)  # Keywords that led to successful identification
+    
+    # Usage and learning metrics
+    usage_count = Column(Integer, default=1, index=True)  # How many times this merchant was referenced
+    last_updated = Column(DateTime, server_default=func.now(), onupdate=func.now())
+    last_used = Column(DateTime, nullable=True)
+    last_verified = Column(DateTime, nullable=True)  # When this entry was last manually verified
+    accuracy_rating = Column(Float, default=1.0)  # User feedback on accuracy (0.0-1.0)
+    
+    # User feedback and corrections
+    user_corrections = Column(Integer, default=0)  # Number of user corrections applied
+    auto_classifications = Column(Integer, default=0)  # Number of automatic classifications
+    success_rate = Column(Float, default=1.0)  # Success rate of auto-classifications
+    
+    # Expense classification suggestions
+    suggested_expense_type = Column(String(20), nullable=True)  # FIXED, VARIABLE, PROVISION
+    suggested_tags = Column(String(500), nullable=True)  # Comma-separated suggested tags
+    
+    # Web data extracted
+    website_url = Column(String(500), nullable=True)  # Official website if found
+    phone_number = Column(String(50), nullable=True)  # Phone number if found
+    description = Column(Text, nullable=True)  # Description from web sources
+    business_hours = Column(Text, nullable=True)  # JSON: operating hours
+    
+    # Learning metadata
+    created_at = Column(DateTime, server_default=func.now())
+    created_by = Column(String(50), default="auto_learning")  # "auto_learning", username
+    research_date = Column(DateTime, nullable=True)  # When web research was performed
+    research_quality = Column(Float, default=0.0)  # Quality of research results
+    research_duration_ms = Column(Integer, default=0)  # Time taken for research
+    search_queries_used = Column(Text, nullable=True)  # JSON array of search queries used
+    
+    # Validation and status
+    is_active = Column(Boolean, default=True, index=True)
+    is_verified = Column(Boolean, default=False, index=True)  # Manually verified by user
+    is_validated = Column(Boolean, default=False)  # Has been validated by user
+    needs_review = Column(Boolean, default=False, index=True)  # Flagged for manual review
+    needs_update = Column(Boolean, default=False, index=True)  # Flag for entries needing re-research
+    
+    # Advanced analytics and pattern recognition
+    seasonal_patterns = Column(Text, nullable=True)  # JSON: seasonal usage patterns
+    transaction_patterns = Column(Text, nullable=True)  # JSON: typical transaction amounts/frequencies
+    label_patterns = Column(Text, nullable=True)  # JSON array of label patterns that match this merchant
+    
+    # Performance indexes for knowledge base
+    __table_args__ = (
+        # Core search indexes
+        Index('idx_merchant_kb_merchant_confidence', 'merchant_name', 'confidence_score'),
+        Index('idx_merchant_kb_normalized_active', 'normalized_name', 'is_active'),
+        Index('idx_merchant_kb_name_normalized', 'merchant_name', 'normalized_name'),
+        
+        # Business classification indexes
+        Index('idx_merchant_kb_business_type', 'business_type', 'category'),
+        Index('idx_merchant_kb_type_confidence', 'business_type', 'confidence_score'),
+        Index('idx_merchant_kb_expense_type_confidence', 'expense_type', 'confidence_score'),
+        
+        # Location-based indexes
+        Index('idx_merchant_kb_city_country', 'city', 'country'),
+        Index('idx_merchant_kb_location_type', 'city', 'business_type'),
+        
+        # Usage and learning indexes
+        Index('idx_merchant_kb_usage_updated', 'usage_count', 'last_updated'),
+        Index('idx_merchant_kb_usage_verified', 'usage_count', 'is_verified'),
+        Index('idx_merchant_kb_success_rate', 'success_rate', 'usage_count'),
+        
+        # Research quality indexes
+        Index('idx_merchant_kb_accuracy_confidence', 'accuracy_rating', 'confidence_score'),
+        Index('idx_merchant_kb_research_date', 'research_date', 'last_verified'),
+        Index('idx_merchant_kb_research_quality', 'research_quality', 'confidence_score'),
+        
+        # Status and validation indexes
+        Index('idx_merchant_kb_needs_review', 'needs_review', 'confidence_score'),
+        Index('idx_merchant_kb_needs_update', 'needs_update', 'last_verified'),
+        Index('idx_merchant_kb_validated_active', 'is_validated', 'is_active'),
+        Index('idx_merchant_kb_created_research', 'created_at', 'research_date'),
+        
+        # Performance monitoring indexes
+        Index('idx_merchant_kb_usage_accuracy', 'usage_count', 'accuracy_rating', 'is_active'),
+        Index('idx_merchant_kb_sources_confidence', 'data_sources', 'confidence_score'),
+    )
+
+
+class ResearchCache(Base):
+    """
+    Cache for web research results to avoid redundant searches and improve performance
+    
+    This table stores research results with intelligent caching and confidence scoring.
+    """
+    __tablename__ = "research_cache"
+    
+    search_term = Column(String(200), primary_key=True, index=True)  # Primary search term
+    research_results = Column(Text, nullable=False)  # JSON: complete research results
+    
+    # Confidence and quality metrics
+    confidence_score = Column(Float, default=0.5, index=True)  # Research result confidence
+    result_quality = Column(Float, default=0.5)  # Quality of research data
+    sources_count = Column(Integer, default=0)  # Number of sources used
+    
+    # Cache management
+    created_at = Column(DateTime, server_default=func.now(), index=True)
+    last_used = Column(DateTime, nullable=True, index=True)
+    usage_count = Column(Integer, default=1, index=True)
+    
+    # Research metadata
+    research_method = Column(String(50), default="web_search")  # "web_search", "api", "osm", "hybrid"
+    data_freshness = Column(Float, default=1.0)  # How fresh the data is (1.0 = very fresh)
+    search_duration_ms = Column(Integer, default=0)  # Time taken for research
+    
+    # Validation and status
+    is_valid = Column(Boolean, default=True, index=True)
+    needs_refresh = Column(Boolean, default=False, index=True)  # Cache needs updating
+    
+    # Success tracking
+    successful_matches = Column(Integer, default=0)  # How many times this cache helped
+    failed_matches = Column(Integer, default=0)  # How many times this cache was insufficient
+    
+    # Performance indexes for research cache
+    __table_args__ = (
+        Index('idx_research_cache_confidence_fresh', 'confidence_score', 'data_freshness'),
+        Index('idx_research_cache_used_count', 'last_used', 'usage_count'),
+        Index('idx_research_cache_valid_needs_refresh', 'is_valid', 'needs_refresh'),
+        Index('idx_research_cache_success_ratio', 'successful_matches', 'failed_matches'),
+        Index('idx_research_cache_quality_sources', 'result_quality', 'sources_count'),
+    )
+
+
 # Database events for optimization
 
 @event.listens_for(Engine, "connect")
@@ -362,10 +603,15 @@ def migrate_schema():
                 conn.exec_driver_sql("ALTER TABLE transactions ADD COLUMN import_id TEXT")
                 logger.info("Added 'import_id' column to transactions table")
             
+            if "expense_type" not in cols:
+                conn.exec_driver_sql("ALTER TABLE transactions ADD COLUMN expense_type TEXT DEFAULT 'VARIABLE'")
+                logger.info("Added 'expense_type' column to transactions table")
+            
             # Create comprehensive performance indexes
             critical_indexes = [
                 # Transaction performance indexes - most critical for application performance
                 "CREATE INDEX IF NOT EXISTS idx_transactions_month_exclude_expense ON transactions(month, exclude, is_expense)",
+                "CREATE INDEX IF NOT EXISTS idx_transactions_month_expense_type ON transactions(month, expense_type, exclude)",
                 "CREATE INDEX IF NOT EXISTS idx_transactions_month_category ON transactions(month, category)",
                 "CREATE INDEX IF NOT EXISTS idx_transactions_date_exclude ON transactions(date_op, exclude)",
                 "CREATE INDEX IF NOT EXISTS idx_transactions_category_amount ON transactions(category, amount)",
@@ -375,6 +621,7 @@ def migrate_schema():
                 "CREATE INDEX IF NOT EXISTS idx_transactions_account_month ON transactions(account_label, month)",
                 "CREATE INDEX IF NOT EXISTS idx_transactions_month_date_exclude ON transactions(month, date_op, exclude)",
                 "CREATE INDEX IF NOT EXISTS idx_transactions_expense_category_month ON transactions(is_expense, category, month)",
+                "CREATE INDEX IF NOT EXISTS idx_transactions_expense_type_month ON transactions(expense_type, is_expense, month)",
                 
                 # Fixed lines performance indexes
                 "CREATE INDEX IF NOT EXISTS idx_fixed_lines_active_freq ON fixed_lines(active, freq)",
@@ -491,6 +738,205 @@ def migrate_schema():
                 
                 logger.info("✅ Table users created with authentication indexes")
             
+            # Migration for tag_fixed_line_mappings table
+            try:
+                conn.exec_driver_sql("SELECT 1 FROM tag_fixed_line_mappings LIMIT 1")
+                logger.info("Table tag_fixed_line_mappings already exists")
+            except Exception:
+                logger.info("Creating tag_fixed_line_mappings table for automatic tag to fixed line conversion")
+                conn.exec_driver_sql("""
+                    CREATE TABLE IF NOT EXISTS tag_fixed_line_mappings (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        tag_name VARCHAR(100) NOT NULL,
+                        fixed_line_id INTEGER NOT NULL,
+                        auto_created BOOLEAN DEFAULT TRUE,
+                        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                        created_by VARCHAR(50),
+                        label_pattern VARCHAR(200),
+                        is_active BOOLEAN DEFAULT TRUE,
+                        usage_count INTEGER DEFAULT 0,
+                        last_used DATETIME,
+                        FOREIGN KEY (fixed_line_id) REFERENCES fixed_lines (id) ON DELETE CASCADE
+                    )
+                """)
+                
+                # Create performance indexes for tag mappings
+                tag_mapping_indexes = [
+                    "CREATE INDEX IF NOT EXISTS idx_tag_mappings_tag_active ON tag_fixed_line_mappings(tag_name, is_active)",
+                    "CREATE INDEX IF NOT EXISTS idx_tag_mappings_fixed_line_active ON tag_fixed_line_mappings(fixed_line_id, is_active)",
+                    "CREATE INDEX IF NOT EXISTS idx_tag_mappings_auto_created ON tag_fixed_line_mappings(auto_created, created_at)",
+                    "CREATE INDEX IF NOT EXISTS idx_tag_mappings_usage ON tag_fixed_line_mappings(usage_count, last_used)",
+                    "CREATE INDEX IF NOT EXISTS idx_tag_mappings_pattern ON tag_fixed_line_mappings(label_pattern, is_active)",
+                ]
+                
+                for index_sql in tag_mapping_indexes:
+                    conn.exec_driver_sql(index_sql)
+                
+                logger.info("✅ Table tag_fixed_line_mappings created with performance indexes")
+            
+            # Migration for label_tag_mappings table (new intelligent tagging system)
+            try:
+                conn.exec_driver_sql("SELECT 1 FROM label_tag_mappings LIMIT 1")
+                logger.info("Table label_tag_mappings already exists")
+            except Exception:
+                logger.info("Creating label_tag_mappings table for intelligent tag suggestions")
+                conn.exec_driver_sql("""
+                    CREATE TABLE IF NOT EXISTS label_tag_mappings (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        label_pattern VARCHAR(200) NOT NULL,
+                        suggested_tags VARCHAR(500) NOT NULL,
+                        confidence_score FLOAT DEFAULT 1.0,
+                        usage_count INTEGER DEFAULT 1,
+                        success_rate FLOAT DEFAULT 1.0,
+                        match_type VARCHAR(20) DEFAULT 'exact',
+                        case_sensitive BOOLEAN DEFAULT FALSE,
+                        is_active BOOLEAN DEFAULT TRUE,
+                        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                        created_by VARCHAR(50),
+                        last_used DATETIME,
+                        last_suggested DATETIME,
+                        accepted_count INTEGER DEFAULT 0,
+                        rejected_count INTEGER DEFAULT 0,
+                        modified_count INTEGER DEFAULT 0
+                    )
+                """)
+                
+                # Create performance indexes for label tag mappings
+                label_mapping_indexes = [
+                    "CREATE INDEX IF NOT EXISTS idx_label_mappings_pattern_active ON label_tag_mappings(label_pattern, is_active)",
+                    "CREATE INDEX IF NOT EXISTS idx_label_mappings_confidence ON label_tag_mappings(confidence_score, usage_count)",
+                    "CREATE INDEX IF NOT EXISTS idx_label_mappings_success_rate ON label_tag_mappings(success_rate, is_active)",
+                    "CREATE INDEX IF NOT EXISTS idx_label_mappings_usage ON label_tag_mappings(usage_count, last_used)",
+                    "CREATE INDEX IF NOT EXISTS idx_label_mappings_match_type ON label_tag_mappings(match_type, case_sensitive)",
+                    "CREATE INDEX IF NOT EXISTS idx_label_mappings_created_by ON label_tag_mappings(created_by, is_active)",
+                ]
+                
+                for index_sql in label_mapping_indexes:
+                    conn.exec_driver_sql(index_sql)
+                
+                logger.info("✅ Table label_tag_mappings created with performance indexes")
+            
+            # Migration for merchant_knowledge_base table (intelligent merchant learning)
+            try:
+                conn.exec_driver_sql("SELECT 1 FROM merchant_knowledge_base LIMIT 1")
+                logger.info("Table merchant_knowledge_base already exists")
+            except Exception:
+                logger.info("Creating merchant_knowledge_base table for intelligent merchant classification")
+                conn.exec_driver_sql("""
+                    CREATE TABLE IF NOT EXISTS merchant_knowledge_base (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        merchant_name VARCHAR(200) NOT NULL,
+                        normalized_name VARCHAR(200) NOT NULL,
+                        business_type VARCHAR(100),
+                        category VARCHAR(100),
+                        sub_category VARCHAR(100),
+                        expense_type VARCHAR(10) DEFAULT 'VARIABLE',
+                        city VARCHAR(100),
+                        country VARCHAR(50) DEFAULT 'France',
+                        address VARCHAR(500),
+                        location_data TEXT,
+                        confidence_score FLOAT DEFAULT 0.5,
+                        data_sources TEXT,
+                        research_keywords VARCHAR(500),
+                        usage_count INTEGER DEFAULT 1,
+                        last_updated DATETIME DEFAULT CURRENT_TIMESTAMP,
+                        last_used DATETIME,
+                        accuracy_rating FLOAT DEFAULT 1.0,
+                        user_corrections INTEGER DEFAULT 0,
+                        auto_classifications INTEGER DEFAULT 0,
+                        success_rate FLOAT DEFAULT 1.0,
+                        suggested_expense_type VARCHAR(20),
+                        suggested_tags VARCHAR(500),
+                        website_url VARCHAR(500),
+                        phone_number VARCHAR(50),
+                        description TEXT,
+                        business_hours TEXT,
+                        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                        created_by VARCHAR(50) DEFAULT 'auto_learning',
+                        research_date DATETIME,
+                        research_quality FLOAT DEFAULT 0.0,
+                        research_duration_ms INTEGER DEFAULT 0,
+                        search_queries_used TEXT,
+                        is_active BOOLEAN DEFAULT TRUE,
+                        is_verified BOOLEAN DEFAULT FALSE,
+                        is_validated BOOLEAN DEFAULT FALSE,
+                        needs_review BOOLEAN DEFAULT FALSE,
+                        needs_update BOOLEAN DEFAULT FALSE,
+                        seasonal_patterns TEXT,
+                        transaction_patterns TEXT,
+                        label_patterns TEXT
+                    )
+                """)
+                
+                # Create performance indexes for merchant knowledge base
+                merchant_kb_indexes = [
+                    "CREATE INDEX IF NOT EXISTS idx_merchant_kb_merchant_confidence ON merchant_knowledge_base(merchant_name, confidence_score)",
+                    "CREATE INDEX IF NOT EXISTS idx_merchant_kb_normalized_active ON merchant_knowledge_base(normalized_name, is_active)",
+                    "CREATE INDEX IF NOT EXISTS idx_merchant_kb_name_normalized ON merchant_knowledge_base(merchant_name, normalized_name)",
+                    "CREATE INDEX IF NOT EXISTS idx_merchant_kb_business_type ON merchant_knowledge_base(business_type, category)",
+                    "CREATE INDEX IF NOT EXISTS idx_merchant_kb_type_confidence ON merchant_knowledge_base(business_type, confidence_score)",
+                    "CREATE INDEX IF NOT EXISTS idx_merchant_kb_expense_type_confidence ON merchant_knowledge_base(expense_type, confidence_score)",
+                    "CREATE INDEX IF NOT EXISTS idx_merchant_kb_city_country ON merchant_knowledge_base(city, country)",
+                    "CREATE INDEX IF NOT EXISTS idx_merchant_kb_location_type ON merchant_knowledge_base(city, business_type)",
+                    "CREATE INDEX IF NOT EXISTS idx_merchant_kb_usage_updated ON merchant_knowledge_base(usage_count, last_updated)",
+                    "CREATE INDEX IF NOT EXISTS idx_merchant_kb_usage_verified ON merchant_knowledge_base(usage_count, is_verified)",
+                    "CREATE INDEX IF NOT EXISTS idx_merchant_kb_success_rate ON merchant_knowledge_base(success_rate, usage_count)",
+                    "CREATE INDEX IF NOT EXISTS idx_merchant_kb_accuracy_confidence ON merchant_knowledge_base(accuracy_rating, confidence_score)",
+                    "CREATE INDEX IF NOT EXISTS idx_merchant_kb_research_date ON merchant_knowledge_base(research_date, last_verified)",
+                    "CREATE INDEX IF NOT EXISTS idx_merchant_kb_research_quality ON merchant_knowledge_base(research_quality, confidence_score)",
+                    "CREATE INDEX IF NOT EXISTS idx_merchant_kb_needs_review ON merchant_knowledge_base(needs_review, confidence_score)",
+                    "CREATE INDEX IF NOT EXISTS idx_merchant_kb_needs_update ON merchant_knowledge_base(needs_update, last_verified)",
+                    "CREATE INDEX IF NOT EXISTS idx_merchant_kb_validated_active ON merchant_knowledge_base(is_validated, is_active)",
+                    "CREATE INDEX IF NOT EXISTS idx_merchant_kb_created_research ON merchant_knowledge_base(created_at, research_date)",
+                    "CREATE INDEX IF NOT EXISTS idx_merchant_kb_usage_accuracy ON merchant_knowledge_base(usage_count, accuracy_rating, is_active)",
+                    "CREATE INDEX IF NOT EXISTS idx_merchant_kb_sources_confidence ON merchant_knowledge_base(data_sources, confidence_score)",
+                ]
+                
+                for index_sql in merchant_kb_indexes:
+                    conn.exec_driver_sql(index_sql)
+                
+                logger.info("✅ Table merchant_knowledge_base created with performance indexes")
+            
+            # Migration for research_cache table (web research caching)
+            try:
+                conn.exec_driver_sql("SELECT 1 FROM research_cache LIMIT 1")
+                logger.info("Table research_cache already exists")
+            except Exception:
+                logger.info("Creating research_cache table for web research caching")
+                conn.exec_driver_sql("""
+                    CREATE TABLE IF NOT EXISTS research_cache (
+                        search_term VARCHAR(200) PRIMARY KEY,
+                        research_results TEXT NOT NULL,
+                        confidence_score FLOAT DEFAULT 0.5,
+                        result_quality FLOAT DEFAULT 0.5,
+                        sources_count INTEGER DEFAULT 0,
+                        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                        last_used DATETIME,
+                        usage_count INTEGER DEFAULT 1,
+                        research_method VARCHAR(50) DEFAULT 'web_search',
+                        data_freshness FLOAT DEFAULT 1.0,
+                        search_duration_ms INTEGER DEFAULT 0,
+                        is_valid BOOLEAN DEFAULT TRUE,
+                        needs_refresh BOOLEAN DEFAULT FALSE,
+                        successful_matches INTEGER DEFAULT 0,
+                        failed_matches INTEGER DEFAULT 0
+                    )
+                """)
+                
+                # Create performance indexes for research cache
+                research_cache_indexes = [
+                    "CREATE INDEX IF NOT EXISTS idx_research_cache_confidence_fresh ON research_cache(confidence_score, data_freshness)",
+                    "CREATE INDEX IF NOT EXISTS idx_research_cache_used_count ON research_cache(last_used, usage_count)",
+                    "CREATE INDEX IF NOT EXISTS idx_research_cache_valid_needs_refresh ON research_cache(is_valid, needs_refresh)",
+                    "CREATE INDEX IF NOT EXISTS idx_research_cache_success_ratio ON research_cache(successful_matches, failed_matches)",
+                    "CREATE INDEX IF NOT EXISTS idx_research_cache_quality_sources ON research_cache(result_quality, sources_count)",
+                ]
+                
+                for index_sql in research_cache_indexes:
+                    conn.exec_driver_sql(index_sql)
+                
+                logger.info("✅ Table research_cache created with performance indexes")
+            
             # Analyze query performance statistics
             try:
                 conn.exec_driver_sql("ANALYZE")
@@ -524,7 +970,7 @@ def get_database_info():
         # Get table sizes and performance metrics
         tables_info = {}
         index_info = {}
-        tables = ['config', 'transactions', 'fixed_lines', 'custom_provisions', 'import_metadata', 'export_history', 'users']
+        tables = ['config', 'transactions', 'fixed_lines', 'custom_provisions', 'import_metadata', 'export_history', 'users', 'merchant_knowledge_base', 'research_cache', 'label_tag_mappings', 'tag_fixed_line_mappings']
         
         total_records = 0
         for table in tables:

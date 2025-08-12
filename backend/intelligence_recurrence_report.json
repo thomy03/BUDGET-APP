@@ -1,0 +1,1076 @@
+{
+  "table_comparison": {
+    "tx": {
+      "count": 131,
+      "date_range": [
+        "2024-01-01",
+        "2024-01-24"
+      ]
+    },
+    "transactions": {
+      "count": 267,
+      "date_range": [
+        "2024-01-01",
+        "2026-01-01"
+      ]
+    }
+  },
+  "recurring_patterns": {
+    "INTERNET ORANGE FIBRE": {
+      "count": 2,
+      "transactions": [
+        {
+          "date": "2024-04-01",
+          "description": "Internet Orange Fibre",
+          "amount": -39.99,
+          "tags": "",
+          "category": ""
+        },
+        {
+          "date": "2024-04-03",
+          "description": "Internet Orange Fibre",
+          "amount": -39.99,
+          "tags": "",
+          "category": ""
+        }
+      ],
+      "amount_stats": {
+        "mean": -39.99,
+        "std": 0.0,
+        "variation_pct": 0.0,
+        "min": -39.99,
+        "max": -39.99
+      },
+      "date_intervals": {
+        "intervals": [
+          2
+        ],
+        "avg_interval": 2.0,
+        "std_interval": 0.0
+      },
+      "recurrence_score": 80,
+      "period_days": 2
+    },
+    "CARTE /25 ERNEST": {
+      "count": 3,
+      "transactions": [
+        {
+          "date": "2025-07-25",
+          "description": "CARTE 24/07/25 ERNEST GLACIER CB*8533",
+          "amount": -9.8,
+          "tags": "",
+          "category": "Restaurants, bars, discothèques…"
+        },
+        {
+          "date": "2025-07-28",
+          "description": "CARTE 26/07/25 ERNEST GLACIER CB*8935",
+          "amount": -9.8,
+          "tags": "",
+          "category": "Restaurants, bars, discothèques…"
+        },
+        {
+          "date": "2025-07-31",
+          "description": "CARTE 30/07/25 ERNEST GLACIER CB*8533",
+          "amount": -9.8,
+          "tags": "",
+          "category": "Restaurants, bars, discothèques…"
+        }
+      ],
+      "amount_stats": {
+        "mean": -9.8,
+        "std": 0.0,
+        "variation_pct": 0.0,
+        "min": -9.8,
+        "max": -9.8
+      },
+      "date_intervals": {
+        "intervals": [
+          3,
+          3
+        ],
+        "avg_interval": 3.0,
+        "std_interval": 0.0
+      },
+      "recurrence_score": 70,
+      "period_days": 6
+    },
+    "ALDI": {
+      "count": 2,
+      "transactions": [
+        {
+          "date": "2024-06-01",
+          "description": "ALDI",
+          "amount": -54.32,
+          "tags": "",
+          "category": ""
+        },
+        {
+          "date": "2024-07-02",
+          "description": "ALDI",
+          "amount": -57.25,
+          "tags": "",
+          "category": ""
+        }
+      ],
+      "amount_stats": {
+        "mean": -55.78,
+        "std": 1.46,
+        "variation_pct": 2.63,
+        "min": -57.25,
+        "max": -54.32
+      },
+      "date_intervals": {
+        "intervals": [
+          31
+        ],
+        "avg_interval": 31.0,
+        "std_interval": 0.0
+      },
+      "recurrence_score": 65,
+      "period_days": 31
+    },
+    "CARTE /25 MONTAGNE": {
+      "count": 2,
+      "transactions": [
+        {
+          "date": "2025-07-28",
+          "description": "CARTE 25/07/25 MONTAGNE SARL CB*8935",
+          "amount": -27.0,
+          "tags": "",
+          "category": "Alimentation"
+        },
+        {
+          "date": "2025-07-30",
+          "description": "CARTE 29/07/25 MONTAGNE SARL CB*8533",
+          "amount": -26.16,
+          "tags": "",
+          "category": "Alimentation"
+        }
+      ],
+      "amount_stats": {
+        "mean": -26.58,
+        "std": 0.42,
+        "variation_pct": 1.58,
+        "min": -27.0,
+        "max": -26.16
+      },
+      "date_intervals": {
+        "intervals": [
+          2
+        ],
+        "avg_interval": 2.0,
+        "std_interval": 0.0
+      },
+      "recurrence_score": 60,
+      "period_days": 2
+    },
+    "CARTE /25 FLO": {
+      "count": 2,
+      "transactions": [
+        {
+          "date": "2025-07-07",
+          "description": "CARTE 04/07/25 FLO GOURMANDISE 4 CB*8533",
+          "amount": -9.6,
+          "tags": "",
+          "category": "Alimentation"
+        },
+        {
+          "date": "2025-07-15",
+          "description": "CARTE 12/07/25 FLO GOURMANDISE 4 CB*8935",
+          "amount": -13.2,
+          "tags": "",
+          "category": "Alimentation"
+        }
+      ],
+      "amount_stats": {
+        "mean": -11.4,
+        "std": 1.8,
+        "variation_pct": 15.79,
+        "min": -13.2,
+        "max": -9.6
+      },
+      "date_intervals": {
+        "intervals": [
+          8
+        ],
+        "avg_interval": 8.0,
+        "std_interval": 0.0
+      },
+      "recurrence_score": 55,
+      "period_days": 8
+    },
+    "MONOPRIX": {
+      "count": 2,
+      "transactions": [
+        {
+          "date": "2024-01-29",
+          "description": "Monoprix",
+          "amount": -76.8,
+          "tags": "",
+          "category": ""
+        },
+        {
+          "date": "2024-06-03",
+          "description": "Monoprix",
+          "amount": -86.1,
+          "tags": "",
+          "category": ""
+        }
+      ],
+      "amount_stats": {
+        "mean": -81.45,
+        "std": 4.65,
+        "variation_pct": 5.71,
+        "min": -86.1,
+        "max": -76.8
+      },
+      "date_intervals": {
+        "intervals": [
+          126
+        ],
+        "avg_interval": 126.0,
+        "std_interval": 0.0
+      },
+      "recurrence_score": 50,
+      "period_days": 126
+    },
+    "MUTUELLE SANTÉ": {
+      "count": 4,
+      "transactions": [
+        {
+          "date": "2024-10-01",
+          "description": "Mutuelle Santé",
+          "amount": -45.9,
+          "tags": "",
+          "category": ""
+        },
+        {
+          "date": "2024-12-01",
+          "description": "Mutuelle Santé",
+          "amount": -45.9,
+          "tags": "",
+          "category": ""
+        },
+        {
+          "date": "2024-12-02",
+          "description": "Mutuelle Santé",
+          "amount": -45.9,
+          "tags": "",
+          "category": ""
+        },
+        {
+          "date": "2024-12-03",
+          "description": "Mutuelle Santé",
+          "amount": -45.9,
+          "tags": "",
+          "category": ""
+        }
+      ],
+      "amount_stats": {
+        "mean": -45.9,
+        "std": 0.0,
+        "variation_pct": 0.0,
+        "min": -45.9,
+        "max": -45.9
+      },
+      "date_intervals": {
+        "intervals": [
+          61,
+          1,
+          1
+        ],
+        "avg_interval": 21.0,
+        "std_interval": 28.3
+      },
+      "recurrence_score": 50,
+      "period_days": 63
+    },
+    "RESTAURANT": {
+      "count": 2,
+      "transactions": [
+        {
+          "date": "2024-01-04",
+          "description": "Restaurant",
+          "amount": -45.2,
+          "tags": "",
+          "category": "Sorties"
+        },
+        {
+          "date": "2024-01-25",
+          "description": "Restaurant",
+          "amount": -28.5,
+          "tags": "",
+          "category": "Restaurant"
+        }
+      ],
+      "amount_stats": {
+        "mean": -36.85,
+        "std": 8.35,
+        "variation_pct": 22.66,
+        "min": -45.2,
+        "max": -28.5
+      },
+      "date_intervals": {
+        "intervals": [
+          21
+        ],
+        "avg_interval": 21.0,
+        "std_interval": 0.0
+      },
+      "recurrence_score": 45,
+      "period_days": 21
+    },
+    "CARTE /25 PHARMACIE": {
+      "count": 3,
+      "transactions": [
+        {
+          "date": "2025-07-02",
+          "description": "CARTE 30/06/25 PHARMACIE FOCH 2 CB*8935",
+          "amount": -3.53,
+          "tags": "",
+          "category": "Pharmacie et laboratoire"
+        },
+        {
+          "date": "2025-07-11",
+          "description": "CARTE 09/07/25 PHARMACIE FOCH 2 CB*8533",
+          "amount": -16.9,
+          "tags": "",
+          "category": "Pharmacie et laboratoire"
+        },
+        {
+          "date": "2025-07-21",
+          "description": "CARTE 18/07/25 PHARMACIE FOCH 2 CB*8533",
+          "amount": -7.9,
+          "tags": "",
+          "category": "Pharmacie et laboratoire"
+        }
+      ],
+      "amount_stats": {
+        "mean": -9.44,
+        "std": 5.57,
+        "variation_pct": 58.94,
+        "min": -16.9,
+        "max": -3.53
+      },
+      "date_intervals": {
+        "intervals": [
+          9,
+          10
+        ],
+        "avg_interval": 9.5,
+        "std_interval": 0.5
+      },
+      "recurrence_score": 45,
+      "period_days": 19
+    },
+    "CARTE /25 FRANPRIX": {
+      "count": 2,
+      "transactions": [
+        {
+          "date": "2025-07-09",
+          "description": "CARTE 08/07/25 FRANPRIX CB*8533",
+          "amount": -17.31,
+          "tags": "",
+          "category": "Alimentation"
+        },
+        {
+          "date": "2025-07-10",
+          "description": "CARTE 09/07/25 FRANPRIX CB*8533",
+          "amount": -10.61,
+          "tags": "",
+          "category": "Alimentation"
+        }
+      ],
+      "amount_stats": {
+        "mean": -13.96,
+        "std": 3.35,
+        "variation_pct": 24.0,
+        "min": -17.31,
+        "max": -10.61
+      },
+      "date_intervals": {
+        "intervals": [
+          1
+        ],
+        "avg_interval": 1.0,
+        "std_interval": 0.0
+      },
+      "recurrence_score": 45,
+      "period_days": 1
+    },
+    "CARBURANT TOTAL": {
+      "count": 3,
+      "transactions": [
+        {
+          "date": "2024-06-01",
+          "description": "Carburant Total",
+          "amount": -68.45,
+          "tags": "",
+          "category": ""
+        },
+        {
+          "date": "2024-09-03",
+          "description": "Carburant Total",
+          "amount": -66.4,
+          "tags": "",
+          "category": ""
+        },
+        {
+          "date": "2024-10-02",
+          "description": "Carburant Total",
+          "amount": -70.0,
+          "tags": "",
+          "category": ""
+        }
+      ],
+      "amount_stats": {
+        "mean": -68.28,
+        "std": 1.47,
+        "variation_pct": 2.16,
+        "min": -70.0,
+        "max": -66.4
+      },
+      "date_intervals": {
+        "intervals": [
+          94,
+          29
+        ],
+        "avg_interval": 61.5,
+        "std_interval": 32.5
+      },
+      "recurrence_score": 40,
+      "period_days": 123
+    },
+    "CARTE /25 FLOWBIRD": {
+      "count": 4,
+      "transactions": [
+        {
+          "date": "2025-07-25",
+          "description": "CARTE 24/07/25 FLOWBIRD LR 2 CB*8533",
+          "amount": -2.0,
+          "tags": "",
+          "category": "Non catégorisé"
+        },
+        {
+          "date": "2025-07-28",
+          "description": "CARTE 25/07/25 FLOWBIRD LR 2 CB*8533",
+          "amount": -2.0,
+          "tags": "",
+          "category": "Non catégorisé"
+        },
+        {
+          "date": "2025-07-28",
+          "description": "CARTE 27/07/25 FLOWBIRD LR 2 CB*8533",
+          "amount": -2.0,
+          "tags": "",
+          "category": "Non catégorisé"
+        },
+        {
+          "date": "2025-07-31",
+          "description": "CARTE 29/07/25 FLOWBIRD LR 2 CB*8533",
+          "amount": -2.0,
+          "tags": "",
+          "category": "Non catégorisé"
+        }
+      ],
+      "amount_stats": {
+        "mean": -2.0,
+        "std": 0.0,
+        "variation_pct": 0.0,
+        "min": -2.0,
+        "max": -2.0
+      },
+      "date_intervals": {
+        "intervals": [
+          3,
+          0,
+          3
+        ],
+        "avg_interval": 2.0,
+        "std_interval": 1.4
+      },
+      "recurrence_score": 40,
+      "period_days": 6
+    },
+    "TEST TRANSACTION": {
+      "count": 7,
+      "transactions": [
+        {
+          "date": "2024-01-01",
+          "description": "Test Transaction",
+          "amount": -50.0,
+          "tags": "",
+          "category": ""
+        },
+        {
+          "date": "2024-01-01",
+          "description": "Test transaction",
+          "amount": -100.0,
+          "tags": "",
+          "category": "Test"
+        },
+        {
+          "date": "2024-01-15",
+          "description": "Test Transaction 1",
+          "amount": -50.0,
+          "tags": "",
+          "category": "Alimentation"
+        },
+        {
+          "date": "2024-01-15",
+          "description": "Test Transaction",
+          "amount": -50.0,
+          "tags": "",
+          "category": "Test Category"
+        },
+        {
+          "date": "2024-01-20",
+          "description": "Test Transaction 2",
+          "amount": -25.5,
+          "tags": "",
+          "category": "Transport"
+        },
+        {
+          "date": "2024-02-01",
+          "description": "Test Transaction 3",
+          "amount": -100.0,
+          "tags": "",
+          "category": "Logement"
+        },
+        {
+          "date": "2024-08-01",
+          "description": "TEST TRANSACTION",
+          "amount": -25.5,
+          "tags": "",
+          "category": "Test"
+        }
+      ],
+      "amount_stats": {
+        "mean": -57.29,
+        "std": 28.86,
+        "variation_pct": 50.37,
+        "min": -100.0,
+        "max": -25.5
+      },
+      "date_intervals": {
+        "intervals": [
+          0,
+          14,
+          0,
+          5,
+          12,
+          182
+        ],
+        "avg_interval": 35.5,
+        "std_interval": 65.7
+      },
+      "recurrence_score": 35,
+      "period_days": 213
+    },
+    "PHARMACIE CENTRALE": {
+      "count": 3,
+      "transactions": [
+        {
+          "date": "2024-01-18",
+          "description": "Pharmacie Centrale",
+          "amount": -12.3,
+          "tags": "",
+          "category": ""
+        },
+        {
+          "date": "2024-01-20",
+          "description": "Pharmacie Centrale",
+          "amount": -9.8,
+          "tags": "",
+          "category": ""
+        },
+        {
+          "date": "2024-02-10",
+          "description": "Pharmacie Centrale",
+          "amount": -15.8,
+          "tags": "",
+          "category": "Santé"
+        }
+      ],
+      "amount_stats": {
+        "mean": -12.63,
+        "std": 2.46,
+        "variation_pct": 19.48,
+        "min": -15.8,
+        "max": -9.8
+      },
+      "date_intervals": {
+        "intervals": [
+          2,
+          21
+        ],
+        "avg_interval": 11.5,
+        "std_interval": 9.5
+      },
+      "recurrence_score": 35,
+      "period_days": 23
+    },
+    "CARTE /25 AMZN": {
+      "count": 5,
+      "transactions": [
+        {
+          "date": "2025-07-01",
+          "description": "CARTE 30/06/25 AMZN Mktp FR*DH1C CB*8533",
+          "amount": -9.0,
+          "tags": "",
+          "category": "Livres, CD/DVD, bijoux, jouets…"
+        },
+        {
+          "date": "2025-07-07",
+          "description": "CARTE 06/07/25 AMZN Mktp FR*RC6E CB*8533",
+          "amount": -39.49,
+          "tags": "",
+          "category": "Livres, CD/DVD, bijoux, jouets…"
+        },
+        {
+          "date": "2025-07-07",
+          "description": "CARTE 04/07/25 AMZN Mktp FR*RG8K CB*8533",
+          "amount": -18.71,
+          "tags": "",
+          "category": "Livres, CD/DVD, bijoux, jouets…"
+        },
+        {
+          "date": "2025-07-09",
+          "description": "CARTE 08/07/25 AMZN Mktp FR*RC9H CB*8533",
+          "amount": -15.92,
+          "tags": "",
+          "category": "Livres, CD/DVD, bijoux, jouets…"
+        },
+        {
+          "date": "2025-07-21",
+          "description": "CARTE 18/07/25 AMZN Mktp FR*RY58 CB*8533",
+          "amount": -24.69,
+          "tags": "",
+          "category": "Livres, CD/DVD, bijoux, jouets…"
+        }
+      ],
+      "amount_stats": {
+        "mean": -21.56,
+        "std": 10.29,
+        "variation_pct": 47.7,
+        "min": -39.49,
+        "max": -9.0
+      },
+      "date_intervals": {
+        "intervals": [
+          6,
+          0,
+          2,
+          12
+        ],
+        "avg_interval": 5.0,
+        "std_interval": 4.6
+      },
+      "recurrence_score": 35,
+      "period_days": 20
+    },
+    "CARTE /25 ALIEXPRESS": {
+      "count": 3,
+      "transactions": [
+        {
+          "date": "2025-07-02",
+          "description": "CARTE 01/07/25 aliexpress CB*8935",
+          "amount": -287.4,
+          "tags": "",
+          "category": "Livres, CD/DVD, bijoux, jouets…"
+        },
+        {
+          "date": "2025-07-03",
+          "description": "CARTE 01/07/25 aliexpress CB*8935",
+          "amount": -153.3,
+          "tags": "",
+          "category": "Livres, CD/DVD, bijoux, jouets…"
+        },
+        {
+          "date": "2025-07-16",
+          "description": "CARTE 14/07/25 aliexpress CB*8935",
+          "amount": -225.06,
+          "tags": "",
+          "category": "Livres, CD/DVD, bijoux, jouets…"
+        }
+      ],
+      "amount_stats": {
+        "mean": -221.92,
+        "std": 54.79,
+        "variation_pct": 24.69,
+        "min": -287.4,
+        "max": -153.3
+      },
+      "date_intervals": {
+        "intervals": [
+          1,
+          13
+        ],
+        "avg_interval": 7.0,
+        "std_interval": 6.0
+      },
+      "recurrence_score": 35,
+      "period_days": 14
+    },
+    "CARTE /25 E.LECLERC": {
+      "count": 11,
+      "transactions": [
+        {
+          "date": "2025-07-03",
+          "description": "CARTE 02/07/25 E.LECLERC WEB CB*8533",
+          "amount": -67.5,
+          "tags": "",
+          "category": "Alimentation"
+        },
+        {
+          "date": "2025-07-07",
+          "description": "CARTE 04/07/25 E.LECLERC CB*8533",
+          "amount": -25.26,
+          "tags": "",
+          "category": "Alimentation"
+        },
+        {
+          "date": "2025-07-07",
+          "description": "CARTE 04/07/25 E.LECLERC CB*8533",
+          "amount": -5.89,
+          "tags": "",
+          "category": "Alimentation"
+        },
+        {
+          "date": "2025-07-07",
+          "description": "CARTE 04/07/25 E.LECLERC CB*8533",
+          "amount": -26.41,
+          "tags": "",
+          "category": "Alimentation"
+        },
+        {
+          "date": "2025-07-11",
+          "description": "CARTE 10/07/25 E.LECLERC WEB CB*8533",
+          "amount": -82.63,
+          "tags": "",
+          "category": "Alimentation"
+        },
+        {
+          "date": "2025-07-15",
+          "description": "CARTE 11/07/25 E.LECLERC CB*8533",
+          "amount": -6.06,
+          "tags": "",
+          "category": "Alimentation"
+        },
+        {
+          "date": "2025-07-15",
+          "description": "CARTE 11/07/25 E.LECLERC CB*8533",
+          "amount": -19.15,
+          "tags": "",
+          "category": "Alimentation"
+        },
+        {
+          "date": "2025-07-21",
+          "description": "CARTE 18/07/25 E.LECLERC CB*8533",
+          "amount": -71.82,
+          "tags": "",
+          "category": "Alimentation"
+        },
+        {
+          "date": "2025-07-21",
+          "description": "CARTE 19/07/25 E.LECLERC CB*8533",
+          "amount": -3.77,
+          "tags": "",
+          "category": "Alimentation"
+        },
+        {
+          "date": "2025-07-24",
+          "description": "CARTE 23/07/25 E.LECLERC WEB CB*8935",
+          "amount": -3.15,
+          "tags": "",
+          "category": "Alimentation"
+        },
+        {
+          "date": "2025-07-28",
+          "description": "CARTE 27/07/25 E.LECLERC WEB CB*8935",
+          "amount": -30.29,
+          "tags": "",
+          "category": "Alimentation"
+        }
+      ],
+      "amount_stats": {
+        "mean": -31.08,
+        "std": 28.01,
+        "variation_pct": 90.1,
+        "min": -82.63,
+        "max": -3.15
+      },
+      "date_intervals": {
+        "intervals": [
+          4,
+          0,
+          0,
+          4,
+          4,
+          0,
+          6,
+          0,
+          3,
+          4
+        ],
+        "avg_interval": 2.5,
+        "std_interval": 2.2
+      },
+      "recurrence_score": 35,
+      "period_days": 25
+    },
+    "PRLV SEPA URSSAF": {
+      "count": 6,
+      "transactions": [
+        {
+          "date": "2025-07-10",
+          "description": "PRLV SEPA URSSAF RHONE-ALPES Avance imme",
+          "amount": -20.0,
+          "tags": "",
+          "category": "Urssaf et charges patronales"
+        },
+        {
+          "date": "2025-07-10",
+          "description": "PRLV SEPA URSSAF RHONE-ALPES Avance imme",
+          "amount": -6.9,
+          "tags": "",
+          "category": "Urssaf et charges patronales"
+        },
+        {
+          "date": "2025-07-17",
+          "description": "PRLV SEPA URSSAF RHONE-ALPES Avance imme",
+          "amount": -6.9,
+          "tags": "",
+          "category": "Urssaf et charges patronales"
+        },
+        {
+          "date": "2025-07-17",
+          "description": "PRLV SEPA URSSAF RHONE-ALPES Avance imme",
+          "amount": -20.0,
+          "tags": "",
+          "category": "Urssaf et charges patronales"
+        },
+        {
+          "date": "2025-07-25",
+          "description": "PRLV SEPA URSSAF RHONE-ALPES Avance imme",
+          "amount": -25.0,
+          "tags": "",
+          "category": "Urssaf et charges patronales"
+        },
+        {
+          "date": "2025-07-25",
+          "description": "PRLV SEPA URSSAF RHONE-ALPES Avance imme",
+          "amount": -8.62,
+          "tags": "",
+          "category": "Urssaf et charges patronales"
+        }
+      ],
+      "amount_stats": {
+        "mean": -14.57,
+        "std": 7.31,
+        "variation_pct": 50.19,
+        "min": -25.0,
+        "max": -6.9
+      },
+      "date_intervals": {
+        "intervals": [
+          0,
+          7,
+          0,
+          8,
+          0
+        ],
+        "avg_interval": 3.0,
+        "std_interval": 3.7
+      },
+      "recurrence_score": 35,
+      "period_days": 15
+    },
+    "CARTE /25 EASYPARK": {
+      "count": 2,
+      "transactions": [
+        {
+          "date": "2025-07-15",
+          "description": "CARTE 13/07/25 EasyPark SARL CB*8935",
+          "amount": -1.75,
+          "tags": "",
+          "category": "Parking"
+        },
+        {
+          "date": "2025-07-22",
+          "description": "CARTE 22/07/25 EasyPark SARL CB*8935",
+          "amount": -3.55,
+          "tags": "",
+          "category": "Parking"
+        }
+      ],
+      "amount_stats": {
+        "mean": -2.65,
+        "std": 0.9,
+        "variation_pct": 33.96,
+        "min": -3.55,
+        "max": -1.75
+      },
+      "date_intervals": {
+        "intervals": [
+          7
+        ],
+        "avg_interval": 7.0,
+        "std_interval": 0.0
+      },
+      "recurrence_score": 35,
+      "period_days": 7
+    },
+    "CARTE /25 TOTAL": {
+      "count": 5,
+      "transactions": [
+        {
+          "date": "2025-07-21",
+          "description": "CARTE 20/07/25 TOTAL 4 CB*8533",
+          "amount": -51.58,
+          "tags": "",
+          "category": "Carburant"
+        },
+        {
+          "date": "2025-07-23",
+          "description": "CARTE 22/07/25 TOTAL 4 CB*8533",
+          "amount": -14.33,
+          "tags": "",
+          "category": "Carburant"
+        },
+        {
+          "date": "2025-07-23",
+          "description": "CARTE 22/07/25 TOTAL 4 CB*8935",
+          "amount": -9.04,
+          "tags": "",
+          "category": "Carburant"
+        },
+        {
+          "date": "2025-07-24",
+          "description": "CARTE 23/07/25 TOTAL 4 CB*8533",
+          "amount": -11.1,
+          "tags": "",
+          "category": "Carburant"
+        },
+        {
+          "date": "2025-07-24",
+          "description": "CARTE 23/07/25 TOTAL 4 CB*8533",
+          "amount": -49.58,
+          "tags": "",
+          "category": "Carburant"
+        }
+      ],
+      "amount_stats": {
+        "mean": -27.13,
+        "std": 19.23,
+        "variation_pct": 70.91,
+        "min": -51.58,
+        "max": -9.04
+      },
+      "date_intervals": {
+        "intervals": [
+          2,
+          0,
+          1,
+          0
+        ],
+        "avg_interval": 0.8,
+        "std_interval": 0.8
+      },
+      "recurrence_score": 35,
+      "period_days": 3
+    },
+    "CARTE /25 MONOPRIX": {
+      "count": 2,
+      "transactions": [
+        {
+          "date": "2025-07-28",
+          "description": "CARTE 25/07/25 MONOPRIX 4 CB*8533",
+          "amount": -3.39,
+          "tags": "",
+          "category": "Alimentation"
+        },
+        {
+          "date": "2025-07-30",
+          "description": "CARTE 29/07/25 MONOPRIX 4 CB*8935",
+          "amount": -42.39,
+          "tags": "",
+          "category": "Alimentation"
+        }
+      ],
+      "amount_stats": {
+        "mean": -22.89,
+        "std": 19.5,
+        "variation_pct": 85.19,
+        "min": -42.39,
+        "max": -3.39
+      },
+      "date_intervals": {
+        "intervals": [
+          2
+        ],
+        "avg_interval": 2.0,
+        "std_interval": 0.0
+      },
+      "recurrence_score": 35,
+      "period_days": 2
+    },
+    "CARTE /25 NATURALIA": {
+      "count": 2,
+      "transactions": [
+        {
+          "date": "2025-07-28",
+          "description": "CARTE 25/07/25 NATURALIA 4 CB*8935",
+          "amount": -69.49,
+          "tags": "",
+          "category": "Alimentation"
+        },
+        {
+          "date": "2025-07-30",
+          "description": "CARTE 29/07/25 NATURALIA 4 CB*8533",
+          "amount": -34.11,
+          "tags": "",
+          "category": "Alimentation"
+        }
+      ],
+      "amount_stats": {
+        "mean": -51.8,
+        "std": 17.69,
+        "variation_pct": 34.15,
+        "min": -69.49,
+        "max": -34.11
+      },
+      "date_intervals": {
+        "intervals": [
+          2
+        ],
+        "avg_interval": 2.0,
+        "std_interval": 0.0
+      },
+      "recurrence_score": 35,
+      "period_days": 2
+    }
+  },
+  "provision_candidates": [
+    {
+      "description": "MUTUELLE SANTÉ",
+      "suggested_name": "Mutuelle Santé",
+      "monthly_amount": 45.9,
+      "frequency": "irregular",
+      "suggested_category": "Insurance",
+      "confidence_score": 50,
+      "supporting_data": {
+        "occurrences": 4,
+        "amount_stability": "0.0% variation",
+        "last_transaction": "Mutuelle Santé",
+        "date_range": "2024-10-01 à 2024-12-03"
+      }
+    }
+  ],
+  "summary": {
+    "total_patterns": 22,
+    "high_confidence_provisions": 0,
+    "medium_confidence_provisions": 1,
+    "total_monthly_provisions": 45.9
+  }
+}

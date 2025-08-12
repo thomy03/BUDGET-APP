@@ -83,3 +83,35 @@ def update_config(payload: ConfigIn, current_user = Depends(get_current_user), d
     
     cfg = ensure_default_config(db)
     return _build_config_response(cfg)
+
+@router.put("", response_model=ConfigOut)
+def put_config(payload: ConfigIn, current_user = Depends(get_current_user), db: Session = Depends(get_db)):
+    """
+    Update application configuration (PUT method)
+    
+    Updates the configuration settings with the provided values using PUT method.
+    This endpoint provides the same functionality as POST but follows REST conventions
+    for resource updates.
+    """
+    audit_logger = get_audit_logger()
+    logger.info(f"Configuration mise à jour par utilisateur (PUT): {current_user.username}")
+    
+    cfg = ensure_default_config(db)
+    changes = {}
+    for k, v in payload.dict().items():
+        old_value = getattr(cfg, k, None)
+        if old_value != v:
+            changes[k] = {"old": old_value, "new": v}
+        setattr(cfg, k, v)
+    
+    db.add(cfg); db.commit(); db.refresh(cfg)
+    
+    audit_logger.log_event(
+        AuditEventType.CONFIG_UPDATE,
+        username=current_user.username,
+        details={"changes_count": len(changes), "method": "PUT"},
+        success=True
+    )
+    
+    cfg = ensure_default_config(db)
+    return _build_config_response(cfg)

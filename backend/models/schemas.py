@@ -503,6 +503,123 @@ class ResearchCacheResponse(BaseModel):
     class Config:
         from_attributes = True
 
+# Tag Management Schemas
+class TagOut(BaseModel):
+    """Schema for tag information with statistics"""
+    id: int
+    name: str
+    expense_type: str = Field(pattern="^(FIXED|VARIABLE|PROVISION)$", description="Type de dépense")
+    transaction_count: int = Field(description="Nombre de transactions avec ce tag")
+    total_amount: float = Field(description="Montant total des transactions")
+    patterns: List[str] = Field(default_factory=list, description="Patterns de reconnaissance automatique")
+    category: Optional[str] = Field(None, description="Catégorie du tag")
+    created_at: dt.datetime
+    last_used: Optional[dt.datetime] = Field(None, description="Dernière utilisation du tag")
+    
+    class Config:
+        schema_extra = {
+            "example": {
+                "id": 1,
+                "name": "restaurant",
+                "expense_type": "VARIABLE",
+                "transaction_count": 15,
+                "total_amount": 450.50,
+                "patterns": ["CHEZ PAUL", "BISTROT"],
+                "category": "Alimentation",
+                "created_at": "2024-01-01T00:00:00",
+                "last_used": "2024-08-12T12:00:00"
+            }
+        }
+
+class TagUpdate(BaseModel):
+    """Schema for updating a tag"""
+    name: Optional[str] = Field(None, min_length=1, max_length=100, description="Nouveau nom du tag")
+    expense_type: Optional[str] = Field(None, pattern="^(FIXED|VARIABLE|PROVISION)$", description="Nouveau type de dépense")
+    patterns: Optional[List[str]] = Field(None, description="Nouveaux patterns de reconnaissance")
+    category: Optional[str] = Field(None, max_length=100, description="Nouvelle catégorie")
+    
+    class Config:
+        schema_extra = {
+            "example": {
+                "name": "restaurant_updated",
+                "expense_type": "VARIABLE",
+                "patterns": ["RESTAURANT", "CHEZ", "BISTROT"],
+                "category": "Alimentation"
+            }
+        }
+
+class TagStats(BaseModel):
+    """Schema for tag statistics"""
+    transaction_count: int = Field(description="Nombre de transactions avec ce tag")
+    total_amount: float = Field(description="Montant total des transactions")
+    last_used: Optional[dt.datetime] = Field(None, description="Dernière utilisation")
+    most_common_merchant: Optional[str] = Field(None, description="Marchand le plus fréquent")
+    average_amount: float = Field(description="Montant moyen par transaction")
+    monthly_frequency: float = Field(description="Fréquence mensuelle moyenne")
+    
+    class Config:
+        schema_extra = {
+            "example": {
+                "transaction_count": 15,
+                "total_amount": 450.50,
+                "last_used": "2024-08-12T12:00:00",
+                "most_common_merchant": "CHEZ PAUL",
+                "average_amount": 30.03,
+                "monthly_frequency": 5.0
+            }
+        }
+
+class TagPatterns(BaseModel):
+    """Schema for adding tag patterns"""
+    patterns: List[str] = Field(description="Liste des patterns à ajouter pour reconnaissance automatique")
+    
+    @validator('patterns')
+    def validate_patterns(cls, v):
+        if not v or len(v) == 0:
+            raise ValueError('Au moins un pattern est requis')
+        # Remove empty patterns and duplicates
+        cleaned = list(set([p.strip().upper() for p in v if p.strip()]))
+        if not cleaned:
+            raise ValueError('Aucun pattern valide trouvé')
+        return cleaned
+    
+    class Config:
+        schema_extra = {
+            "example": {
+                "patterns": ["CHEZ PAUL", "RESTAURANT PAUL", "BISTROT PAUL"]
+            }
+        }
+
+class TagDelete(BaseModel):
+    """Schema for tag deletion options"""
+    cascade: bool = Field(default=False, description="Si True, supprime le tag de toutes les transactions")
+    
+    class Config:
+        schema_extra = {
+            "example": {
+                "cascade": False
+            }
+        }
+
+class TagsListResponse(BaseModel):
+    """Schema for tags list response"""
+    tags: List[TagOut] = Field(description="Liste des tags avec leurs statistiques")
+    total_count: int = Field(description="Nombre total de tags")
+    stats: Dict[str, Any] = Field(description="Statistiques globales des tags")
+    
+    class Config:
+        schema_extra = {
+            "example": {
+                "tags": [],
+                "total_count": 25,
+                "stats": {
+                    "most_used_tags": ["restaurant", "essence", "courses"],
+                    "total_transactions_tagged": 450,
+                    "expense_type_distribution": {"VARIABLE": 20, "FIXED": 5}
+                }
+            }
+        }
+
 # Summary Schema - Compatible with frontend Dashboard
 class SummaryOut(BaseModel):
     month: str
