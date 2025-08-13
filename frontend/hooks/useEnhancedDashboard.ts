@@ -146,9 +146,7 @@ export function useEnhancedDashboard(month: string, isAuthenticated: boolean = f
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const loadEnhancedData = async (): Promise<void> => {
-    // Implement comprehensive error handling
-    const performDataLoad = async () => {
+  const loadEnhancedData = useCallback(async (): Promise<void> => {
     if (!isAuthenticated) return;
     
     console.log('📊 Enhanced Dashboard - Loading data for month:', month);
@@ -183,7 +181,7 @@ export function useEnhancedDashboard(month: string, isAuthenticated: boolean = f
     } finally {
       setLoading(false);
     }
-  };
+  }, [month, isAuthenticated]);
 
   const convertExpenseType = async (
     transactionId: number, 
