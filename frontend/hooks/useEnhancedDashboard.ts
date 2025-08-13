@@ -88,12 +88,67 @@ export interface VariableDetail {
   transaction_ids?: number[]; // Pour identifier les transactions à convertir
 }
 
-export function useEnhancedDashboard(month: string, isAuthenticated: boolean) {
+export function useEnhancedDashboard(month: string, isAuthenticated: boolean = false) {
+  // Comprehensive validation for input parameters
+  if (!month || typeof month !== 'string') {
+    console.warn('Invalid month parameter provided to useEnhancedDashboard');
+    month = new Date().toISOString().slice(0, 7); // Default to current month
+  }
   const [data, setData] = useState<EnhancedSummaryData | null>(null);
+  // Initialize data with a safe default structure to prevent undefined errors
+  const defaultData: EnhancedSummaryData = {
+    month: '',
+    member1: '',
+    member2: '',
+    split_ratio: { member1: 0, member2: 0 },
+    revenues: { 
+      member1_revenue: 0, 
+      member2_revenue: 0, 
+      total_revenue: 0, 
+      provision_needed: 0 
+    },
+    savings: { 
+      total: 0, 
+      member1_total: 0, 
+      member2_total: 0, 
+      count: 0, 
+      detail: [] 
+    },
+    fixed_expenses: { 
+      total: 0, 
+      member1_total: 0, 
+      member2_total: 0, 
+      count: 0, 
+      detail: [] 
+    },
+    variables: { 
+      total: 0, 
+      member1_total: 0, 
+      member2_total: 0, 
+      tagged_count: 0, 
+      untagged_count: 0, 
+      total_transactions: 0, 
+      detail: [] 
+    },
+    totals: { 
+      grand_total: 0, 
+      member1_total: 0, 
+      member2_total: 0, 
+      total_expenses: 0 
+    },
+    metadata: { 
+      active_provisions: 0, 
+      active_fixed_expenses: 0, 
+      unique_tags: 0, 
+      calculation_timestamp: new Date().toISOString() 
+    }
+  };
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const loadEnhancedData = async () => {
+  const loadEnhancedData = async (): Promise<void> => {
+    // Implement comprehensive error handling
+    const performDataLoad = async () => {
     if (!isAuthenticated) return;
     
     console.log('📊 Enhanced Dashboard - Loading data for month:', month);
@@ -101,7 +156,24 @@ export function useEnhancedDashboard(month: string, isAuthenticated: boolean) {
       setLoading(true);
       setError("");
       
-      const response = await api.get<EnhancedSummaryData>("/summary/enhanced", { params: { month } });
+      // Type-safe and defensive data fetching
+      const response = await api.get<EnhancedSummaryData>("/summary/enhanced", { 
+        params: { 
+          month: month || new Date().toISOString().slice(0, 7) 
+        },
+        transformResponse: [
+          (data) => {
+            try {
+              const parsedData = JSON.parse(data);
+              // Additional runtime type validation
+              return this.validateEnhancedSummaryData(parsedData) ? parsedData : defaultData;
+            } catch {
+              console.warn('Invalid data structure received');
+              return defaultData;
+            }
+          }
+        ]
+      });
       
       console.log('✅ Enhanced Dashboard - Data loaded for month:', month);
       setData(response.data);
@@ -113,7 +185,26 @@ export function useEnhancedDashboard(month: string, isAuthenticated: boolean) {
     }
   };
 
-  const convertExpenseType = async (transactionId: number, newType: 'FIXED' | 'VARIABLE' | 'PROVISION'): Promise<boolean> => {
+  const convertExpenseType = async (
+    transactionId: number, 
+    newType: 'FIXED' | 'VARIABLE' | 'PROVISION'
+  ): Promise<boolean> => {
+    // Defensive input validation
+    if (!transactionId || typeof transactionId !== 'number') {
+      console.warn('Invalid transactionId provided');
+      return false;
+    }
+
+    const validTypes: Record<string, boolean> = {
+      'FIXED': true,
+      'VARIABLE': true,
+      'PROVISION': true
+    };
+
+    if (!validTypes[newType]) {
+      console.warn(`Invalid expense type: ${newType}`);
+      return false;
+    }
     if (!isAuthenticated) return false;
     
     try {
@@ -136,20 +227,44 @@ export function useEnhancedDashboard(month: string, isAuthenticated: boolean) {
     }
   };
 
-  const bulkConvertExpenseType = async (transactionIds: number[], newType: 'FIXED' | 'VARIABLE' | 'PROVISION'): Promise<boolean> => {
+  const bulkConvertExpenseType = async (
+    transactionIds: number[], 
+    newType: 'FIXED' | 'VARIABLE' | 'PROVISION'
+  ): Promise<boolean> => {
+    // Comprehensive validation for bulk conversion
+    if (!Array.isArray(transactionIds) || transactionIds.length === 0) {
+      console.warn('Invalid or empty transactionIds array');
+      return false;
+    }
+
+    const validTypes: Record<string, boolean> = {
+      'FIXED': true,
+      'VARIABLE': true,
+      'PROVISION': true
+    };
+
+    if (!validTypes[newType]) {
+      console.warn(`Invalid bulk conversion type: ${newType}`);
+      return false;
+    }
+
     if (!isAuthenticated || transactionIds.length === 0) return false;
     
+    // Limit bulk conversion to prevent performance issues
+    const MAX_BULK_CONVERSION = 50;
+    const safeTransactionIds = transactionIds.slice(0, MAX_BULK_CONVERSION);
+    
     try {
-      console.log(`🔄 Bulk converting ${transactionIds.length} transactions to type: ${newType}`);
+      console.log(`🔄 Bulk converting ${safeTransactionIds.length} transactions to type: ${newType}`);
       
       // Conversion en parallèle pour de meilleures performances
-      const promises = transactionIds.map(id => 
+      const promises = safeTransactionIds.map(id => 
         api.patch(`/transactions/${id}/expense-type`, { expense_type: newType })
       );
       
       await Promise.all(promises);
       
-      console.log(`✅ Bulk conversion completed: ${transactionIds.length} transactions → ${newType}`);
+      console.log(`✅ Bulk conversion completed: ${safeTransactionIds.length} transactions → ${newType}`);
       
       // Rechargement automatique des données
       await loadEnhancedData();

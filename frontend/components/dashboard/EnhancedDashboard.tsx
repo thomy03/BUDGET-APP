@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { useEnhancedDashboard, EnhancedSummaryData, SavingsDetail, FixedExpenseDetail, VariableDetail } from '../../hooks/useEnhancedDashboard';
 import { Card, LoadingSpinner } from '../ui';
+import { ErrorBoundary } from './ErrorBoundary';
 import { TransactionDetailModal } from './TransactionDetailModal';
 import { useRouter } from 'next/navigation';
 
@@ -39,8 +40,14 @@ const EnhancedDashboard = React.memo<EnhancedDashboardProps>(({ month, isAuthent
     }
   };
 
+  // Enhanced authentication and access control
   if (!isAuthenticated) {
-    return null;
+    console.warn('Unauthorized access attempt to dashboard');
+    return (
+      <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl">
+        Vous devez être connecté pour accéder au tableau de bord.
+      </div>
+    );
   }
 
   if (error) {
@@ -61,8 +68,32 @@ const EnhancedDashboard = React.memo<EnhancedDashboardProps>(({ month, isAuthent
 
   if (loading || !data) {
     return (
-      <div className="flex justify-center py-12">
-        <LoadingSpinner size="lg" text="Chargement du dashboard..." />
+      <div className="space-y-8">
+        {/* Loading Skeleton */}
+        <div className="animate-pulse">
+          {/* Revenue Section Skeleton */}
+          <div className="h-48 bg-gray-200 rounded-xl mb-8"></div>
+          
+          {/* Metrics Overview Skeleton */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+            {[...Array(4)].map((_, i) => (
+              <div key={i} className="h-32 bg-gray-200 rounded-xl"></div>
+            ))}
+          </div>
+          
+          {/* Main Content Skeleton */}
+          <div className="grid lg:grid-cols-2 gap-8 mb-8">
+            <div className="h-64 bg-gray-200 rounded-xl"></div>
+            <div className="h-64 bg-gray-200 rounded-xl"></div>
+          </div>
+          
+          {/* Summary Skeleton */}
+          <div className="h-32 bg-gray-200 rounded-xl"></div>
+        </div>
+        
+        <div className="flex justify-center py-8">
+          <LoadingSpinner size="lg" text="Chargement du dashboard..." />
+        </div>
       </div>
     );
   }
@@ -88,6 +119,7 @@ const EnhancedDashboard = React.memo<EnhancedDashboardProps>(({ month, isAuthent
   };
 
   return (
+    <ErrorBoundary>
     <div className="space-y-8">
       {/* Revenue Details Section */}
       <RevenueSection data={data} />
@@ -150,6 +182,7 @@ const EnhancedDashboard = React.memo<EnhancedDashboardProps>(({ month, isAuthent
         tagFilter={modalState.tagFilter}
       />
     </div>
+    </ErrorBoundary>
   );
 });
 
@@ -157,10 +190,22 @@ EnhancedDashboard.displayName = 'EnhancedDashboard';
 
 // Revenue Section Component
 const RevenueSection = React.memo<{ data: EnhancedSummaryData }>(({ data }) => {
-  if (!data.revenues) return null;
+  // Defensive checks for revenue data
+  const safeData = data ?? {
+    revenues: { member1_revenue: 0, member2_revenue: 0, total_revenue: 0, provision_needed: 0 },
+    member1: 'Membre 1',
+    member2: 'Membre 2',
+    fixed_expenses: { total: 0 },
+    savings: { total: 0 },
+    totals: { total_expenses: 0 }
+  };
+  if (!data?.revenues) return null;
   
   // Calculate recommended provision amount: Total Fixed Expenses + Suggested Provisions
-  const recommendedProvision = data.fixed_expenses.total + data.savings.total;
+  const recommendedProvision = (
+    (safeData.fixed_expenses?.total ?? 0) + 
+    (safeData.savings?.total ?? 0)
+  );
   
   return (
     <Card className="p-6 border-l-4 border-l-emerald-500 bg-gradient-to-r from-emerald-50 to-green-50">
@@ -174,23 +219,23 @@ const RevenueSection = React.memo<{ data: EnhancedSummaryData }>(({ data }) => {
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-white rounded-lg p-4 border border-emerald-100">
-          <div className="text-sm font-medium text-emerald-700 mb-1">{data.member1}</div>
-          <div className="text-xl font-bold text-emerald-900">{data.revenues.member1_revenue.toFixed(2)} €</div>
+          <div className="text-sm font-medium text-emerald-700 mb-1">{safeData.member1 ?? 'Membre 1'}</div>
+          <div className="text-xl font-bold text-emerald-900">{(data?.revenues?.member1_revenue || 0).toFixed(2)} €</div>
           <div className="text-xs text-emerald-600 mt-1">Revenus individuels</div>
         </div>
         <div className="bg-white rounded-lg p-4 border border-emerald-100">
           <div className="text-sm font-medium text-emerald-700 mb-1">{data.member2}</div>
-          <div className="text-xl font-bold text-emerald-900">{data.revenues.member2_revenue.toFixed(2)} €</div>
+          <div className="text-xl font-bold text-emerald-900">{(data?.revenues?.member2_revenue || 0).toFixed(2)} €</div>
           <div className="text-xs text-emerald-600 mt-1">Revenus individuels</div>
         </div>
         <div className="bg-white rounded-lg p-4 border border-emerald-100 ring-2 ring-emerald-200">
           <div className="text-sm font-medium text-emerald-700 mb-1">Total Revenus</div>
-          <div className="text-xl font-bold text-emerald-900">{data.revenues.total_revenue.toFixed(2)} €</div>
+          <div className="text-xl font-bold text-emerald-900">{(data?.revenues?.total_revenue || 0).toFixed(2)} €</div>
           <div className="text-xs text-emerald-600 mt-1">Revenus combinés</div>
         </div>
         <div className="bg-gradient-to-r from-yellow-50 to-orange-50 rounded-lg p-4 border border-orange-200">
           <div className="text-sm font-medium text-orange-700 mb-1">Montant à Provisionner</div>
-          <div className="text-xl font-bold text-orange-900">{recommendedProvision.toFixed(2)} €</div>
+          <div className="text-xl font-bold text-orange-900">{(recommendedProvision || 0).toFixed(2)} €</div>
           <div className="text-xs text-orange-600 mt-1">Charges fixes + Épargne</div>
         </div>
       </div>
@@ -200,15 +245,15 @@ const RevenueSection = React.memo<{ data: EnhancedSummaryData }>(({ data }) => {
         <div className="text-sm font-medium text-emerald-700 mb-2">Calcul du montant à provisionner:</div>
         <div className="grid grid-cols-3 gap-4 text-xs">
           <div className="text-center">
-            <div className="text-blue-600 font-semibold">{data.fixed_expenses.total.toFixed(2)} €</div>
+            <div className="text-blue-600 font-semibold">{(data?.fixed_expenses?.total || 0).toFixed(2)} €</div>
             <div className="text-gray-600">Charges fixes</div>
           </div>
           <div className="text-center">
-            <div className="text-green-600 font-semibold">+ {data.savings.total.toFixed(2)} €</div>
+            <div className="text-green-600 font-semibold">+ {(data?.savings?.total || 0).toFixed(2)} €</div>
             <div className="text-gray-600">Provisions épargne</div>
           </div>
           <div className="text-center">
-            <div className="text-orange-600 font-bold">{recommendedProvision.toFixed(2)} €</div>
+            <div className="text-orange-600 font-bold">{(recommendedProvision || 0).toFixed(2)} €</div>
             <div className="text-gray-600">Total recommandé</div>
           </div>
         </div>
@@ -218,13 +263,13 @@ const RevenueSection = React.memo<{ data: EnhancedSummaryData }>(({ data }) => {
       <div className="mt-4">
         <div className="flex justify-between text-sm text-emerald-700 mb-2">
           <span>Couverture Budget Total</span>
-          <span>{((data.revenues.total_revenue / data.totals.total_expenses) * 100).toFixed(1)}%</span>
+          <span>{(data?.totals?.total_expenses && data?.revenues?.total_revenue ? ((data.revenues.total_revenue / data.totals.total_expenses) * 100).toFixed(1) : '0.0')}%</span>
         </div>
         <div className="w-full bg-gray-200 rounded-full h-3">
           <div 
             className="bg-gradient-to-r from-emerald-400 to-green-500 h-3 rounded-full transition-all duration-300"
             style={{ 
-              width: `${Math.min(100, (data.revenues.total_revenue / data.totals.total_expenses) * 100)}%` 
+              width: `${data?.totals?.total_expenses && data?.revenues?.total_revenue ? Math.min(100, (data.revenues.total_revenue / data.totals.total_expenses) * 100) : 0}%` 
             }}
           ></div>
         </div>
@@ -251,25 +296,25 @@ const MetricsOverview = React.memo<{
           </h3>
           
           {/* Main total */}
-          <div className="text-4xl font-bold text-red-900 mb-4">{data.totals.total_expenses.toFixed(2)} €</div>
+          <div className="text-4xl font-bold text-red-900 mb-4">{(data?.totals?.total_expenses || 0).toFixed(2)} €</div>
           
           {/* Breakdown with visual separation */}
           <div className="grid grid-cols-2 gap-4 max-w-md mx-auto">
             <div className="bg-white rounded-lg p-4 border-l-4 border-l-orange-400">
               <div className="text-sm font-medium text-orange-700 mb-1">Variables</div>
-              <div className="text-xl font-bold text-orange-900">{data.variables.total.toFixed(2)} €</div>
-              <div className="text-xs text-orange-600 mt-1">{data.variables.total_transactions} transactions</div>
+              <div className="text-xl font-bold text-orange-900">{(data?.variables?.total || 0).toFixed(2)} €</div>
+              <div className="text-xs text-orange-600 mt-1">{data?.variables?.total_transactions || 0} transactions</div>
             </div>
             <div className="bg-white rounded-lg p-4 border-l-4 border-l-blue-400">
               <div className="text-sm font-medium text-blue-700 mb-1">Fixes</div>
-              <div className="text-xl font-bold text-blue-900">{data.fixed_expenses.total.toFixed(2)} €</div>
-              <div className="text-xs text-blue-600 mt-1">{data.fixed_expenses.count} charges</div>
+              <div className="text-xl font-bold text-blue-900">{(data?.fixed_expenses?.total || 0).toFixed(2)} €</div>
+              <div className="text-xs text-blue-600 mt-1">{data?.fixed_expenses?.count || 0} charges</div>
             </div>
           </div>
           
           {/* Sum equation */}
           <div className="text-sm text-red-700 mt-4 font-medium">
-            {data.variables.total.toFixed(2)} € + {data.fixed_expenses.total.toFixed(2)} € = {data.totals.total_expenses.toFixed(2)} €
+            {(data?.variables?.total || 0).toFixed(2)} € + {(data?.fixed_expenses?.total || 0).toFixed(2)} € = {(data?.totals?.total_expenses || 0).toFixed(2)} €
           </div>
         </div>
       </Card>
@@ -278,34 +323,34 @@ const MetricsOverview = React.memo<{
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <MetricCard 
           title="Épargne" 
-          value={data.savings.total} 
+          value={data?.savings?.total || 0} 
           color="green"
           icon="🎯"
-          subtitle={`${data.savings.count} provision${data.savings.count > 1 ? 's' : ''}`}
+          subtitle={`${data?.savings?.count || 0} provision${(data?.savings?.count || 0) > 1 ? 's' : ''}`}
           onClick={() => onCategoryClick('provision')}
           clickable
         />
         <MetricCard 
           title="Charges Fixes" 
-          value={data.fixed_expenses.total} 
+          value={data?.fixed_expenses?.total || 0} 
           color="blue"
           icon="💳"
-          subtitle={`${data.fixed_expenses.count} charge${data.fixed_expenses.count > 1 ? 's' : ''}`}
+          subtitle={`${data?.fixed_expenses?.count || 0} charge${(data?.fixed_expenses?.count || 0) > 1 ? 's' : ''}`}
           onClick={() => onCategoryClick('fixed')}
           clickable
         />
         <MetricCard 
           title="Variables" 
-          value={data.variables.total} 
+          value={data?.variables?.total || 0} 
           color="orange"
           icon="📊"
-          subtitle={`${data.variables.total_transactions} transaction${data.variables.total_transactions > 1 ? 's' : ''}`}
+          subtitle={`${data?.variables?.total_transactions || 0} transaction${(data?.variables?.total_transactions || 0) > 1 ? 's' : ''}`}
           onClick={() => onCategoryClick('variable')}
           clickable
         />
         <MetricCard 
           title="Total Budget" 
-          value={data.totals.grand_total} 
+          value={data?.totals?.grand_total || 0} 
           color="purple"
           icon="📈"
           subtitle="Budget complet"
@@ -349,8 +394,8 @@ const SavingsSection = React.memo<{
             <div className="flex justify-between items-center font-bold text-green-900">
               <span>Total Épargne</span>
               <div className="flex space-x-6">
-                <span>{data.savings.member1_total.toFixed(2)} €</span>
-                <span>{data.savings.member2_total.toFixed(2)} €</span>
+                <span>{(data?.savings?.member1_total || 0).toFixed(2)} €</span>
+                <span>{(data?.savings?.member2_total || 0).toFixed(2)} €</span>
               </div>
             </div>
           </div>
@@ -419,8 +464,8 @@ const ExpensesSection = React.memo<{
               <div className="flex justify-between items-center font-semibold text-blue-800">
                 <span>Sous-total Fixes</span>
                 <div className="flex space-x-6">
-                  <span>{data.fixed_expenses.member1_total.toFixed(2)} €</span>
-                  <span>{data.fixed_expenses.member2_total.toFixed(2)} €</span>
+                  <span>{(data?.fixed_expenses?.member1_total || 0).toFixed(2)} €</span>
+                  <span>{(data?.fixed_expenses?.member2_total || 0).toFixed(2)} €</span>
                 </div>
               </div>
             </div>
@@ -459,8 +504,8 @@ const ExpensesSection = React.memo<{
             <div className="flex justify-between items-center font-semibold text-orange-800">
               <span>Sous-total Variables</span>
               <div className="flex space-x-6">
-                <span>{data.variables.member1_total.toFixed(2)} €</span>
-                <span>{data.variables.member2_total.toFixed(2)} €</span>
+                <span>{(data?.variables?.member1_total || 0).toFixed(2)} €</span>
+                <span>{(data?.variables?.member2_total || 0).toFixed(2)} €</span>
               </div>
             </div>
           </div>
@@ -479,6 +524,7 @@ const SavingRow = React.memo<{
   member2: string;
   onClick?: () => void;
 }>(({ saving, member1, member2, onClick }) => {
+  if (!saving) return null;
   return (
     <div 
       className={`flex justify-between items-center py-2 px-3 bg-white rounded-lg border border-green-100 transition-colors ${
@@ -494,8 +540,8 @@ const SavingRow = React.memo<{
         </div>
       </div>
       <div className="flex space-x-6 text-sm font-mono">
-        <span className="text-green-800">{saving.member1_amount.toFixed(2)} €</span>
-        <span className="text-green-800">{saving.member2_amount.toFixed(2)} €</span>
+        <span className="text-green-800">{(saving?.member1_amount || 0).toFixed(2)} €</span>
+        <span className="text-green-800">{(saving?.member2_amount || 0).toFixed(2)} €</span>
       </div>
     </div>
   );
@@ -509,6 +555,7 @@ const FixedExpenseRow = React.memo<{
   member2: string;
   onClick?: () => void;
 }>(({ expense, member1, member2, onClick }) => {
+  if (!expense) return null;
   const isAIGenerated = expense.source === 'ai_classified';
   
   return (
@@ -542,8 +589,8 @@ const FixedExpenseRow = React.memo<{
         </div>
       </div>
       <div className="flex space-x-6 text-sm font-mono flex-shrink-0">
-        <span className="text-blue-800">{expense.member1_amount.toFixed(2)} €</span>
-        <span className="text-blue-800">{expense.member2_amount.toFixed(2)} €</span>
+        <span className="text-blue-800">{(expense?.member1_amount || 0).toFixed(2)} €</span>
+        <span className="text-blue-800">{(expense?.member2_amount || 0).toFixed(2)} €</span>
       </div>
     </div>
   );
@@ -559,6 +606,7 @@ const VariableRow = React.memo<{
   onConvert: (transactionId: number, newType: 'FIXED' | 'VARIABLE' | 'PROVISION') => void;
   onClick?: () => void;
 }>(({ variable, member1, member2, convertingIds, onConvert, onClick }) => {
+  if (!variable) return null;
   const isUntagged = variable.type === 'untagged_variable';
   
   return (
@@ -591,8 +639,8 @@ const VariableRow = React.memo<{
         )}
       </div>
       <div className="flex space-x-6 text-sm font-mono">
-        <span className="text-orange-800">{variable.member1_amount.toFixed(2)} €</span>
-        <span className="text-orange-800">{variable.member2_amount.toFixed(2)} €</span>
+        <span className="text-orange-800">{(variable?.member1_amount || 0).toFixed(2)} €</span>
+        <span className="text-orange-800">{(variable?.member2_amount || 0).toFixed(2)} €</span>
       </div>
     </div>
   );
@@ -613,17 +661,17 @@ const TotalsSummary = React.memo<{ data: EnhancedSummaryData }>(({ data }) => {
         <div className="grid grid-cols-3 gap-6 max-w-2xl mx-auto">
           <div className="text-center">
             <p className="text-sm font-medium text-purple-700 mb-1">{data.member1}</p>
-            <p className="text-2xl font-bold text-purple-900">{data.totals.member1_total.toFixed(2)} €</p>
+            <p className="text-2xl font-bold text-purple-900">{(data?.totals?.member1_total || 0).toFixed(2)} €</p>
           </div>
           
           <div className="text-center">
             <p className="text-sm font-medium text-purple-700 mb-1">TOTAL</p>
-            <p className="text-3xl font-bold text-purple-900">{data.totals.grand_total.toFixed(2)} €</p>
+            <p className="text-3xl font-bold text-purple-900">{(data?.totals?.grand_total || 0).toFixed(2)} €</p>
           </div>
           
           <div className="text-center">
             <p className="text-sm font-medium text-purple-700 mb-1">{data.member2}</p>
-            <p className="text-2xl font-bold text-purple-900">{data.totals.member2_total.toFixed(2)} €</p>
+            <p className="text-2xl font-bold text-purple-900">{(data?.totals?.member2_total || 0).toFixed(2)} €</p>
           </div>
         </div>
         
@@ -638,16 +686,18 @@ const TotalsSummary = React.memo<{ data: EnhancedSummaryData }>(({ data }) => {
 TotalsSummary.displayName = 'TotalsSummary';
 
 // Individual metric card component
-const MetricCard = React.memo<{ 
+interface MetricCardProps {
   title: string; 
-  value: number; 
-  color: string; 
+  value: number | null | undefined; 
+  color: 'green' | 'blue' | 'orange' | 'purple'; 
   icon: string;
   subtitle?: string;
   isTotal?: boolean;
   onClick?: () => void;
   clickable?: boolean;
-}>(({ title, value, color, icon, subtitle, isTotal = false, onClick, clickable = false }) => {
+}
+
+const MetricCard = React.memo<MetricCardProps>(({ title, value, color, icon, subtitle, isTotal = false, onClick, clickable = false }) => {
   const colorClasses = {
     green: 'border-l-green-500 bg-gradient-to-r from-green-50 to-green-100 text-green-900',
     blue: 'border-l-blue-500 bg-gradient-to-r from-blue-50 to-blue-100 text-blue-900',
@@ -655,7 +705,11 @@ const MetricCard = React.memo<{
     purple: 'border-l-purple-500 bg-gradient-to-r from-purple-50 to-purple-100 text-purple-900'
   };
 
-  const safeValue = typeof value === 'number' && !isNaN(value) ? value : 0;
+  const safeValue = (
+    typeof value === 'number' && 
+    !isNaN(value) && 
+    isFinite(value)
+  ) ? value : 0;
 
   return (
     <Card 

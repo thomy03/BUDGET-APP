@@ -643,7 +643,14 @@ def get_summary(month: str, current_user = Depends(get_current_user), db: Sessio
             # Métadonnées
             transaction_count=transaction_count,
             active_fixed_lines=active_fixed_lines,
-            active_provisions=active_provisions_count
+            active_provisions=active_provisions_count,
+            
+            # Totals object for unified structure
+            totals={
+                "total_expenses": round(-var_total, 2),
+                "total_fixed": round(lines_total, 2),
+                "total_variable": round(-var_total, 2)
+            }
         )
         
     except Exception as e:
@@ -671,7 +678,12 @@ def get_summary(month: str, current_user = Depends(get_current_user), db: Sessio
             grand_total=0.0,
             transaction_count=0,
             active_fixed_lines=0,
-            active_provisions=0
+            active_provisions=0,
+            totals={
+                "total_expenses": 0.0,
+                "total_fixed": 0.0,
+                "total_variable": 0.0
+            }
         )
 
 @app.get("/summary/enhanced")
@@ -947,6 +959,9 @@ def get_enhanced_summary(month: str, current_user = Depends(get_current_user), d
             
             # TOTAUX GÉNÉRAUX
             "totals": {
+                "total_expenses": round(variables_total, 2),
+                "total_fixed": round(fixed_total, 2),
+                "total_variable": round(variables_total, 2),
                 "grand_total": round(grand_total, 2),
                 "member1_total": round(grand_total_p1, 2),
                 "member2_total": round(grand_total_p2, 2)

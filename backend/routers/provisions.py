@@ -60,10 +60,10 @@ def list_provisions(
         provision_response = CustomProvisionResponse(
             id=provision.id,
             name=provision.name,
-            description=provision.description,
+            description=provision.description or "",
             percentage=provision.percentage,
             base_calculation=provision.base_calculation,
-            fixed_amount=provision.fixed_amount,
+            fixed_amount=provision.fixed_amount or 0.0,
             split_mode=provision.split_mode,
             split_member1=provision.split_member1,
             split_member2=provision.split_member2,
@@ -72,16 +72,16 @@ def list_provisions(
             display_order=provision.display_order,
             is_active=provision.is_active,
             is_temporary=provision.is_temporary,
-            start_date=provision.start_date,
-            end_date=provision.end_date,
-            target_amount=provision.target_amount,
+            start_date=provision.start_date,  # Optional dates can be None
+            end_date=provision.end_date,      # Optional dates can be None
+            target_amount=provision.target_amount or 0.0,
             category=provision.category,
-            current_amount=provision.current_amount,
+            current_amount=provision.current_amount or 0.0,
             created_at=provision.created_at,
-            updated_at=provision.updated_at,
+            updated_at=provision.updated_at,  # Optional datetime can be None
             created_by=provision.created_by,
             monthly_amount=monthly_amount,
-            progress_percentage=progress_percentage
+            progress_percentage=progress_percentage or 0.0
         )
         result.append(provision_response)
     
@@ -155,10 +155,10 @@ def create_provision(
     return CustomProvisionResponse(
         id=provision.id,
         name=provision.name,
-        description=provision.description,
+        description=provision.description or "",
         percentage=provision.percentage,
         base_calculation=provision.base_calculation,
-        fixed_amount=provision.fixed_amount,
+        fixed_amount=provision.fixed_amount or 0.0,
         split_mode=provision.split_mode,
         split_member1=provision.split_member1,
         split_member2=provision.split_member2,
@@ -167,16 +167,16 @@ def create_provision(
         display_order=provision.display_order,
         is_active=provision.is_active,
         is_temporary=provision.is_temporary,
-        start_date=provision.start_date,
-        end_date=provision.end_date,
-        target_amount=provision.target_amount,
+        start_date=provision.start_date,  # Optional dates can be None
+        end_date=provision.end_date,      # Optional dates can be None  
+        target_amount=provision.target_amount or 0.0,
         category=provision.category,
-        current_amount=provision.current_amount,
+        current_amount=provision.current_amount or 0.0,
         created_at=provision.created_at,
-        updated_at=provision.updated_at,
+        updated_at=provision.updated_at,  # Optional datetime can be None
         created_by=provision.created_by,
         monthly_amount=monthly_amount,
-        progress_percentage=progress_percentage
+        progress_percentage=progress_percentage or 0.0
     )
 
 @router.get("/summary", response_model=CustomProvisionSummary)

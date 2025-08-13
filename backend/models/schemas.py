@@ -647,6 +647,9 @@ class SummaryOut(BaseModel):
     transaction_count: Optional[int] = None      # Nombre total de transactions
     active_fixed_lines: Optional[int] = None     # Nombre de lignes fixes actives
     active_provisions: Optional[int] = None      # Nombre de provisions actives
+    
+    # Totals object for unified structure
+    totals: Optional[Dict[str, float]] = None    # Totals breakdown with total_expenses, total_fixed, total_variable
 
 # Batch Auto-Tagging Schemas
 
