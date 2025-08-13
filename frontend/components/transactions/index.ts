@@ -10,3 +10,4 @@ export { TagClassificationBadge, CompactTagClassificationBadge, HistoryTagClassi
 export { AutoTaggingButton } from './AutoTaggingButton';
 export { AutoTaggingProgress } from './AutoTaggingProgress';
 export { TransactionFilters, type FilterState } from './TransactionFilters';
+export { ModernTransactionsTable } from './ModernTransactionsTable';

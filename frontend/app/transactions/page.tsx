@@ -4,13 +4,18 @@ import { useEffect, useState, useMemo } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useGlobalMonthWithUrl } from "../../lib/month";
 import { useAuth } from "../../lib/auth";
-import { LoadingSpinner, Card, Alert } from "../../components/ui";
-import ImportSuccessBanner from "../../components/ImportSuccessBanner";
 import { useTransactions } from "../../hooks/useTransactions";
-import { useAutoTagging } from "../../hooks/useAutoTagging";
-import { TransactionsSummary, TransactionsTable, AutoTaggingButton, AutoTaggingProgress, TransactionFilters, FilterState } from "../../components/transactions";
+import { ModernTransactionsTable } from "../../components/transactions/ModernTransactionsTable";
+import { 
+  MagnifyingGlassIcon, 
+  FunnelIcon,
+  ArrowPathIcon,
+  CalendarIcon,
+  CurrencyEuroIcon,
+  TagIcon
+} from '@heroicons/react/24/outline';
 
-export default function TransactionsPage() {
+export default function ModernTransactionsPage() {
   const { isAuthenticated, loading: authLoading } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -19,136 +24,48 @@ export default function TransactionsPage() {
     rows,
     loading,
     error,
-    autoClassifying,
-    autoClassificationResults,
     calculations,
     refresh,
     toggle,
     saveTags,
-    bulkUnexcludeAll,
-    updateExpenseType
+    bulkUnexcludeAll
   } = useTransactions();
   
-  // State for filters
-  const [filters, setFilters] = useState<FilterState>({
-    searchText: '',
-    dateFrom: '',
-    dateTo: '',
-    amountMin: '',
-    amountMax: '',
-    excludeFilter: 'all',
-    transactionType: 'all'
-  });
+  // États pour les filtres
+  const [searchText, setSearchText] = useState('');
+  const [showFilters, setShowFilters] = useState(false);
+  const [filterType, setFilterType] = useState<'all' | 'income' | 'expense'>('all');
+  const [filterExclude, setFilterExclude] = useState<'all' | 'included' | 'excluded'>('all');
   
-  // Apply filters to transactions
+  // Appliquer les filtres
   const filteredRows = useMemo(() => {
     let filtered = [...rows];
     
-    // Filter by search text (libellé)
-    if (filters.searchText) {
-      const searchLower = filters.searchText.toLowerCase();
+    // Filtre par recherche
+    if (searchText) {
+      const searchLower = searchText.toLowerCase();
       filtered = filtered.filter(row => 
         row.label?.toLowerCase().includes(searchLower) ||
-        row.name?.toLowerCase().includes(searchLower)
+        row.tags?.some(tag => tag.toLowerCase().includes(searchLower))
       );
     }
     
-    // Filter by date range
-    if (filters.dateFrom) {
-      filtered = filtered.filter(row => row.date >= filters.dateFrom);
-    }
-    if (filters.dateTo) {
-      filtered = filtered.filter(row => row.date <= filters.dateTo);
-    }
-    
-    // Filter by amount range
-    if (filters.amountMin) {
-      const min = parseFloat(filters.amountMin);
-      filtered = filtered.filter(row => Math.abs(row.amount) >= min);
-    }
-    if (filters.amountMax) {
-      const max = parseFloat(filters.amountMax);
-      filtered = filtered.filter(row => Math.abs(row.amount) <= max);
-    }
-    
-    // Filter by transaction type
-    if (filters.transactionType === 'income') {
+    // Filtre par type
+    if (filterType === 'income') {
       filtered = filtered.filter(row => row.amount >= 0);
-    } else if (filters.transactionType === 'expense') {
+    } else if (filterType === 'expense') {
       filtered = filtered.filter(row => row.amount < 0);
     }
     
-    // Filter by exclusion status
-    if (filters.excludeFilter === 'included') {
+    // Filtre par exclusion
+    if (filterExclude === 'included') {
       filtered = filtered.filter(row => !row.exclude);
-    } else if (filters.excludeFilter === 'excluded') {
+    } else if (filterExclude === 'excluded') {
       filtered = filtered.filter(row => row.exclude);
     }
     
     return filtered;
-  }, [rows, filters]);
-
-  // Auto-tagging functionality
-  const {
-    isProcessing: isAutoTagging,
-    progress: autoTaggingProgress,
-    stats: autoTaggingStats,
-    error: autoTaggingError,
-    showProgressModal,
-    startAutoTagging,
-    cancelAutoTagging,
-    closeProgressModal,
-    getUntaggedCount,
-    resetState: resetAutoTaggingState
-  } = useAutoTagging();
-
-  // Paramètres d'URL
-  const importId = searchParams.get('importId');
-  const tagFilter = searchParams.get('tag');
-  
-  console.log('📊 Transactions page - Current month:', month, 'ImportId:', importId);
-
-  // Gestionnaire pour les changements de type de dépense (classification IA)
-  const handleExpenseTypeChange = async (id: number, expenseType: 'fixed' | 'variable') => {
-    console.log(`✨ Expense type changed for transaction ${id}: ${expenseType}`);
-    await updateExpenseType(id, expenseType);
-  };
-
-  // Gestionnaire pour réinclure toutes les transactions
-  const handleBulkUnexcludeAll = async () => {
-    console.log(`📊 Réinclusion de toutes les transactions exclues`);
-    await bulkUnexcludeAll();
-  };
-
-  // Gestionnaire pour démarrer l'auto-tagging
-  const handleStartAutoTagging = async () => {
-    if (!month) {
-      console.error('❌ No month selected for auto-tagging');
-      return;
-    }
-
-    try {
-      await startAutoTagging(month, {
-        confidenceThreshold: 0.7,
-        includeClassified: false
-      });
-      
-    } catch (error) {
-      console.error('❌ Failed to start auto-tagging:', error);
-    }
-  };
-
-  // Gestionnaire pour la fermeture du modal de progression
-  const handleCloseProgressModal = () => {
-    closeProgressModal();
-    // Refresh transactions when modal closes to show the updated data
-    if (!isAutoTagging) {
-      refresh(isAuthenticated, month);
-    }
-  };
-
-  // Calculate untagged count for the button (use filtered rows)
-  const untaggedCount = getUntaggedCount(filteredRows);
+  }, [rows, searchText, filterType, filterExclude]);
 
   useEffect(() => {
     if (!authLoading) {
@@ -158,171 +75,212 @@ export default function TransactionsPage() {
 
   if (authLoading) {
     return (
-      <div className="flex justify-center py-8">
-        <LoadingSpinner text="Vérification de l'authentification..." />
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Chargement...</p>
+        </div>
       </div>
     );
   }
 
   if (!isAuthenticated) {
     return (
-      <Alert variant="warning">
-        Veuillez vous connecter pour accéder aux transactions.
-      </Alert>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="bg-white rounded-2xl shadow-lg p-8 max-w-md w-full">
+          <div className="text-center">
+            <div className="bg-red-100 rounded-full p-3 w-16 h-16 mx-auto mb-4">
+              <svg className="w-10 h-10 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+              </svg>
+            </div>
+            <h2 className="text-xl font-semibold text-gray-900 mb-2">Authentification requise</h2>
+            <p className="text-gray-600">Veuillez vous connecter pour accéder aux transactions.</p>
+          </div>
+        </div>
+      </div>
     );
   }
 
   return (
-    <div className="max-w-7xl mx-auto p-4 space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex flex-col gap-2">
-          <h1 className="text-2xl font-bold text-gray-900">
-            📈 Transactions - {month || 'Mois non sélectionné'}
-          </h1>
-          {tagFilter && (
-            <div className="flex items-center gap-2">
-              <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">
-                🏷️ Filtre: {tagFilter}
-              </span>
+    <div className="min-h-screen bg-gray-50">
+      {/* Header moderne */}
+      <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="py-4">
+            {/* Ligne supérieure */}
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <div className="bg-blue-100 rounded-lg p-2">
+                  <CurrencyEuroIcon className="h-6 w-6 text-blue-600" />
+                </div>
+                <div>
+                  <h1 className="text-2xl font-bold text-gray-900">Transactions</h1>
+                  <p className="text-sm text-gray-500">{month || 'Sélectionnez un mois'}</p>
+                </div>
+              </div>
+              
               <button 
-                onClick={() => router.push('/transactions')}
-                className="text-sm text-blue-600 hover:text-blue-800 underline"
+                onClick={() => refresh(isAuthenticated, month)}
+                disabled={loading}
+                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Supprimer le filtre
+                <ArrowPathIcon className={`h-5 w-5 ${loading ? 'animate-spin' : ''}`} />
+                Actualiser
               </button>
             </div>
-          )}
+
+            {/* Barre de recherche et filtres */}
+            <div className="flex items-center gap-3">
+              {/* Recherche */}
+              <div className="flex-1 relative">
+                <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                <input
+                  type="text"
+                  value={searchText}
+                  onChange={(e) => setSearchText(e.target.value)}
+                  placeholder="Rechercher par libellé ou tag..."
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+
+              {/* Bouton filtres */}
+              <button
+                onClick={() => setShowFilters(!showFilters)}
+                className={`flex items-center gap-2 px-4 py-2 border rounded-lg transition-colors ${
+                  showFilters ? 'bg-blue-50 border-blue-300 text-blue-700' : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+                }`}
+              >
+                <FunnelIcon className="h-5 w-5" />
+                Filtres
+                {(filterType !== 'all' || filterExclude !== 'all') && (
+                  <span className="bg-blue-600 text-white text-xs rounded-full px-2 py-0.5">
+                    {(filterType !== 'all' ? 1 : 0) + (filterExclude !== 'all' ? 1 : 0)}
+                  </span>
+                )}
+              </button>
+            </div>
+
+            {/* Panneau de filtres */}
+            {showFilters && (
+              <div className="mt-3 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Type de transaction</label>
+                    <select
+                      value={filterType}
+                      onChange={(e) => setFilterType(e.target.value as any)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="all">Toutes</option>
+                      <option value="income">Revenus uniquement</option>
+                      <option value="expense">Dépenses uniquement</option>
+                    </select>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Statut d'inclusion</label>
+                    <select
+                      value={filterExclude}
+                      onChange={(e) => setFilterExclude(e.target.value as any)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="all">Toutes</option>
+                      <option value="included">Incluses uniquement</option>
+                      <option value="excluded">Exclues uniquement</option>
+                    </select>
+                  </div>
+                </div>
+                
+                {(filterType !== 'all' || filterExclude !== 'all') && (
+                  <button
+                    onClick={() => {
+                      setFilterType('all');
+                      setFilterExclude('all');
+                    }}
+                    className="mt-3 text-sm text-blue-600 hover:text-blue-800"
+                  >
+                    Réinitialiser les filtres
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
         </div>
-        <button 
-          onClick={() => refresh(isAuthenticated, month)}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
-          disabled={loading}
-        >
-          🔄 Actualiser
-        </button>
       </div>
 
-      {/* Filters */}
-      {!loading && rows.length > 0 && (
-        <TransactionFilters onFiltersChange={setFilters} />
-      )}
-      
-      {/* Auto-tagging button */}
-      {!loading && filteredRows.length > 0 && (
-        <div className="flex justify-center">
-          <AutoTaggingButton
-            totalTransactions={filteredRows.length}
-            untaggedCount={untaggedCount}
-            isProcessing={isAutoTagging}
-            onStartAutoTagging={handleStartAutoTagging}
-            progress={autoTaggingProgress}
-            processedCount={autoTaggingStats.processed}
-            statusMessage={autoTaggingStats.processed > 0 ? `Traitement ${autoTaggingStats.processed}/${autoTaggingStats.totalTransactions} transactions...` : undefined}
-          />
-        </div>
-      )}
+      {/* Contenu principal */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {error && (
+          <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4">
+            <div className="flex">
+              <div className="flex-shrink-0">
+                <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <div className="ml-3">
+                <p className="text-sm text-red-800">{error}</p>
+              </div>
+            </div>
+          </div>
+        )}
 
-      {/* Auto-classification status */}
-      {autoClassifying && (
-        <Alert variant="info">
-          🤖 Classification IA en cours... Analyse automatique des transactions non classifiées.
-        </Alert>
-      )}
-
-      {autoClassificationResults && !autoClassifying && (
-        <Alert variant="success">
-          ✨ Classification IA terminée en {autoClassificationResults.processingTimeMs.toFixed(0)}ms : 
-          <strong> {autoClassificationResults.autoApplied} classifications appliquées</strong> 
-          sur {autoClassificationResults.totalAnalyzed} analysées
-          {autoClassificationResults.pendingReview > 0 && (
-            <span>, {autoClassificationResults.pendingReview} en attente de révision</span>
-          )}
-        </Alert>
-      )}
-
-      {/* Auto-tagging error */}
-      {autoTaggingError && (
-        <Alert variant="error">
-          ❌ Erreur auto-tagging: {autoTaggingError}
-        </Alert>
-      )}
-
-      {error && (
-        <Alert variant="error">
-          {error}
-        </Alert>
-      )}
-
-      {/* Rappel des totaux du mois */}
-      {!loading && rows.length > 0 && (
-        <>
-          <TransactionsSummary month={month} calculations={calculations} />
-          {filteredRows.length < rows.length && (
-            <Alert variant="info">
-              🔍 Affichage de {filteredRows.length} transactions sur {rows.length} total (filtres actifs)
-            </Alert>
-          )}
-        </>
-      )}
-
-      {/* Bandeau d'import success si importId présent */}
-      {importId && (
-        <ImportSuccessBanner
-          importId={importId}
-          currentMonth={month}
-          onMonthChange={setMonth}
-          onRefresh={() => refresh(isAuthenticated, month)}
-        />
-      )}
-
-      <Card padding="lg">
         {loading ? (
-          <div className="flex justify-center py-8">
-            <LoadingSpinner text="Chargement des transactions..." />
+          <div className="bg-white rounded-2xl shadow-sm p-12">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+              <p className="mt-4 text-gray-600">Chargement des transactions...</p>
+            </div>
           </div>
         ) : filteredRows.length === 0 ? (
-          <div className="text-center py-12">
-            <div className="text-6xl mb-4">💳</div>
-            <h3 className="text-lg font-medium text-gray-900 mb-2">
-              Aucune transaction trouvée
-            </h3>
-            <p className="text-gray-600 mb-4">
-              {rows.length > 0 
-                ? "Aucune transaction ne correspond aux filtres sélectionnés."
-                : `Aucune transaction n'a été importée pour le mois de ${month}.`
-              }
-            </p>
-            <button 
-              onClick={() => refresh(isAuthenticated, month)}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              Actualiser
-            </button>
+          <div className="bg-white rounded-2xl shadow-sm p-12">
+            <div className="text-center">
+              <div className="bg-gray-100 rounded-full p-3 w-16 h-16 mx-auto mb-4">
+                <TagIcon className="w-10 h-10 text-gray-400" />
+              </div>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">
+                Aucune transaction trouvée
+              </h3>
+              <p className="text-gray-600 mb-6">
+                {rows.length > 0 
+                  ? "Aucune transaction ne correspond aux filtres sélectionnés."
+                  : `Aucune transaction n'a été importée pour ${month}.`
+                }
+              </p>
+              {rows.length > 0 && (
+                <button 
+                  onClick={() => {
+                    setSearchText('');
+                    setFilterType('all');
+                    setFilterExclude('all');
+                  }}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  Réinitialiser les filtres
+                </button>
+              )}
+            </div>
           </div>
         ) : (
-          <TransactionsTable
-            rows={filteredRows}
-            importId={importId}
-            calculations={calculations}
-            onToggle={toggle}
-            onSaveTags={saveTags}
-            onExpenseTypeChange={handleExpenseTypeChange}
-            onBulkUnexcludeAll={handleBulkUnexcludeAll}
-          />
+          <>
+            {filteredRows.length < rows.length && (
+              <div className="mb-4 bg-blue-50 border border-blue-200 rounded-lg p-3">
+                <p className="text-sm text-blue-800">
+                  Affichage de {filteredRows.length} transactions sur {rows.length} total
+                </p>
+              </div>
+            )}
+            
+            <ModernTransactionsTable
+              rows={filteredRows}
+              onToggle={toggle}
+              onSaveTags={saveTags}
+              onBulkUnexcludeAll={bulkUnexcludeAll}
+            />
+          </>
         )}
-      </Card>
-
-      {/* Auto-tagging progress modal */}
-      <AutoTaggingProgress
-        isOpen={showProgressModal}
-        stats={autoTaggingStats}
-        progressPercentage={autoTaggingProgress}
-        isCompleted={!isAutoTagging && autoTaggingProgress === 100}
-        hasError={!!autoTaggingError}
-        errorMessage={autoTaggingError || undefined}
-        onCancel={cancelAutoTagging}
-        onClose={handleCloseProgressModal}
-      />
+      </div>
     </div>
   );
 }
