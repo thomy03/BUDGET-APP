@@ -1,14 +1,21 @@
 'use client';
 
-import { useState, useMemo } from 'react';
-import { Tx } from '../../lib/api';
-import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/24/outline';
+import { useState, useMemo, useEffect } from 'react';
+import { Tx, expenseClassificationApi } from '../../lib/api';
+import { ChevronDownIcon, ChevronUpIcon, SparklesIcon } from '@heroicons/react/24/outline';
+import { useToast } from '../ui';
 
 interface ModernTransactionsTableProps {
   rows: Tx[];
   onToggle: (id: number, exclude: boolean) => void;
   onSaveTags: (id: number, tagsCSV: string) => void;
   onBulkUnexcludeAll?: () => void;
+}
+
+interface AISuggestion {
+  tags: string[];
+  confidence: number;
+  source?: string;
 }
 
 export function ModernTransactionsTable({ 
@@ -19,6 +26,9 @@ export function ModernTransactionsTable({
 }: ModernTransactionsTableProps) {
   const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
   const [editingTags, setEditingTags] = useState<{ [key: number]: string }>({});
+  const [loadingSuggestions, setLoadingSuggestions] = useState<{ [key: number]: boolean }>({});
+  const [suggestions, setSuggestions] = useState<{ [key: number]: AISuggestion }>({});
+  const { addToast } = useToast();
 
   // Calculer les statistiques
   const stats = useMemo(() => {
@@ -47,17 +57,70 @@ export function ModernTransactionsTable({
     setExpandedRows(newExpanded);
   };
 
+  // Obtenir les suggestions IA pour une transaction
+  const fetchAISuggestions = async (row: Tx) => {
+    if (loadingSuggestions[row.id]) return;
+    
+    setLoadingSuggestions(prev => ({ ...prev, [row.id]: true }));
+    
+    try {
+      // Appel API pour obtenir les suggestions de tags
+      const response = await expenseClassificationApi.suggestTags({
+        transaction_id: row.id,
+        label: row.label || '',
+        amount: row.amount,
+        existing_tags: row.tags || []
+      });
+      
+      if (response.data?.suggestions?.length > 0) {
+        setSuggestions(prev => ({
+          ...prev,
+          [row.id]: {
+            tags: response.data.suggestions,
+            confidence: response.data.confidence || 0,
+            source: response.data.source // "web", "pattern", "history"
+          }
+        }));
+      }
+    } catch (error) {
+      console.error('Error fetching AI suggestions:', error);
+    } finally {
+      setLoadingSuggestions(prev => ({ ...prev, [row.id]: false }));
+    }
+  };
+
   const handleTagEdit = (id: number, value: string) => {
     setEditingTags({ ...editingTags, [id]: value });
   };
 
-  const handleTagSave = (id: number) => {
+  const handleTagSave = async (id: number) => {
     const tags = editingTags[id];
     if (tags !== undefined) {
-      onSaveTags(id, tags);
+      await onSaveTags(id, tags);
       const newEditingTags = { ...editingTags };
       delete newEditingTags[id];
       setEditingTags(newEditingTags);
+      
+      addToast({
+        message: "Tags mis à jour avec succès",
+        type: "success",
+        duration: 2000
+      });
+    }
+  };
+
+  const applySuggestion = (rowId: number) => {
+    const suggestion = suggestions[rowId];
+    if (suggestion) {
+      const tagsString = suggestion.tags.join(', ');
+      handleTagEdit(rowId, tagsString);
+      handleTagSave(rowId);
+      
+      addToast({
+        message: `Tags suggérés appliqués (confiance: ${Math.round(suggestion.confidence * 100)}%)`,
+        type: "success",
+        duration: 3000
+      });
     }
   };
 
@@ -137,6 +200,8 @@ export function ModernTransactionsTable({
             const isExpanded = expandedRows.has(row.id);
             const isEditing = editingTags[row.id] !== undefined;
             const isIncome = row.amount > 0;
+            const hasSuggestions = suggestions[row.id];
+            const isLoadingSuggestions = loadingSuggestions[row.id];
             
             return (
               <div 
@@ -160,8 +225,8 @@ export function ModernTransactionsTable({
                             {row.label}
                           </div>
                           
-                          {/* Tags */}
-                          <div className="mt-1 flex flex-wrap gap-1">
+                          {/* Tags avec suggestions IA */}
+                          <div className="mt-1">
                             {isEditing ? (
                               <div className="flex items-center gap-2">
                                 <input
@@ -188,27 +253,85 @@ export function ModernTransactionsTable({
                                 </button>
                               </div>
                             ) : (
-                              <div 
-                                className="flex flex-wrap gap-1 cursor-pointer"
-                                onClick={() => {
-                                  const currentTags = row.tags?.join(', ') || '';
-                                  handleTagEdit(row.id, currentTags);
-                                }}
-                              >
-                                {row.tags && row.tags.length > 0 ? (
-                                  row.tags.map((tag, idx) => (
-                                    <span 
-                                      key={idx}
-                                      className="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs font-medium rounded-full"
-                                    >
-                                      {tag}
+                              <div className="flex items-center gap-2">
+                                <div 
+                                  className="flex flex-wrap gap-1 cursor-pointer"
+                                  onClick={() => {
+                                    const currentTags = row.tags?.join(', ') || '';
+                                    handleTagEdit(row.id, currentTags);
+                                    if (!hasSuggestions && !isLoadingSuggestions) {
+                                      fetchAISuggestions(row);
+                                    }
+                                  }}
+                                >
+                                  {row.tags && row.tags.length > 0 ? (
+                                    row.tags.map((tag, idx) => (
+                                      <span 
+                                        key={idx}
+                                        className="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs font-medium rounded-full"
+                                      >
+                                        {tag}
+                                      </span>
+                                    ))
+                                  ) : (
+                                    <span className="text-xs text-gray-400 italic hover:text-blue-600">
+                                      + Ajouter des tags
                                     </span>
-                                  ))
-                                ) : (
-                                  <span className="text-xs text-gray-400 italic hover:text-blue-600">
-                                    + Ajouter des tags
-                                  </span>
+                                  )}
+                                </div>
+                                
+                                {/* Bouton suggestions IA */}
+                                {!row.tags?.length && (
+                                  <button
+                                    onClick={() => fetchAISuggestions(row)}
+                                    disabled={isLoadingSuggestions}
+                                    className={`flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-full transition-all ${
+                                      isLoadingSuggestions 
+                                        ? 'bg-gray-100 text-gray-400' 
+                                        : 'bg-purple-100 text-purple-700 hover:bg-purple-200'
+                                    }`}
+                                  >
+                                    <SparklesIcon className="h-3 w-3" />
+                                    {isLoadingSuggestions ? 'Chargement...' : 'Suggestions IA'}
+                                  </button>
                                 )}
+                              </div>
+                            )}
+                            
+                            {/* Affichage des suggestions IA */}
+                            {hasSuggestions && !isEditing && (
+                              <div className="mt-2 p-2 bg-purple-50 rounded-lg">
+                                <div className="flex items-start justify-between">
+                                  <div>
+                                    <div className="flex items-center gap-2">
+                                      <SparklesIcon className="h-4 w-4 text-purple-600" />
+                                      <span className="text-xs font-medium text-purple-700">
+                                        Suggestions IA ({Math.round(hasSuggestions.confidence * 100)}% confiance)
+                                      </span>
+                                      {hasSuggestions.source && (
+                                        <span className="text-xs text-purple-600">
+                                          • Source: {hasSuggestions.source === 'web' ? 'Web' : hasSuggestions.source === 'pattern' ? 'Patterns' : 'Historique'}
+                                        </span>
+                                      )}
+                                    </div>
+                                    <div className="mt-1 flex flex-wrap gap-1">
+                                      {hasSuggestions.tags.map((tag, idx) => (
+                                        <span 
+                                          key={idx}
+                                          className="px-2 py-0.5 bg-white text-purple-700 text-xs font-medium rounded-full border border-purple-300"
+                                        >
+                                          {tag}
+                                        </span>
+                                      ))}
+                                    </div>
+                                  </div>
+                                  <button
+                                    onClick={() => applySuggestion(row.id)}
+                                    className="text-xs bg-purple-600 text-white px-2 py-1 rounded hover:bg-purple-700 transition-colors"
+                                  >
+                                    Appliquer
+                                  </button>
+                                </div>
                               </div>
                             )}
                           </div>
@@ -218,21 +341,33 @@ export function ModernTransactionsTable({
 
                     {/* Partie droite : Montant et actions */}
                     <div className="flex items-center gap-4">
-                      {/* Montant */}
+                      {/* Montant avec indicateur ML */}
                       <div className={`text-right ${isIncome ? 'text-green-600' : 'text-gray-900'}`}>
                         <div className="text-lg font-semibold">
                           {isIncome ? '+' : '-'}{formatAmount(row.amount)}
                         </div>
-                        {row.expense_type && (
-                          <div className="text-xs text-gray-500">
-                            {row.expense_type === 'FIXED' ? 'Fixe' : 'Variable'}
+                        {row.ml_confidence && (
+                          <div className="flex items-center justify-end gap-1">
+                            <div className={`h-1.5 w-12 bg-gray-200 rounded-full overflow-hidden`}>
+                              <div 
+                                className={`h-full transition-all duration-300 ${
+                                  row.ml_confidence > 0.8 ? 'bg-green-500' : 
+                                  row.ml_confidence > 0.6 ? 'bg-yellow-500' : 
+                                  'bg-red-500'
+                                }`}
+                                style={{ width: `${row.ml_confidence * 100}%` }}
+                              />
+                            </div>
+                            <span className="text-xs text-gray-500">
+                              {Math.round(row.ml_confidence * 100)}%
+                            </span>
                           </div>
                         )}
                       </div>
 
                       {/* Actions */}
                       <div className="flex items-center gap-2">
-                        {/* Checkbox exclure */}
+                        {/* Toggle exclure */}
                         <label className="relative inline-flex items-center cursor-pointer">
                           <input
                             type="checkbox"
@@ -266,7 +401,7 @@ export function ModernTransactionsTable({
                       <div className="grid grid-cols-2 gap-4">
                         <div>
                           <span className="text-gray-500">Date d'opération:</span>
-                          <span className="ml-2 text-gray-900">{row.date_op || row.date}</span>
+                          <span className="ml-2 text-gray-900">{formatDate(row.date_op || row.date)}</span>
                         </div>
                         <div>
                           <span className="text-gray-500">Compte:</span>
@@ -284,13 +419,15 @@ export function ModernTransactionsTable({
                             <span className="ml-2 text-gray-900">{row.category}</span>
                           </div>
                         )}
+                        {row.expense_type && (
+                          <div>
+                            <span className="text-gray-500">Type:</span>
+                            <span className="ml-2 text-gray-900">
+                              {row.expense_type === 'FIXED' ? 'Dépense fixe' : 'Dépense variable'}
+                            </span>
+                          </div>
+                        )}
                       </div>
-                      {row.ml_confidence && (
-                        <div className="pt-2 border-t border-gray-200">
-                          <span className="text-gray-500">Confiance IA:</span>
-                          <span className="ml-2 text-gray-900">{Math.round(row.ml_confidence * 100)}%</span>
-                        </div>
-                      )}
                     </div>
                   </div>
                 )}

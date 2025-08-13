@@ -5,7 +5,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { useGlobalMonthWithUrl } from "../../lib/month";
 import { useAuth } from "../../lib/auth";
 import { useTransactions } from "../../hooks/useTransactions";
-import { ModernTransactionsTable } from "../../components/transactions/ModernTransactionsTable";
+import { ModernTransactionsTable } from "../../components/transactions/ModernTransactionsTableWithAI";
 import { 
   MagnifyingGlassIcon, 
   FunnelIcon,
