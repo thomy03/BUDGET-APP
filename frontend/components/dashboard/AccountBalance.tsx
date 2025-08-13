@@ -216,7 +216,7 @@ export function AccountBalanceComponent({ month, onBalanceUpdate }: AccountBalan
             </div>
           ) : (
             <div>
-              <div className="text-3xl font-bold text-indigo-900 mb-2">
+              <div className="text-3xl font-bold text-indigo-900 font-mono tabular-nums mb-2">
                 {balance ? balance.account_balance.toFixed(2) : '0.00'} €
               </div>
               {balance?.notes && (
@@ -242,7 +242,7 @@ export function AccountBalanceComponent({ month, onBalanceUpdate }: AccountBalan
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
               <div className="bg-blue-50 rounded-lg p-4 border border-blue-100">
                 <div className="text-sm font-medium text-blue-700 mb-1">Membre 1 - Virement</div>
-                <div className="text-xl font-bold text-blue-900">
+                <div className="text-xl font-bold text-blue-900 font-mono tabular-nums">
                   {transferCalc.suggested_transfer_member1.toFixed(2)} €
                 </div>
                 <div className="text-xs text-blue-600 mt-1">
@@ -252,7 +252,7 @@ export function AccountBalanceComponent({ month, onBalanceUpdate }: AccountBalan
               
               <div className="bg-green-50 rounded-lg p-4 border border-green-100">
                 <div className="text-sm font-medium text-green-700 mb-1">Membre 2 - Virement</div>
-                <div className="text-xl font-bold text-green-900">
+                <div className="text-xl font-bold text-green-900 font-mono tabular-nums">
                   {transferCalc.suggested_transfer_member2.toFixed(2)} €
                 </div>
                 <div className="text-xs text-green-600 mt-1">
@@ -265,25 +265,25 @@ export function AccountBalanceComponent({ month, onBalanceUpdate }: AccountBalan
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center text-sm">
                 <div>
                   <div className="font-medium text-gray-700">Total Dépenses</div>
-                  <div className="text-lg font-bold text-gray-900">
+                  <div className="text-lg font-bold text-gray-900 font-mono tabular-nums">
                     {transferCalc.total_expenses.toFixed(2)} €
                   </div>
                 </div>
                 <div>
                   <div className="font-medium text-gray-700">Solde Actuel</div>
-                  <div className="text-lg font-bold text-gray-900">
+                  <div className="text-lg font-bold text-gray-900 font-mono tabular-nums">
                     {transferCalc.current_balance.toFixed(2)} €
                   </div>
                 </div>
                 <div>
                   <div className="font-medium text-gray-700">Total Virements</div>
-                  <div className="text-lg font-bold text-gray-900">
+                  <div className="text-lg font-bold text-gray-900 font-mono tabular-nums">
                     {(transferCalc.suggested_transfer_member1 + transferCalc.suggested_transfer_member2).toFixed(2)} €
                   </div>
                 </div>
                 <div>
                   <div className="font-medium text-gray-700">Solde Final</div>
-                  <div className={`text-lg font-bold ${
+                  <div className={`text-lg font-bold font-mono tabular-nums ${
                     transferCalc.final_balance_after_transfers >= 0 ? 'text-green-700' : 'text-red-700'
                   }`}>
                     {transferCalc.final_balance_after_transfers.toFixed(2)} €

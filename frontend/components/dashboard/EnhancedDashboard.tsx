@@ -176,21 +176,27 @@ const EnhancedDashboard = React.memo<EnhancedDashboardProps>(({ month, isAuthent
         </div>
       </div>
       
-      {/* Main Content - Split Layout */}
-      <div className="grid lg:grid-cols-2 xl:grid-cols-3 gap-8">
+      {/* Main Content - Equal Height 3-Column Layout */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 min-h-[600px]">
         {/* LEFT: REVENUS (INCOME) */}
-        <RevenueTransactionsSection data={data} month={month} />
+        <div className="flex flex-col h-full">
+          <RevenueTransactionsSection data={data} month={month} />
+        </div>
         
         {/* CENTER: ÉPARGNE (PROVISIONS) */}
-        <SavingsSection data={data} onCategoryClick={openModal} />
+        <div className="flex flex-col h-full">
+          <SavingsSection data={data} onCategoryClick={openModal} />
+        </div>
         
         {/* RIGHT: DÉPENSES (FIXED + VARIABLES) */}
-        <ExpensesSection 
-          data={data} 
-          convertingIds={convertingIds}
-          onConvertExpenseType={handleConvertExpenseType}
-          onCategoryClick={openModal}
-        />
+        <div className="flex flex-col h-full">
+          <ExpensesSection 
+            data={data} 
+            convertingIds={convertingIds}
+            onConvertExpenseType={handleConvertExpenseType}
+            onCategoryClick={openModal}
+          />
+        </div>
       </div>
       
       {/* Summary Totals */}
@@ -351,7 +357,7 @@ const MetricsOverview = React.memo<{
         <MetricCard 
           title="Épargne" 
           value={data?.savings?.total || 0} 
-          color="green"
+          color="purple"
           icon="🎯"
           subtitle={`${data?.savings?.count || 0} provision${(data?.savings?.count || 0) > 1 ? 's' : ''}`}
           onClick={() => onCategoryClick('provision')}
@@ -396,43 +402,49 @@ const SavingsSection = React.memo<{
   onCategoryClick: (category: 'provision' | 'fixed' | 'variable', categoryName?: string, tagFilter?: string) => void;
 }>(({ data, onCategoryClick }) => {
   return (
-    <Card className="p-6 border-l-4 border-l-green-500 bg-gradient-to-r from-green-50 to-emerald-50">
-      <div className="flex items-center mb-6">
+    <Card className="p-6 border-l-4 border-l-purple-500 bg-gradient-to-r from-purple-50 to-indigo-50 h-full flex flex-col">
+      <div className="flex items-center mb-6 flex-shrink-0">
         <span className="text-2xl mr-3">🎯</span>
         <div>
-          <h2 className="text-xl font-bold text-green-900">ÉPARGNE</h2>
-          <p className="text-sm text-green-700">Provisions pour objectifs futurs</p>
+          <h2 className="text-xl font-bold text-purple-900">ÉPARGNE</h2>
+          <p className="text-sm text-purple-700">Provisions pour objectifs futurs</p>
         </div>
       </div>
 
-      {data.savings.detail.length > 0 ? (
-        <div className="space-y-3">
-          {data.savings.detail.map((saving, index) => (
-            <SavingRow 
-              key={index} 
-              saving={saving} 
-              member1={data.member1} 
-              member2={data.member2}
-              onClick={() => onCategoryClick('provision', saving.name)}
-            />
-          ))}
-          
-          <div className="border-t-2 border-green-200 pt-3 mt-4">
-            <div className="flex justify-between items-center font-bold text-green-900">
-              <span>Total Épargne</span>
-              <div className="flex space-x-6">
-                <span>{(data?.savings?.member1_total || 0).toFixed(2)} €</span>
-                <span>{(data?.savings?.member2_total || 0).toFixed(2)} €</span>
+      <div className="flex-1 flex flex-col min-h-0">
+        {data.savings.detail.length > 0 ? (
+          <>
+            <div className="flex-1 overflow-y-auto space-y-3 pr-2 -mr-2">
+              {data.savings.detail.map((saving, index) => (
+                <SavingRow 
+                  key={index} 
+                  saving={saving} 
+                  member1={data.member1} 
+                  member2={data.member2}
+                  onClick={() => onCategoryClick('provision', saving.name)}
+                />
+              ))}
+            </div>
+            
+            <div className="border-t-2 border-purple-200 pt-3 mt-4 flex-shrink-0">
+              <div className="flex justify-between items-center font-bold text-purple-900">
+                <span>Total Épargne</span>
+                <div className="flex space-x-6">
+                  <span>{(data?.savings?.member1_total || 0).toFixed(2)} €</span>
+                  <span>{(data?.savings?.member2_total || 0).toFixed(2)} €</span>
+                </div>
               </div>
             </div>
+          </>
+        ) : (
+          <div className="flex-1 flex items-center justify-center text-purple-600">
+            <div className="text-center">
+              <p>Aucune provision configurée</p>
+              <p className="text-sm mt-2">Configurez vos objectifs d'épargne dans les paramètres</p>
+            </div>
           </div>
-        </div>
-      ) : (
-        <div className="text-center py-8 text-green-600">
-          <p>Aucune provision configurée</p>
-          <p className="text-sm mt-2">Configurez vos objectifs d'épargne dans les paramètres</p>
-        </div>
-      )}
+        )}
+      </div>
     </Card>
   );
 });
@@ -447,8 +459,8 @@ const ExpensesSection = React.memo<{
   onCategoryClick: (category: 'provision' | 'fixed' | 'variable', categoryName?: string, tagFilter?: string) => void;
 }>(({ data, convertingIds, onConvertExpenseType, onCategoryClick }) => {
   return (
-    <Card className="p-6 border-l-4 border-l-red-500 bg-gradient-to-r from-red-50 to-orange-50">
-      <div className="flex items-center mb-6">
+    <Card className="p-6 border-l-4 border-l-red-500 bg-gradient-to-r from-red-50 to-orange-50 h-full flex flex-col">
+      <div className="flex items-center mb-6 flex-shrink-0">
         <span className="text-2xl mr-3">💸</span>
         <div>
           <h2 className="text-xl font-bold text-red-900">DÉPENSES</h2>
@@ -456,10 +468,10 @@ const ExpensesSection = React.memo<{
         </div>
       </div>
 
-      <div className="space-y-6">
+      <div className="flex-1 flex flex-col min-h-0 space-y-6">
         {/* Fixed Expenses Subsection */}
         {data.fixed_expenses.detail.length > 0 && (
-          <div>
+          <div className="flex-shrink-0">
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-lg font-semibold text-blue-900 flex items-center">
                 <span className="mr-2">💳</span>
@@ -476,7 +488,7 @@ const ExpensesSection = React.memo<{
                 </div>
               </div>
             </div>
-            <div className="space-y-2 mb-4">
+            <div className="space-y-2 mb-4 max-h-48 overflow-y-auto pr-2 -mr-2">
               {data.fixed_expenses.detail.map((expense, index) => (
                 <FixedExpenseRow 
                   key={index} 
@@ -500,8 +512,8 @@ const ExpensesSection = React.memo<{
         )}
 
         {/* Variables Subsection - DETAILED BY TAGS */}
-        <div>
-          <h3 className="text-lg font-semibold text-orange-900 mb-3 flex items-center">
+        <div className="flex-1 flex flex-col min-h-0">
+          <h3 className="text-lg font-semibold text-orange-900 mb-3 flex items-center flex-shrink-0">
             <span className="mr-2">📊</span>
             Dépenses Variables
             <span className="ml-2 text-sm font-normal text-orange-600">
@@ -510,32 +522,36 @@ const ExpensesSection = React.memo<{
           </h3>
           
           {data.variables.detail.length > 0 ? (
-            <div className="space-y-2 mb-4">
-              {data.variables.detail.map((variable, index) => (
-                <VariableRow 
-                  key={index} 
-                  variable={variable} 
-                  member1={data.member1} 
-                  member2={data.member2}
-                  convertingIds={convertingIds}
-                  onConvert={onConvertExpenseType}
-                  onClick={() => onCategoryClick('variable', variable.name, variable.tag)}
-                />
-              ))}
-            </div>
-          ) : (
-            <p className="text-orange-600 text-sm mb-4">Aucune dépense variable ce mois</p>
-          )}
-          
-          <div className="border-b border-orange-200 pb-2">
-            <div className="flex justify-between items-center font-semibold text-orange-800">
-              <span>Sous-total Variables</span>
-              <div className="flex space-x-6">
-                <span>{(data?.variables?.member1_total || 0).toFixed(2)} €</span>
-                <span>{(data?.variables?.member2_total || 0).toFixed(2)} €</span>
+            <>
+              <div className="flex-1 overflow-y-auto space-y-2 mb-4 pr-2 -mr-2">
+                {data.variables.detail.map((variable, index) => (
+                  <VariableRow 
+                    key={index} 
+                    variable={variable} 
+                    member1={data.member1} 
+                    member2={data.member2}
+                    convertingIds={convertingIds}
+                    onConvert={onConvertExpenseType}
+                    onClick={() => onCategoryClick('variable', variable.name, variable.tag)}
+                  />
+                ))}
               </div>
+              
+              <div className="border-b border-orange-200 pb-2 flex-shrink-0">
+                <div className="flex justify-between items-center font-semibold text-orange-800">
+                  <span>Sous-total Variables</span>
+                  <div className="flex space-x-6">
+                    <span>{(data?.variables?.member1_total || 0).toFixed(2)} €</span>
+                    <span>{(data?.variables?.member2_total || 0).toFixed(2)} €</span>
+                  </div>
+                </div>
+              </div>
+            </>
+          ) : (
+            <div className="flex-1 flex items-center justify-center">
+              <p className="text-orange-600 text-sm">Aucune dépense variable ce mois</p>
             </div>
-          </div>
+          )}
         </div>
       </div>
     </Card>
@@ -554,21 +570,21 @@ const SavingRow = React.memo<{
   if (!saving) return null;
   return (
     <div 
-      className={`flex justify-between items-center py-2 px-3 bg-white rounded-lg border border-green-100 transition-colors ${
-        onClick ? 'hover:bg-green-50 cursor-pointer hover:shadow-md' : 'hover:bg-green-25'
+      className={`flex justify-between items-center py-2 px-3 bg-white rounded-lg border border-purple-100 transition-colors ${
+        onClick ? 'hover:bg-purple-50 cursor-pointer hover:shadow-md' : 'hover:bg-purple-25'
       }`}
       onClick={onClick}
     >
       <div className="flex items-center space-x-2">
         <span className="text-lg">{saving.icon}</span>
         <div className="min-w-0 flex-1">
-          <span className="font-medium text-green-900 truncate">{saving.name}</span>
+          <span className="font-medium text-purple-900 truncate">{saving.name}</span>
           <div className="w-2 h-2 rounded-full mt-1" style={{ backgroundColor: saving.color }}></div>
         </div>
       </div>
       <div className="flex space-x-6 text-sm font-mono tabular-nums flex-shrink-0 min-w-[160px]">
-        <span className="text-green-800">{(saving?.member1_amount || 0).toFixed(2)} €</span>
-        <span className="text-green-800">{(saving?.member2_amount || 0).toFixed(2)} €</span>
+        <span className="text-purple-800">{(saving?.member1_amount || 0).toFixed(2)} €</span>
+        <span className="text-purple-800">{(saving?.member2_amount || 0).toFixed(2)} €</span>
       </div>
     </div>
   );
@@ -613,7 +629,7 @@ const FixedExpenseRow = React.memo<{
             )}
             {expense.tag && (
               <span className="text-xs bg-blue-200 text-blue-800 px-2 py-0.5 rounded-full flex-shrink-0" title={expense.tag}>
-                {expense.tag.length > 15 ? expense.tag.substring(0, 15) + '...' : expense.tag}
+                {expense.tag.length > 25 ? expense.tag.substring(0, 25) + '...' : expense.tag}
               </span>
             )}
           </div>
@@ -647,18 +663,23 @@ const VariableRow = React.memo<{
       }`}
       onClick={onClick}
     >
-      <div className="flex items-center space-x-2 min-w-0 flex-1">
-        <span className={`text-sm font-medium truncate ${isUntagged ? 'text-gray-700' : 'text-orange-900'}`}>
-          {variable.name}
-        </span>
-        <span className="text-xs text-orange-600 bg-orange-100 px-2 py-0.5 rounded">
+      <div className="flex items-center min-w-0 flex-1">
+        <div className="flex items-center space-x-2 min-w-0 flex-1 mr-2">
+          <span className={`text-sm font-medium truncate ${isUntagged ? 'text-gray-700' : 'text-orange-900'}`}>
+            {variable.name}
+          </span>
+          {!isUntagged && variable.tag && (
+            <span 
+              className="text-xs bg-orange-200 text-orange-800 px-2 py-0.5 rounded-full flex-shrink-0" 
+              title={variable.tag}
+            >
+              {variable.tag.length > 25 ? variable.tag.substring(0, 25) + '...' : variable.tag}
+            </span>
+          )}
+        </div>
+        <span className="text-xs text-orange-600 bg-orange-100 px-2 py-0.5 rounded flex-shrink-0">
           {variable.transaction_count} tx
         </span>
-        {!isUntagged && variable.tag && (
-          <span className="text-xs bg-orange-200 text-orange-800 px-2 py-0.5 rounded-full">
-            {variable.tag}
-          </span>
-        )}
         {/* Type Toggle Button - Placeholder for transaction ID */}
         {variable.transaction_ids && variable.transaction_ids.length > 0 && (
           <TypeToggleButton
@@ -880,8 +901,8 @@ const RevenueTransactionsSection = React.memo<{
   }, [month]);
   
   return (
-    <Card className="p-6 border-l-4 border-l-emerald-500 bg-gradient-to-r from-emerald-50 to-green-50">
-      <div className="flex items-center mb-6">
+    <Card className="p-6 border-l-4 border-l-emerald-500 bg-gradient-to-r from-emerald-50 to-green-50 h-full flex flex-col">
+      <div className="flex items-center mb-6 flex-shrink-0">
         <span className="text-2xl mr-3">💰</span>
         <div>
           <h2 className="text-xl font-bold text-emerald-900">REVENUS</h2>
@@ -889,100 +910,154 @@ const RevenueTransactionsSection = React.memo<{
         </div>
       </div>
 
-      {loading ? (
-        <div className="text-center py-8 text-emerald-600">
-          <p>Chargement des revenus...</p>
-        </div>
-      ) : revenueTransactions.length > 0 ? (
-        <div className="space-y-3">
-          {currentPageTransactions.map((transaction, index) => (
-            <div 
-              key={startIndex + index} 
-              className="flex justify-between items-center py-2 px-3 bg-white rounded-lg border border-emerald-100 hover:bg-emerald-50 transition-colors duration-200"
-            >
-              <div className="flex-1 min-w-0">
+      <div className="flex-1 flex flex-col min-h-0">
+        {loading ? (
+          <div className="flex-1 flex items-center justify-center text-emerald-600">
+            <p>Chargement des revenus...</p>
+          </div>
+        ) : revenueTransactions.length > 0 ? (
+          <>
+            <div className="flex-1 overflow-y-auto space-y-3 pr-2 -mr-2">
+              {currentPageTransactions.map((transaction, index) => (
                 <div 
-                  className="text-sm font-medium text-emerald-900" 
-                  title={transaction.label || 'Revenu'}
-                  style={{
-                    whiteSpace: 'nowrap',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis'
-                  }}
+                  key={startIndex + index} 
+                  className="flex justify-between items-center py-2 px-3 bg-white rounded-lg border border-emerald-100 hover:bg-emerald-50 transition-colors duration-200"
                 >
-                  {transaction.label || 'Revenu'}
-                </div>
-                <div className="text-xs text-emerald-600">
-                  {transaction.date_op ? new Date(transaction.date_op).toLocaleDateString('fr-FR') : ''}
-                </div>
-              </div>
-              <div className="text-right flex-shrink-0 min-w-[100px]">
-                <div className="text-sm font-bold text-emerald-800 tabular-nums">
-                  +{(transaction.amount || 0).toFixed(2)} €
-                </div>
-                {transaction.category && (
-                  <div className="text-xs text-emerald-600">
-                    {transaction.category}
+                  <div className="flex-1 min-w-0">
+                    <div 
+                      className="text-sm font-medium text-emerald-900" 
+                      title={transaction.label || 'Revenu'}
+                      style={{
+                        whiteSpace: 'nowrap',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis'
+                      }}
+                    >
+                      {transaction.label || 'Revenu'}
+                    </div>
+                    <div className="text-xs text-emerald-600">
+                      {transaction.date_op ? new Date(transaction.date_op).toLocaleDateString('fr-FR') : ''}
+                    </div>
                   </div>
-                )}
-              </div>
+                  <div className="text-right flex-shrink-0 min-w-[100px]">
+                    <div className="text-sm font-bold text-emerald-800 font-mono tabular-nums">
+                      +{(transaction.amount || 0).toFixed(2)} €
+                    </div>
+                    {transaction.category && (
+                      <div className="text-xs text-emerald-600">
+                        {transaction.category}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
             </div>
-          ))}
-          
-          {/* Pagination Controls */}
-          {totalPages > 1 && (
-            <div className="flex items-center justify-between pt-4 mt-4 border-t border-emerald-200">
-              <div className="flex items-center space-x-2">
-                <button
-                  onClick={() => setCurrentPage(prev => Math.max(0, prev - 1))}
-                  disabled={currentPage === 0}
-                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
-                    currentPage === 0
-                      ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                      : 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200 hover:shadow-md'
-                  }`}
-                >
-                  ← Précédent
-                </button>
-                <button
-                  onClick={() => setCurrentPage(prev => Math.min(totalPages - 1, prev + 1))}
-                  disabled={currentPage === totalPages - 1}
-                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
-                    currentPage === totalPages - 1
-                      ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                      : 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200 hover:shadow-md'
-                  }`}
-                >
-                  Suivant →
-                </button>
-              </div>
+            
+            {/* Fixed bottom section with pagination and total */}
+            <div className="flex-shrink-0 mt-4 space-y-4">
+              {/* Modern Pagination Controls */}
+              {totalPages > 1 && (
+                <div className="bg-gradient-to-r from-emerald-50 to-green-50 rounded-xl p-4 border border-emerald-200 shadow-sm">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                    {/* Navigation Buttons */}
+                    <div className="flex items-center justify-center sm:justify-start space-x-3">
+                      <button
+                        onClick={() => setCurrentPage(prev => Math.max(0, prev - 1))}
+                        disabled={currentPage === 0}
+                        className={`group flex items-center space-x-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all duration-300 transform ${
+                          currentPage === 0
+                            ? 'bg-gray-100 text-gray-400 cursor-not-allowed opacity-50'
+                            : 'bg-gradient-to-r from-emerald-500 to-green-500 text-white hover:from-emerald-600 hover:to-green-600 hover:scale-105 hover:shadow-lg active:scale-95 shadow-md'
+                        }`}
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                        </svg>
+                        <span>Précédent</span>
+                      </button>
+                      
+                      <button
+                        onClick={() => setCurrentPage(prev => Math.min(totalPages - 1, prev + 1))}
+                        disabled={currentPage === totalPages - 1}
+                        className={`group flex items-center space-x-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all duration-300 transform ${
+                          currentPage === totalPages - 1
+                            ? 'bg-gray-100 text-gray-400 cursor-not-allowed opacity-50'
+                            : 'bg-gradient-to-r from-emerald-500 to-green-500 text-white hover:from-emerald-600 hover:to-green-600 hover:scale-105 hover:shadow-lg active:scale-95 shadow-md'
+                        }`}
+                      >
+                        <span>Suivant</span>
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                        </svg>
+                      </button>
+                    </div>
+                    
+                    {/* Page Info and Statistics */}
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-6 space-y-2 sm:space-y-0 text-center sm:text-right">
+                      <div className="bg-white rounded-lg px-3 py-2 shadow-sm border border-emerald-200">
+                        <div className="flex items-center justify-center sm:justify-end space-x-2">
+                          <span className="text-emerald-600 font-medium text-sm">
+                            Page
+                          </span>
+                          <span className="bg-gradient-to-r from-emerald-600 to-green-600 text-white px-3 py-1 rounded-lg font-bold text-sm min-w-[2.5rem] text-center">
+                            {currentPage + 1}
+                          </span>
+                          <span className="text-emerald-600 font-medium text-sm">
+                            sur {totalPages}
+                          </span>
+                        </div>
+                      </div>
+                      
+                      <div className="bg-white rounded-lg px-3 py-2 shadow-sm border border-emerald-200">
+                        <div className="text-sm text-emerald-700 font-medium">
+                          <span className="text-emerald-800 font-semibold">
+                            {startIndex + 1}-{Math.min(endIndex, revenueTransactions.length)}
+                          </span>
+                          <span className="mx-1 text-emerald-600">sur</span>
+                          <span className="text-emerald-800 font-semibold">
+                            {revenueTransactions.length}
+                          </span>
+                          <span className="ml-1 text-emerald-600">revenus</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Progress Indicator */}
+                  <div className="mt-3">
+                    <div className="flex justify-between text-xs text-emerald-700 mb-2">
+                      <span>Navigation</span>
+                      <span>{((currentPage + 1) / totalPages * 100).toFixed(0)}%</span>
+                    </div>
+                    <div className="w-full bg-emerald-200 rounded-full h-1.5">
+                      <div 
+                        className="bg-gradient-to-r from-emerald-500 to-green-500 h-1.5 rounded-full transition-all duration-500 ease-out"
+                        style={{ width: `${((currentPage + 1) / totalPages) * 100}%` }}
+                      ></div>
+                    </div>
+                  </div>
+                </div>
+              )}
               
-              <div className="flex items-center space-x-4">
-                <span className="text-xs text-emerald-600">
-                  Page {currentPage + 1} sur {totalPages}
-                </span>
-                <span className="text-xs text-emerald-600">
-                  Affichage de {startIndex + 1}-{Math.min(endIndex, revenueTransactions.length)} sur {revenueTransactions.length} revenus
-                </span>
+              <div className="border-t-2 border-emerald-200 pt-3">
+                <div className="flex justify-between items-center font-bold text-emerald-900">
+                  <span>Total Revenus</span>
+                  <span className="font-mono tabular-nums">
+                    {revenueTransactions.reduce((sum, tx) => sum + (tx.amount || 0), 0).toFixed(2)} €
+                  </span>
+                </div>
               </div>
             </div>
-          )}
-          
-          <div className="border-t-2 border-emerald-200 pt-3 mt-4">
-            <div className="flex justify-between items-center font-bold text-emerald-900">
-              <span>Total Revenus</span>
-              <span>
-                {revenueTransactions.reduce((sum, tx) => sum + (tx.amount || 0), 0).toFixed(2)} €
-              </span>
+          </>
+        ) : (
+          <div className="flex-1 flex items-center justify-center text-emerald-600">
+            <div className="text-center">
+              <p>Aucun revenu trouvé pour ce mois</p>
+              <p className="text-sm mt-2">Les revenus sont des transactions avec des montants positifs</p>
             </div>
           </div>
-        </div>
-      ) : (
-        <div className="text-center py-8 text-emerald-600">
-          <p>Aucun revenu trouvé pour ce mois</p>
-          <p className="text-sm mt-2">Les revenus sont des transactions avec des montants positifs</p>
-        </div>
-      )}
+        )}
+      </div>
     </Card>
   );
 });
