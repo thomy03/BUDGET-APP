@@ -2,20 +2,20 @@
 Authentication dependencies for Budget Famille v2.3
 """
 from fastapi import Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordBearer
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from typing import Dict, Any
 
 # Import from existing auth module
 from auth import get_current_user as _get_current_user
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/token")
+security = HTTPBearer()
 
-def get_current_user(token: str = Depends(oauth2_scheme)) -> Dict[str, Any]:
+def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)) -> Dict[str, Any]:
     """
     Get current authenticated user
     Wrapper around the existing auth module function
     """
-    return _get_current_user(token)
+    return _get_current_user(credentials)
 
 def get_current_active_user(current_user: Dict[str, Any] = Depends(get_current_user)) -> Dict[str, Any]:
     """

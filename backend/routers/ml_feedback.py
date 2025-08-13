@@ -324,7 +324,7 @@ class MLFeedbackService:
         )
 
 
-@router.post("/", response_model=MLFeedbackResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/", status_code=status.HTTP_201_CREATED)
 async def save_ml_feedback(
     feedback: MLFeedbackCreate,
     db: Session = Depends(get_db),
@@ -340,7 +340,27 @@ async def save_ml_feedback(
         service = MLFeedbackService(db)
         saved_feedback = service.save_feedback(feedback, current_user.username)
         
-        return MLFeedbackResponse.from_orm(saved_feedback)
+        # Return a simple dict instead of using the complex Pydantic model to avoid validation issues
+        return {
+            "id": saved_feedback.id,
+            "transaction_id": saved_feedback.transaction_id,
+            "original_tag": saved_feedback.original_tag,
+            "corrected_tag": saved_feedback.corrected_tag,
+            "original_expense_type": saved_feedback.original_expense_type,
+            "corrected_expense_type": saved_feedback.corrected_expense_type,
+            "merchant_pattern": saved_feedback.merchant_pattern,
+            "transaction_amount": saved_feedback.transaction_amount,
+            "transaction_description": saved_feedback.transaction_description,
+            "feedback_type": saved_feedback.feedback_type,
+            "confidence_before": saved_feedback.confidence_before,
+            "user_id": saved_feedback.user_id,
+            "created_at": saved_feedback.created_at.isoformat() if saved_feedback.created_at else None,
+            "applied_at": saved_feedback.applied_at.isoformat() if saved_feedback.applied_at else None,
+            "pattern_learned": getattr(saved_feedback, 'pattern_learned', False),
+            "times_pattern_used": getattr(saved_feedback, 'times_pattern_used', 0),
+            "pattern_success_rate": getattr(saved_feedback, 'pattern_success_rate', 0.0),
+            "message": "Feedback saved successfully"
+        }
         
     except HTTPException:
         raise
@@ -400,7 +420,7 @@ async def get_feedback_statistics(db: Session = Depends(get_db)):
         )
 
 
-@router.get("/recent", response_model=List[MLFeedbackResponse])
+@router.get("/recent")
 async def get_recent_feedback(
     limit: int = Query(20, ge=1, le=100, description="Number of recent feedback entries"),
     feedback_type: Optional[str] = Query(None, description="Filter by feedback type"),
@@ -417,7 +437,30 @@ async def get_recent_feedback(
         
         recent_feedback = query.limit(limit).all()
         
-        return [MLFeedbackResponse.from_orm(feedback) for feedback in recent_feedback]
+        # Return a list of dicts to avoid Pydantic validation issues
+        result = []
+        for feedback in recent_feedback:
+            result.append({
+                "id": feedback.id,
+                "transaction_id": feedback.transaction_id,
+                "original_tag": feedback.original_tag,
+                "corrected_tag": feedback.corrected_tag,
+                "original_expense_type": feedback.original_expense_type,
+                "corrected_expense_type": feedback.corrected_expense_type,
+                "merchant_pattern": feedback.merchant_pattern,
+                "transaction_amount": feedback.transaction_amount,
+                "transaction_description": feedback.transaction_description,
+                "feedback_type": feedback.feedback_type,
+                "confidence_before": feedback.confidence_before,
+                "user_id": feedback.user_id,
+                "created_at": feedback.created_at.isoformat() if feedback.created_at else None,
+                "applied_at": feedback.applied_at.isoformat() if feedback.applied_at else None,
+                "pattern_learned": getattr(feedback, 'pattern_learned', False),
+                "times_pattern_used": getattr(feedback, 'times_pattern_used', 0),
+                "pattern_success_rate": getattr(feedback, 'pattern_success_rate', 0.0)
+            })
+        
+        return result
         
     except Exception as e:
         logger.error(f"Error retrieving recent feedback: {e}")

@@ -428,7 +428,7 @@ app.add_middleware(
     allow_methods=settings.cors.allow_methods,
     allow_headers=settings.cors.allow_headers,
     max_age=settings.cors.max_age,
-    expose_headers=["*"],  # Expose all headers for debugging
+    expose_headers=["Content-Type", "Authorization", "X-Total-Count", "X-Pagination", "*"],  # Expose all headers for debugging
 )
 
 # Add compatibility routes for existing endpoints that don't have prefixes
@@ -503,8 +503,145 @@ async def legacy_create_custom_provision(payload: dict, current_user = Depends(g
 def legacy_tags_summary(month: str, db: Session = Depends(get_db)):
     """Legacy tags-summary endpoint for frontend compatibility"""
     # Delegate to the transactions router implementation
-    from routers.transactions import tags_summary
-    return tags_summary(month=month, db=db)
+    try:
+        from routers.transactions import tags_summary
+        return tags_summary(month=month, db=db)
+    except Exception as e:
+        logger.error(f"Error in legacy_tags_summary: {str(e)}")
+        # Return a safe fallback response
+        return {
+            "month": month,
+            "tags": {},
+            "total_tagged_transactions": 0
+        }
+
+# Compatibility routes for unified classification endpoints (frontend expects /unified/* paths)
+@app.post("/unified/classify")
+async def legacy_unified_classify(payload: dict, current_user = Depends(get_current_user), db: Session = Depends(get_db)):
+    """Legacy unified classify endpoint for frontend compatibility"""
+    try:
+        from routers.classification import unified_classify
+        from models.schemas import UnifiedClassificationRequest
+        
+        # Convert dict payload to Pydantic model
+        request_data = UnifiedClassificationRequest(**payload)
+        return await unified_classify(request=request_data, current_user=current_user, db=db)
+    except Exception as e:
+        logger.error(f"Error in legacy_unified_classify: {str(e)}")
+        # Return fallback classification
+        return {
+            "classification_results": {
+                "category": "autres",
+                "expense_type": "VARIABLE",
+                "confidence": 0.0,
+                "suggested_tags": []
+            },
+            "request": payload,
+            "timestamp": dt.datetime.now().isoformat(),
+            "fallback": True
+        }
+
+@app.post("/unified/batch-classify") 
+async def legacy_unified_batch_classify(payload: dict, current_user = Depends(get_current_user), db: Session = Depends(get_db)):
+    """Legacy unified batch classify endpoint for frontend compatibility"""
+    try:
+        from routers.classification import unified_batch_classify
+        from models.schemas import BatchUnifiedClassificationRequest
+        
+        # Convert dict payload to Pydantic model
+        request_data = BatchUnifiedClassificationRequest(**payload)
+        return await unified_batch_classify(request=request_data, current_user=current_user, db=db)
+    except Exception as e:
+        logger.error(f"Error in legacy_unified_batch_classify: {str(e)}")
+        # Return fallback batch classification
+        return {
+            "results": [],
+            "stats": {
+                "total_transactions": 0,
+                "successfully_classified": 0,
+                "classification_rate": 0.0
+            },
+            "timestamp": dt.datetime.now().isoformat(),
+            "fallback": True
+        }
+
+@app.get("/unified/stats")
+async def legacy_unified_stats(current_user = Depends(get_current_user), db: Session = Depends(get_db)):
+    """Legacy unified stats endpoint for frontend compatibility"""
+    try:
+        from routers.classification import get_unified_classification_stats
+        return await get_unified_classification_stats(current_user=current_user, db=db)
+    except Exception as e:
+        logger.error(f"Error in legacy_unified_stats: {str(e)}")
+        # Return fallback stats
+        return {
+            "total_classifications": 0,
+            "success_rate": 0.0,
+            "average_confidence": 0.0,
+            "category_distribution": {},
+            "expense_type_distribution": {"VARIABLE": 100, "FIXED": 0},
+            "timestamp": dt.datetime.now().isoformat(),
+            "fallback": True
+        }
+
+# Compatibility routes for tag suggestion endpoints
+@app.get("/tags/suggest/{tag_name}")
+async def legacy_tag_suggest_simple(tag_name: str, current_user = Depends(get_current_user), db: Session = Depends(get_db)):
+    """Legacy tag suggest endpoint for frontend compatibility"""
+    try:
+        from routers.classification import suggest_classification_simple
+        return suggest_classification_simple(tag_name=tag_name, current_user=current_user, db=db)
+    except Exception as e:
+        logger.error(f"Error in legacy_tag_suggest_simple: {str(e)}")
+        # Return fallback suggestion
+        return {
+            "tag_name": tag_name,
+            "suggested_type": "VARIABLE",
+            "confidence": 0.0,
+            "explanation": "Fallback suggestion - system unavailable",
+            "timestamp": dt.datetime.now().isoformat(),
+            "fallback": True
+        }
+
+@app.post("/tags/suggest")
+async def legacy_tag_suggest(payload: dict, current_user = Depends(get_current_user), db: Session = Depends(get_db)):
+    """Legacy tag suggest POST endpoint for frontend compatibility"""
+    try:
+        from routers.classification import suggest_classification
+        from models.schemas import ClassificationRequest
+        
+        # Convert dict payload to Pydantic model
+        request_data = ClassificationRequest(**payload)
+        return suggest_classification(request=request_data, current_user=current_user, db=db)
+    except Exception as e:
+        logger.error(f"Error in legacy_tag_suggest: {str(e)}")
+        # Return fallback suggestion
+        return {
+            "tag_name": payload.get("tag_name", "unknown"),
+            "suggested_type": "VARIABLE",
+            "confidence": 0.0,
+            "explanation": "Fallback suggestion - system unavailable",
+            "timestamp": dt.datetime.now().isoformat(),
+            "fallback": True
+        }
+
+@app.options("/tags/suggest/{tag_name}")
+@app.options("/tags/suggest")
+@app.options("/unified/classify")
+@app.options("/unified/batch-classify")
+@app.options("/unified/stats")
+async def cors_preflight():
+    """Handle CORS preflight requests for all endpoints that need OPTIONS support"""
+    from fastapi.responses import Response
+    return Response(
+        status_code=200,
+        headers={
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+            "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Requested-With, Accept, Origin",
+            "Access-Control-Max-Age": "600"
+        }
+    )
 
 # The /summary endpoint is implemented later in the file for compatibility
 

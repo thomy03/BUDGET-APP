@@ -19,6 +19,7 @@ import { useEnhancedDashboard, EnhancedSummaryData, SavingsDetail, FixedExpenseD
 import { Card, LoadingSpinner } from '../ui';
 import { ErrorBoundary } from './ErrorBoundary';
 import { TransactionDetailModal } from './TransactionDetailModal';
+import { HierarchicalNavigationModal } from './HierarchicalNavigationModal';
 import { AccountBalanceComponent } from './AccountBalance';
 import { useRouter } from 'next/navigation';
 import { api } from '../../lib/api';
@@ -63,6 +64,22 @@ const EnhancedDashboard = React.memo<EnhancedDashboardProps>(({ month, isAuthent
     category: '',
     categoryName: '',
     items: []
+  });
+
+  // State for hierarchical navigation modal
+  const [hierarchicalModalState, setHierarchicalModalState] = useState<{
+    isOpen: boolean;
+    title: string;
+    initialCategory?: string;
+    initialFilters?: {
+      expense_type?: 'FIXED' | 'VARIABLE' | 'PROVISION';
+      tag?: string;
+    };
+  }>({
+    isOpen: false,
+    title: '',
+    initialCategory: undefined,
+    initialFilters: undefined
   });
   
   const router = useRouter();
@@ -212,6 +229,25 @@ const EnhancedDashboard = React.memo<EnhancedDashboardProps>(({ month, isAuthent
     });
   };
 
+  // Handlers for hierarchical navigation modal
+  const openHierarchicalModal = (title: string, initialCategory?: string, initialFilters?: any) => {
+    setHierarchicalModalState({
+      isOpen: true,
+      title,
+      initialCategory,
+      initialFilters
+    });
+  };
+
+  const closeHierarchicalModal = () => {
+    setHierarchicalModalState({
+      isOpen: false,
+      title: '',
+      initialCategory: undefined,
+      initialFilters: undefined
+    });
+  };
+
   // Reassignment handlers
   const handleReassignSaving = (itemName: string, newCategory: string) => {
     console.log('Reassigning saving:', itemName, 'to category:', newCategory);
@@ -239,7 +275,11 @@ const EnhancedDashboard = React.memo<EnhancedDashboardProps>(({ month, isAuthent
       <AccountBalanceComponent month={month} onBalanceUpdate={reload} />
       
       {/* Key Metrics Overview */}
-      <MetricsOverview data={data} onCategoryClick={openModal} />
+      <MetricsOverview 
+        data={data} 
+        onCategoryClick={openModal} 
+        onHierarchicalNavigation={openHierarchicalModal}
+      />
       
       {/* Strict Separation Info Banner */}
       <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-4">
@@ -272,9 +312,9 @@ const EnhancedDashboard = React.memo<EnhancedDashboardProps>(({ month, isAuthent
         </div>
       </div>
       
-      {/* Main Content - Equal Height 3-Column Layout */}
-      <div className="flex justify-center">
-        <div className="flex flex-col 2xl:flex-row gap-6 min-h-[600px] w-full max-w-[1600px]">
+      {/* Main Content - Equal Height 3-Column Layout avec centrage amélioré */}
+      <div className="flex justify-start pl-8">
+        <div className="flex flex-col 2xl:flex-row gap-6 min-h-[600px] w-full max-w-[1400px]">
         {/* LEFT: REVENUS (INCOME) */}
         <div className="flex flex-col h-full flex-1 min-w-0 2xl:min-w-[400px] 2xl:max-w-[500px]">
           <RevenueTransactionsSection data={data} month={month} />
@@ -282,7 +322,11 @@ const EnhancedDashboard = React.memo<EnhancedDashboardProps>(({ month, isAuthent
         
         {/* CENTER: ÉPARGNE (PROVISIONS) */}
         <div className="flex flex-col h-full flex-1 min-w-0 2xl:min-w-[400px] 2xl:max-w-[500px]">
-          <SavingsSection data={data} onCategoryClick={openSavingsModal} />
+          <SavingsSection 
+            data={data} 
+            onCategoryClick={openSavingsModal} 
+            onHierarchicalNavigation={openHierarchicalModal}
+          />
         </div>
         
         {/* RIGHT: DÉPENSES (FIXED + VARIABLES) */}
@@ -292,6 +336,7 @@ const EnhancedDashboard = React.memo<EnhancedDashboardProps>(({ month, isAuthent
             convertingIds={convertingIds}
             onConvertExpenseType={handleConvertExpenseType}
             onCategoryClick={openExpenseModal}
+            onHierarchicalNavigation={openHierarchicalModal}
           />
         </div>
         </div>
@@ -309,6 +354,7 @@ const EnhancedDashboard = React.memo<EnhancedDashboardProps>(({ month, isAuthent
         categoryName={modalState.categoryName}
         month={month}
         tagFilter={modalState.tagFilter}
+        onOpenHierarchicalNavigation={openHierarchicalModal}
       />
       
       {/* Savings Detail Modal */}
@@ -329,6 +375,16 @@ const EnhancedDashboard = React.memo<EnhancedDashboardProps>(({ month, isAuthent
         categoryName={expenseModalState.categoryName}
         items={expenseModalState.items}
         onReassign={handleReassignExpense}
+      />
+
+      {/* Hierarchical Navigation Modal */}
+      <HierarchicalNavigationModal
+        isOpen={hierarchicalModalState.isOpen}
+        onClose={closeHierarchicalModal}
+        title={hierarchicalModalState.title}
+        month={month}
+        initialCategory={hierarchicalModalState.initialCategory}
+        initialFilters={hierarchicalModalState.initialFilters}
       />
     </div>
     </ErrorBoundary>
@@ -435,7 +491,8 @@ RevenueSection.displayName = 'RevenueSection';
 const MetricsOverview = React.memo<{ 
   data: EnhancedSummaryData;
   onCategoryClick: (category: 'provision' | 'fixed' | 'variable', categoryName?: string, tagFilter?: string) => void;
-}>(({ data, onCategoryClick }) => {
+  onHierarchicalNavigation: (title: string, initialCategory?: string, initialFilters?: any) => void;
+}>(({ data, onCategoryClick, onHierarchicalNavigation }) => {
   return (
     <div className="space-y-4">
       {/* Total Dépenses - Enhanced with clear visual separation */}
@@ -466,6 +523,45 @@ const MetricsOverview = React.memo<{
           {/* Sum equation */}
           <div className={`text-sm mt-4 font-medium ${getAmountColorClass('expense')}`}>
             {formatAmount(data?.variables?.total || 0, 'expense')} + {formatAmount(data?.fixed_expenses?.total || 0, 'expense')} = {formatAmount(data?.totals?.total_expenses || 0, 'expense')}
+          </div>
+        </div>
+      </Card>
+      
+      {/* Navigation Hiérarchique Avancée */}
+      <Card className="p-4 border border-indigo-200 bg-gradient-to-r from-indigo-50 to-purple-50">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-3">
+            <span className="text-2xl">🗂️</span>
+            <div>
+              <h3 className="text-lg font-bold text-indigo-900">Navigation Hiérarchique</h3>
+              <p className="text-sm text-indigo-700">Explorez vos données jusqu'au niveau transaction</p>
+            </div>
+          </div>
+          <div className="flex space-x-2">
+            <button
+              onClick={() => onHierarchicalNavigation('Navigation Complète - Épargne', undefined, { expense_type: 'PROVISION' })}
+              className="px-3 py-2 bg-purple-100 text-purple-800 rounded-lg hover:bg-purple-200 transition-colors text-sm font-medium"
+            >
+              🎯 Épargne
+            </button>
+            <button
+              onClick={() => onHierarchicalNavigation('Navigation Complète - Charges Fixes', undefined, { expense_type: 'FIXED' })}
+              className="px-3 py-2 bg-blue-100 text-blue-800 rounded-lg hover:bg-blue-200 transition-colors text-sm font-medium"
+            >
+              💳 Fixes
+            </button>
+            <button
+              onClick={() => onHierarchicalNavigation('Navigation Complète - Variables', undefined, { expense_type: 'VARIABLE' })}
+              className="px-3 py-2 bg-orange-100 text-orange-800 rounded-lg hover:bg-orange-200 transition-colors text-sm font-medium"
+            >
+              📊 Variables
+            </button>
+            <button
+              onClick={() => onHierarchicalNavigation('Navigation Complète - Toutes les Dépenses')}
+              className="px-3 py-2 bg-gray-100 text-gray-800 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium"
+            >
+              🔍 Tout
+            </button>
           </div>
         </div>
       </Card>
@@ -568,7 +664,8 @@ function categorizeSaving(saving: SavingsDetail) {
 const SavingsSection = React.memo<{ 
   data: EnhancedSummaryData;
   onCategoryClick: (category: string, categoryName: string, items: SavingsDetail[]) => void;
-}>(({ data, onCategoryClick }) => {
+  onHierarchicalNavigation?: (title: string, initialCategory?: string, initialFilters?: any) => void;
+}>(({ data, onCategoryClick, onHierarchicalNavigation }) => {
   // Group savings by categories
   const savingsGroups = React.useMemo(() => {
     // Reset categories
@@ -597,12 +694,23 @@ const SavingsSection = React.memo<{
 
   return (
     <Card className="p-8 border-l-4 border-l-purple-500 bg-gradient-to-r from-purple-50 to-indigo-50 h-full flex flex-col">
-      <div className="flex items-center mb-6 flex-shrink-0">
-        <span className="text-2xl mr-3">🎯</span>
-        <div>
-          <h2 className="text-xl font-bold text-purple-900">ÉPARGNE</h2>
-          <p className="text-sm text-purple-700">Provisions groupées par objectifs</p>
+      <div className="flex items-center justify-between mb-6 flex-shrink-0">
+        <div className="flex items-center space-x-3">
+          <span className="text-2xl">🎯</span>
+          <div>
+            <h2 className="text-xl font-bold text-purple-900">ÉPARGNE</h2>
+            <p className="text-sm text-purple-700">Provisions groupées par objectifs</p>
+          </div>
         </div>
+        {onHierarchicalNavigation && (
+          <button
+            onClick={() => onHierarchicalNavigation('Navigation Épargne Détaillée', undefined, { expense_type: 'PROVISION' })}
+            className="px-3 py-1.5 bg-purple-100 text-purple-800 rounded-lg hover:bg-purple-200 transition-colors text-xs font-medium flex items-center space-x-1"
+          >
+            <span>🔍</span>
+            <span>Détail</span>
+          </button>
+        )}
       </div>
 
       <div className="flex-1 flex flex-col min-h-0">
@@ -761,7 +869,8 @@ const ExpensesSection = React.memo<{
   convertingIds: Set<number>;
   onConvertExpenseType: (transactionId: number, newType: 'FIXED' | 'VARIABLE' | 'PROVISION') => void;
   onCategoryClick: (category: string, categoryName: string, items: (FixedExpenseDetail | VariableDetail & { type: string })[]) => void;
-}>(({ data, convertingIds, onConvertExpenseType, onCategoryClick }) => {
+  onHierarchicalNavigation?: (title: string, initialCategory?: string, initialFilters?: any) => void;
+}>(({ data, convertingIds, onConvertExpenseType, onCategoryClick, onHierarchicalNavigation }) => {
   // Group expenses by categories
   const expenseGroups = React.useMemo(() => {
     // Reset categories
@@ -797,12 +906,36 @@ const ExpensesSection = React.memo<{
 
   return (
     <Card className="p-8 border-l-4 border-l-red-500 bg-gradient-to-r from-red-50 to-orange-50 h-full flex flex-col">
-      <div className="flex items-center mb-6 flex-shrink-0">
-        <span className="text-2xl mr-3">💸</span>
-        <div>
-          <h2 className="text-xl font-bold text-red-900">DÉPENSES</h2>
-          <p className="text-sm text-red-700">Charges groupées par catégories</p>
+      <div className="flex items-center justify-between mb-6 flex-shrink-0">
+        <div className="flex items-center space-x-3">
+          <span className="text-2xl">💸</span>
+          <div>
+            <h2 className="text-xl font-bold text-red-900">DÉPENSES</h2>
+            <p className="text-sm text-red-700">Charges groupées par catégories</p>
+          </div>
         </div>
+        {onHierarchicalNavigation && (
+          <div className="flex space-x-1">
+            <button
+              onClick={() => onHierarchicalNavigation('Navigation Charges Fixes', undefined, { expense_type: 'FIXED' })}
+              className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs font-medium hover:bg-blue-200 transition-colors"
+            >
+              💳
+            </button>
+            <button
+              onClick={() => onHierarchicalNavigation('Navigation Variables', undefined, { expense_type: 'VARIABLE' })}
+              className="px-2 py-1 bg-orange-100 text-orange-800 rounded text-xs font-medium hover:bg-orange-200 transition-colors"
+            >
+              📊
+            </button>
+            <button
+              onClick={() => onHierarchicalNavigation('Navigation Toutes Dépenses')}
+              className="px-2 py-1 bg-red-100 text-red-800 rounded text-xs font-medium hover:bg-red-200 transition-colors"
+            >
+              🔍
+            </button>
+          </div>
+        )}
       </div>
 
       <div className="flex-1 flex flex-col min-h-0">

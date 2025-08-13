@@ -96,7 +96,7 @@ class CORSSettings(BaseSettings):
     allowed_origins: List[str] = []
     allow_credentials: bool = True
     allow_methods: List[str] = ["GET", "POST", "PATCH", "DELETE", "PUT", "OPTIONS"]
-    allow_headers: List[str] = ["Content-Type", "Authorization", "X-Requested-With"]
+    allow_headers: List[str] = ["Content-Type", "Authorization", "X-Requested-With", "Accept", "Origin", "Access-Control-Request-Method", "Access-Control-Request-Headers"]
     max_age: int = 600  # 10 minutes
     
     def __init__(self, **kwargs):
@@ -119,7 +119,9 @@ class CORSSettings(BaseSettings):
                 "http://localhost:3000",
                 "http://127.0.0.1:3000",
                 "http://localhost:45678",
-                "http://127.0.0.1:45678"
+                "http://127.0.0.1:45678",
+                "http://localhost:45679",
+                "http://127.0.0.1:45679"
             ]
     
     @field_validator('allowed_origins')

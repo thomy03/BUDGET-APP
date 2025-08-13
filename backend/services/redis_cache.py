@@ -447,17 +447,147 @@ class RedisCacheService:
         self.close()
 
 
+# Fallback in-memory cache for when Redis is unavailable
+class InMemoryCacheService:
+    """In-memory fallback cache when Redis is unavailable"""
+    
+    def __init__(self):
+        self._cache: Dict[str, Dict] = {}  # key -> {value, expires_at}
+        self._stats = {
+            "hits": 0,
+            "misses": 0,
+            "errors": 0,
+            "total_requests": 0,
+            "last_error": None
+        }
+        logger.info("🔄 Using in-memory cache fallback (Redis unavailable)")
+    
+    def _is_expired(self, entry: Dict) -> bool:
+        """Check if cache entry is expired"""
+        if 'expires_at' not in entry:
+            return False
+        return dt.datetime.now().timestamp() > entry['expires_at']
+    
+    def _make_key(self, *parts: str) -> str:
+        """Create a cache key"""
+        return ":".join(str(part) for part in parts)
+    
+    def get(self, key: str, default: Any = None) -> Any:
+        """Get value from in-memory cache"""
+        self._stats["total_requests"] += 1
+        cache_key = self._make_key(key)
+        
+        if cache_key in self._cache:
+            entry = self._cache[cache_key]
+            if not self._is_expired(entry):
+                self._stats["hits"] += 1
+                return entry['value']
+            else:
+                # Clean up expired entry
+                del self._cache[cache_key]
+        
+        self._stats["misses"] += 1
+        return default
+    
+    def set(self, key: str, value: Any, ttl: Optional[int] = None) -> bool:
+        """Set value in in-memory cache"""
+        try:
+            cache_key = self._make_key(key)
+            
+            entry = {'value': value}
+            if ttl is not None:
+                entry['expires_at'] = dt.datetime.now().timestamp() + ttl
+            
+            self._cache[cache_key] = entry
+            return True
+        except Exception as e:
+            self._stats["errors"] += 1
+            self._stats["last_error"] = str(e)
+            return False
+    
+    def delete(self, key: str) -> bool:
+        """Delete value from in-memory cache"""
+        cache_key = self._make_key(key)
+        if cache_key in self._cache:
+            del self._cache[cache_key]
+            return True
+        return False
+    
+    def delete_pattern(self, pattern: str) -> int:
+        """Delete keys matching pattern"""
+        cache_pattern = self._make_key(pattern)
+        # Simple pattern matching with * wildcards
+        import fnmatch
+        keys_to_delete = [k for k in self._cache.keys() if fnmatch.fnmatch(k, cache_pattern)]
+        for key in keys_to_delete:
+            del self._cache[key]
+        return len(keys_to_delete)
+    
+    # Async methods (same as sync for in-memory)
+    async def aget(self, key: str, default: Any = None) -> Any:
+        return self.get(key, default)
+    
+    async def aset(self, key: str, value: Any, ttl: Optional[int] = None) -> bool:
+        return self.set(key, value, ttl)
+    
+    async def adelete(self, key: str) -> bool:
+        return self.delete(key)
+    
+    async def adelete_pattern(self, pattern: str) -> int:
+        return self.delete_pattern(pattern)
+    
+    def health_check(self) -> Dict[str, Any]:
+        """Health check for in-memory cache"""
+        return {
+            "status": "healthy",
+            "cache_type": "in_memory_fallback",
+            "response_time_ms": 0.1,  # Very fast for in-memory
+            "is_connected": True,
+            "last_check": dt.datetime.now().isoformat(),
+            "stats": self.get_stats(),
+            "cache_size": len(self._cache)
+        }
+    
+    async def ahealth_check(self) -> Dict[str, Any]:
+        """Async health check"""
+        return self.health_check()
+    
+    def get_stats(self) -> Dict[str, Any]:
+        """Get cache statistics"""
+        total = self._stats["hits"] + self._stats["misses"]
+        hit_rate = (self._stats["hits"] / total * 100) if total > 0 else 0
+        
+        return {
+            "hits": self._stats["hits"],
+            "misses": self._stats["misses"],
+            "errors": self._stats["errors"],
+            "total_requests": self._stats["total_requests"],
+            "hit_rate_percent": round(hit_rate, 2),
+            "last_error": self._stats["last_error"],
+            "is_connected": True,
+            "cache_type": "in_memory_fallback"
+        }
+
+
 # Global cache instance
-_redis_cache_instance: Optional[RedisCacheService] = None
+_redis_cache_instance: Optional[Union[RedisCacheService, InMemoryCacheService]] = None
 
 
-def get_redis_cache() -> RedisCacheService:
-    """Get global Redis cache instance (singleton pattern)"""
+def get_redis_cache() -> Union[RedisCacheService, InMemoryCacheService]:
+    """Get cache instance (Redis if available, in-memory fallback otherwise)"""
     global _redis_cache_instance
     
     if _redis_cache_instance is None:
-        _redis_cache_instance = RedisCacheService()
-        logger.info("Redis cache service initialized")
+        try:
+            # Try to initialize Redis cache first
+            _redis_cache_instance = RedisCacheService()
+            # Test Redis connection
+            _redis_cache_instance.health_check()
+            logger.info("✅ Redis cache service initialized")
+        except Exception as e:
+            # Fall back to in-memory cache
+            logger.warning(f"⚠️  Redis unavailable ({e}), using in-memory cache fallback")
+            _redis_cache_instance = InMemoryCacheService()
     
     return _redis_cache_instance
 

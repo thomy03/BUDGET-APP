@@ -28,6 +28,7 @@ interface TransactionDetailModalProps {
   categoryName?: string;
   month: string;
   tagFilter?: string;
+  onOpenHierarchicalNavigation?: (title: string, initialCategory?: string, initialFilters?: any) => void;
 }
 
 export function TransactionDetailModal({ 
@@ -37,7 +38,8 @@ export function TransactionDetailModal({
   category, 
   categoryName,
   month,
-  tagFilter
+  tagFilter,
+  onOpenHierarchicalNavigation
 }: TransactionDetailModalProps) {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(false);
@@ -386,6 +388,26 @@ export function TransactionDetailModal({
           {/* Modern Action Buttons */}
           <div className="flex flex-col sm:flex-row justify-between items-center pt-8 border-t-2 border-gradient-to-r from-gray-200 via-gray-100 to-gray-200 space-y-4 sm:space-y-0">
             <div className="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-4">
+              {/* Hierarchical Navigation Button */}
+              {onOpenHierarchicalNavigation && (
+                <button
+                  onClick={() => {
+                    onClose();
+                    onOpenHierarchicalNavigation(
+                      `Navigation Hiérarchique - ${title}`,
+                      categoryName,
+                      {
+                        expense_type: category.toUpperCase(),
+                        ...(tagFilter && { tag: tagFilter })
+                      }
+                    );
+                  }}
+                  className="group inline-flex items-center px-5 py-3 bg-gradient-to-r from-purple-500 to-purple-600 text-white rounded-xl hover:from-purple-600 hover:to-purple-700 transition-all duration-300 text-sm font-semibold shadow-lg hover:shadow-xl transform hover:scale-105"
+                >
+                  <span className="mr-2 text-lg group-hover:scale-110 transition-transform duration-300">🗂️</span>
+                  Navigation Hiérarchique
+                </button>
+              )}
               <button
                 onClick={() => {
                   onClose();

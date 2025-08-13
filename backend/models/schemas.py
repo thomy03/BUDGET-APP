@@ -618,6 +618,27 @@ class TagsListResponse(BaseModel):
             }
         }
 
+class TagsSummaryResponse(BaseModel):
+    """Schema for tags summary response"""
+    month: str = Field(description="Mois au format YYYY-MM")
+    tags: Dict[str, Dict[str, Union[int, float]]] = Field(
+        description="Statistiques par tag avec count et total_amount"
+    )
+    total_tagged_transactions: int = Field(description="Nombre total de transactions taggées")
+    
+    class Config:
+        schema_extra = {
+            "example": {
+                "month": "2025-08",
+                "tags": {
+                    "restaurant": {"count": 15, "total_amount": 450.50},
+                    "essence": {"count": 8, "total_amount": 320.75},
+                    "courses": {"count": 12, "total_amount": 680.30}
+                },
+                "total_tagged_transactions": 35
+            }
+        }
+
 # Summary Schema - Compatible with frontend Dashboard
 class SummaryOut(BaseModel):
     month: str

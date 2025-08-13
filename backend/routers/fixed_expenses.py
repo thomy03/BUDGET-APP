@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func
 
 from auth import get_current_user
-from dependencies.database import get_db
+from models.database import get_db
 
 logger = logging.getLogger(__name__)
 
@@ -18,6 +18,17 @@ router = APIRouter(
     tags=["fixed-expenses"],
     responses={404: {"description": "Not found"}}
 )
+
+# Explicit OPTIONS handler for CORS preflight
+@router.options("")
+async def fixed_lines_options():
+    """Handle CORS preflight requests for fixed-lines endpoint"""
+    return {"message": "OK"}
+
+@router.options("/{path:path}")
+async def fixed_lines_options_with_path(path: str):
+    """Handle CORS preflight requests for all fixed-lines sub-endpoints"""
+    return {"message": "OK"}
 
 # Import models and schemas
 from models.database import FixedLine

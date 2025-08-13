@@ -49,6 +49,164 @@ def tx_to_response(tx: Transaction) -> TxOut:
         tags=parse_tags_to_array(tx.tags or "")
     )
 
+# Hierarchical navigation endpoints
+@router.get("/categories")
+def get_categories(
+    month: str,
+    expense_type: Optional[str] = Query(None, description="Filter by expense type: FIXED, VARIABLE, or PROVISION"),
+    db: Session = Depends(get_db)
+):
+    """
+    Get hierarchical category structure for navigation
+    """
+    from sqlalchemy import distinct, func
+    
+    query = db.query(
+        Transaction.category,
+        func.count(Transaction.id).label('count'),
+        func.sum(func.abs(Transaction.amount)).label('amount')
+    ).filter(
+        Transaction.month == month,
+        Transaction.exclude == False,
+        Transaction.is_expense == True
+    )
+    
+    # Filter by expense type if provided
+    if expense_type and expense_type.strip():
+        normalized_type = expense_type.strip().upper()
+        if normalized_type in ['FIXED', 'VARIABLE', 'PROVISION']:
+            query = query.filter(Transaction.expense_type == normalized_type)
+    
+    results = query.group_by(Transaction.category).all()
+    
+    return [
+        {
+            "name": result.category or "Non catégorisé",
+            "level": "category",
+            "value": result.category or "",
+            "count": result.count,
+            "amount": result.amount
+        }
+        for result in results
+    ]
+
+@router.get("/subcategories") 
+def get_subcategories(
+    month: str,
+    category: str,
+    expense_type: Optional[str] = Query(None, description="Filter by expense type: FIXED, VARIABLE, or PROVISION"),
+    db: Session = Depends(get_db)
+):
+    """
+    Get subcategories for a specific category
+    """
+    from sqlalchemy import func
+    
+    query = db.query(
+        Transaction.subcategory,
+        func.count(Transaction.id).label('count'),
+        func.sum(func.abs(Transaction.amount)).label('amount')
+    ).filter(
+        Transaction.month == month,
+        Transaction.category == category,
+        Transaction.exclude == False,
+        Transaction.is_expense == True
+    )
+    
+    # Filter by expense type if provided  
+    if expense_type and expense_type.strip():
+        normalized_type = expense_type.strip().upper()
+        if normalized_type in ['FIXED', 'VARIABLE', 'PROVISION']:
+            query = query.filter(Transaction.expense_type == normalized_type)
+    
+    results = query.group_by(Transaction.subcategory).all()
+    
+    return [
+        {
+            "name": result.subcategory or "Non spécifié",
+            "level": "subcategory", 
+            "value": result.subcategory or "",
+            "count": result.count,
+            "amount": result.amount,
+            "parent": category
+        }
+        for result in results
+    ]
+
+@router.get("/tags")
+def get_transaction_tags(
+    month: str,
+    category: Optional[str] = Query(None),
+    subcategory: Optional[str] = Query(None),
+    expense_type: Optional[str] = Query(None, description="Filter by expense type: FIXED, VARIABLE, or PROVISION"),
+    db: Session = Depends(get_db)
+):
+    """
+    Get unique tags for transactions with optional category/subcategory filtering
+    """
+    query = db.query(Transaction).filter(
+        Transaction.month == month,
+        Transaction.exclude == False,
+        Transaction.is_expense == True
+    )
+    
+    # Apply filters
+    if category:
+        query = query.filter(Transaction.category == category)
+    if subcategory:
+        query = query.filter(Transaction.subcategory == subcategory)
+    if expense_type and expense_type.strip():
+        normalized_type = expense_type.strip().upper()
+        if normalized_type in ['FIXED', 'VARIABLE', 'PROVISION']:
+            query = query.filter(Transaction.expense_type == normalized_type)
+    
+    transactions = query.all()
+    
+    # Collect and count tags
+    tag_counts = {}
+    tag_amounts = {}
+    
+    for tx in transactions:
+        if tx.tags:
+            tx_tags = [tag.strip() for tag in tx.tags.split(',') if tag.strip()]
+            for tag in tx_tags:
+                tag_counts[tag] = tag_counts.get(tag, 0) + 1
+                tag_amounts[tag] = tag_amounts.get(tag, 0) + abs(tx.amount)
+    
+    return [
+        {
+            "name": tag,
+            "level": "tag",
+            "value": tag,
+            "count": count,
+            "amount": tag_amounts[tag],
+            "parent": f"{category or ''}/{subcategory or ''}".strip('/')
+        }
+        for tag, count in tag_counts.items()
+    ]
+
+@router.get("/hierarchy")
+def get_hierarchy_data(
+    month: str,
+    expense_type: Optional[str] = Query(None, description="Filter by expense type: FIXED, VARIABLE, or PROVISION"),
+    category: Optional[str] = Query(None),
+    subcategory: Optional[str] = Query(None),
+    tag: Optional[str] = Query(None),
+    level: Optional[str] = Query("category", description="Level to return: category, subcategory, tag"),
+    db: Session = Depends(get_db)
+):
+    """
+    Generic hierarchical data endpoint for navigation modal
+    """
+    if level == "category":
+        return get_categories(month, expense_type, db)
+    elif level == "subcategory" and category:
+        return get_subcategories(month, category, expense_type, db)
+    elif level == "tag":
+        return get_transaction_tags(month, category, subcategory, expense_type, db)
+    else:
+        return []
+
 @router.get("", response_model=List[TxOut])
 def list_transactions(
     month: str, 
@@ -356,26 +514,52 @@ def tags_summary(month: str, db: Session = Depends(get_db)):
     """
     from collections import defaultdict
     
-    txs = db.query(Transaction).filter(
-        Transaction.month == month,
-        Transaction.tags.isnot(None),
-        Transaction.tags != ""
-    ).all()
-    
-    tag_stats = defaultdict(lambda: {"count": 0, "total_amount": 0})
-    
-    for tx in txs:
-        if tx.tags:
-            tags = [t.strip() for t in tx.tags.split(',') if t.strip()]
-            for tag in tags:
-                tag_stats[tag]["count"] += 1
-                tag_stats[tag]["total_amount"] += abs(tx.amount or 0)
-    
-    return {
-        "month": month,
-        "tags": dict(tag_stats),
-        "total_tagged_transactions": len(txs)
-    }
+    try:
+        # Validate month format
+        if not month or len(month) != 7 or month[4] != '-':
+            raise HTTPException(
+                status_code=422, 
+                detail="Month must be in YYYY-MM format"
+            )
+        
+        txs = db.query(Transaction).filter(
+            Transaction.month == month,
+            Transaction.tags.isnot(None),
+            Transaction.tags != ""
+        ).all()
+        
+        tag_stats = defaultdict(lambda: {"count": 0, "total_amount": 0.0})
+        
+        for tx in txs:
+            if tx.tags and tx.tags.strip():
+                tags = [t.strip() for t in tx.tags.split(',') if t.strip()]
+                for tag in tags:
+                    tag_stats[tag]["count"] += 1
+                    tag_stats[tag]["total_amount"] += abs(tx.amount or 0.0)
+        
+        # Convert to regular dict to avoid serialization issues
+        clean_tag_stats = {}
+        for tag_name, stats in tag_stats.items():
+            clean_tag_stats[tag_name] = {
+                "count": int(stats["count"]),
+                "total_amount": round(float(stats["total_amount"]), 2)
+            }
+        
+        # Return a simple dict instead of Pydantic model to avoid validation issues
+        return {
+            "month": month,
+            "tags": clean_tag_stats,
+            "total_tagged_transactions": len(txs)
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error in tags_summary for month {month}: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to generate tags summary: {str(e)}"
+        )
 
 @router.get("/tag-suggestions")
 def get_tag_suggestions(label: str, current_user = Depends(get_current_user), db: Session = Depends(get_db)):
@@ -576,3 +760,60 @@ def delete_learned_association(
     db.commit()
     
     return {"message": "Association deleted successfully"}
+
+# New endpoints for hierarchical navigation and transaction reassignment
+@router.put("/{tx_id}/reassign")
+def reassign_transaction(
+    tx_id: int,
+    category: str,
+    subcategory: Optional[str] = None,
+    tags: Optional[List[str]] = None,
+    current_user = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Reassign transaction to new category, subcategory and tags
+    """
+    tx = db.query(Transaction).filter(Transaction.id == tx_id).first()
+    if not tx:
+        raise HTTPException(status_code=404, detail="Transaction introuvable")
+    
+    # Update transaction properties
+    tx.category = category
+    tx.subcategory = subcategory or ""
+    
+    if tags:
+        tx.tags = ','.join(tags)
+    else:
+        tx.tags = ""
+    
+    db.add(tx)
+    db.commit()
+    db.refresh(tx)
+    
+    logger.info(f"✅ Transaction {tx_id} reassigned: category={category}, subcategory={subcategory}, tags={tags}")
+    
+    return tx_to_response(tx)
+
+# New endpoints for creating categories and tags
+@router.post("/categories")
+def create_category(
+    name: str,
+    current_user = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Create a new category (for now, just return success since categories are implicit)
+    """
+    return {"message": f"Category '{name}' noted for future use", "name": name}
+
+@router.post("/tags")  
+def create_tag(
+    name: str,
+    current_user = Depends(get_current_user),
+    db: Session = Depends(get_db)  
+):
+    """
+    Create a new tag (for now, just return success since tags are implicit)
+    """
+    return {"message": f"Tag '{name}' noted for future use", "name": name}
