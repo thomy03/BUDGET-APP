@@ -149,7 +149,7 @@ const EnhancedDashboard = React.memo<EnhancedDashboardProps>(({ month, isAuthent
 
   return (
     <ErrorBoundary>
-    <div className="max-w-full mx-auto space-y-8">
+    <div className="w-full px-4 space-y-8">
       {/* Revenue Details Section */}
       <RevenueSection data={data} />
       
@@ -191,19 +191,19 @@ const EnhancedDashboard = React.memo<EnhancedDashboardProps>(({ month, isAuthent
       </div>
       
       {/* Main Content - Equal Height 3-Column Layout */}
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-10 min-h-[600px] max-w-none">
+      <div className="flex flex-col 2xl:flex-row gap-6 min-h-[600px]">
         {/* LEFT: REVENUS (INCOME) */}
-        <div className="flex flex-col h-full">
+        <div className="flex flex-col h-full flex-1 min-w-[400px]">
           <RevenueTransactionsSection data={data} month={month} />
         </div>
         
         {/* CENTER: ÉPARGNE (PROVISIONS) */}
-        <div className="flex flex-col h-full">
+        <div className="flex flex-col h-full flex-1 min-w-[400px]">
           <SavingsSection data={data} onCategoryClick={openModal} />
         </div>
         
         {/* RIGHT: DÉPENSES (FIXED + VARIABLES) */}
-        <div className="flex flex-col h-full">
+        <div className="flex flex-col h-full flex-1 min-w-[400px]">
           <ExpensesSection 
             data={data} 
             convertingIds={convertingIds}
@@ -264,25 +264,25 @@ const RevenueSection = React.memo<{ data: EnhancedSummaryData }>(({ data }) => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6">
-        <div className="bg-white rounded-lg p-5 border border-emerald-100">
-          <div className="text-sm font-medium text-emerald-700 mb-2 whitespace-nowrap overflow-hidden text-ellipsis" title={safeData.member1 ?? 'Membre 1'}>{safeData.member1 ?? 'Membre 1'}</div>
-          <div className={`text-xl font-bold ${getAmountColorClass('revenue')}`}>{formatAmount(revenues?.member1_revenue || 0, 'revenue')}</div>
+      <div className="flex flex-col sm:grid sm:grid-cols-2 2xl:flex 2xl:flex-row gap-6">
+        <div className="bg-white rounded-lg p-5 border border-emerald-100 flex-1">
+          <div className="text-sm font-medium text-emerald-700 mb-2 whitespace-nowrap" title={safeData.member1 ?? 'Membre 1'}>{safeData.member1 ?? 'Membre 1'}</div>
+          <div className={`text-lg font-bold ${getAmountColorClass('revenue')}`}>{formatAmount(revenues?.member1_revenue || 0, 'revenue')}</div>
           <div className="text-xs text-emerald-600 mt-2 leading-relaxed">Revenus individuels</div>
         </div>
-        <div className="bg-white rounded-lg p-5 border border-emerald-100">
-          <div className="text-sm font-medium text-emerald-700 mb-2 whitespace-nowrap overflow-hidden text-ellipsis" title={safeData.member2 ?? 'Membre 2'}>{safeData.member2 ?? 'Membre 2'}</div>
-          <div className={`text-xl font-bold ${getAmountColorClass('revenue')}`}>{formatAmount(revenues?.member2_revenue || 0, 'revenue')}</div>
+        <div className="bg-white rounded-lg p-5 border border-emerald-100 flex-1">
+          <div className="text-sm font-medium text-emerald-700 mb-2 whitespace-nowrap" title={safeData.member2 ?? 'Membre 2'}>{safeData.member2 ?? 'Membre 2'}</div>
+          <div className={`text-lg font-bold ${getAmountColorClass('revenue')}`}>{formatAmount(revenues?.member2_revenue || 0, 'revenue')}</div>
           <div className="text-xs text-emerald-600 mt-2 leading-relaxed">Revenus individuels</div>
         </div>
-        <div className="bg-white rounded-lg p-5 border border-emerald-100 ring-2 ring-emerald-200">
+        <div className="bg-white rounded-lg p-5 border border-emerald-100 ring-2 ring-emerald-200 flex-1">
           <div className="text-sm font-medium text-emerald-700 mb-2 whitespace-nowrap">Total Revenus</div>
-          <div className={`text-xl font-bold ${getAmountColorClass('revenue')}`}>{formatAmount(revenues?.total_revenue || 0, 'revenue')}</div>
+          <div className={`text-lg font-bold ${getAmountColorClass('revenue')}`}>{formatAmount(revenues?.total_revenue || 0, 'revenue')}</div>
           <div className="text-xs text-emerald-600 mt-2 leading-relaxed">Revenus combinés</div>
         </div>
-        <div className="bg-gradient-to-r from-yellow-50 to-orange-50 rounded-lg p-5 border border-orange-200">
-          <div className="text-sm font-medium text-orange-700 mb-2 whitespace-normal leading-relaxed">Montant à Provisionner</div>
-          <div className={`text-xl font-bold ${getAmountColorClass('expense')}`}>{formatAmount(recommendedProvision || 0, 'expense')}</div>
+        <div className="bg-gradient-to-r from-yellow-50 to-orange-50 rounded-lg p-5 border border-orange-200 flex-1">
+          <div className="text-sm font-medium text-orange-700 mb-2 whitespace-nowrap">Montant à Provisionner</div>
+          <div className={`text-lg font-bold ${getAmountColorClass('expense')}`}>{formatAmount(recommendedProvision || 0, 'expense')}</div>
           <div className="text-xs text-orange-600 mt-2 leading-relaxed">Charges fixes + Épargne</div>
         </div>
       </div>
@@ -343,18 +343,18 @@ const MetricsOverview = React.memo<{
           </h3>
           
           {/* Main total */}
-          <div className={`text-4xl font-bold mb-4 ${getAmountColorClass('expense')}`}>{formatAmount(data?.totals?.total_expenses || 0, 'expense')}</div>
+          <div className={`text-xl font-bold mb-4 ${getAmountColorClass('expense')}`}>{formatAmount(data?.totals?.total_expenses || 0, 'expense')}</div>
           
           {/* Breakdown with visual separation */}
           <div className="grid grid-cols-2 gap-4 max-w-md mx-auto">
             <div className="bg-white rounded-lg p-4 border-l-4 border-l-orange-400">
               <div className="text-sm font-medium text-orange-700 mb-1">Variables</div>
-              <div className={`text-xl font-bold ${getAmountColorClass('expense')}`}>{formatAmount(data?.variables?.total || 0, 'expense')}</div>
+              <div className={`text-lg font-bold ${getAmountColorClass('expense')}`}>{formatAmount(data?.variables?.total || 0, 'expense')}</div>
               <div className="text-xs text-orange-600 mt-1">{data?.variables?.total_transactions || 0} transactions</div>
             </div>
             <div className="bg-white rounded-lg p-4 border-l-4 border-l-blue-400">
               <div className="text-sm font-medium text-blue-700 mb-1">Fixes</div>
-              <div className={`text-xl font-bold ${getAmountColorClass('expense')}`}>{formatAmount(data?.fixed_expenses?.total || 0, 'expense')}</div>
+              <div className={`text-lg font-bold ${getAmountColorClass('expense')}`}>{formatAmount(data?.fixed_expenses?.total || 0, 'expense')}</div>
               <div className="text-xs text-blue-600 mt-1">{data?.fixed_expenses?.count || 0} charges</div>
             </div>
           </div>
@@ -367,7 +367,7 @@ const MetricsOverview = React.memo<{
       </Card>
       
       {/* Métriques détaillées */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6">
+      <div className="flex flex-col sm:grid sm:grid-cols-2 2xl:flex 2xl:flex-row gap-6">
         <MetricCard 
           title="Épargne" 
           value={data?.savings?.total || 0} 
@@ -537,7 +537,7 @@ const ExpensesSection = React.memo<{
           
           {data.variables.detail.length > 0 ? (
             <>
-              <div className="flex-1 overflow-y-auto space-y-2 mb-4 pr-2 -mr-2">
+              <div className="max-h-[240px] overflow-y-auto space-y-2 mb-4 pr-2 scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-gray-100">
                 {data.variables.detail.map((variable, index) => (
                   <VariableRow 
                     key={index} 
@@ -592,7 +592,7 @@ const SavingRow = React.memo<{
       <div className="flex items-center space-x-2">
         <span className="text-lg">{saving.icon}</span>
         <div className="min-w-0 flex-1">
-          <span className="font-medium text-purple-900 truncate">{saving.name}</span>
+          <span className="font-medium text-purple-900 whitespace-nowrap" title={saving.name}>{saving.name}</span>
           <div className="w-2 h-2 rounded-full mt-1" style={{ backgroundColor: saving.color }}></div>
         </div>
       </div>
@@ -629,7 +629,7 @@ const FixedExpenseRow = React.memo<{
       <div className="flex items-start space-x-3 min-w-0 flex-1">
         <span className="text-lg flex-shrink-0 mt-0.5">{expense.icon}</span>
         <div className="min-w-0 flex-1 space-y-1">
-          <div className="text-sm font-medium text-blue-900 whitespace-normal leading-relaxed" title={expense.name} style={{ wordWrap: 'break-word', overflowWrap: 'break-word' }}>
+          <div className="text-sm font-medium text-blue-900 whitespace-nowrap" title={expense.name}>
             {expense.name}
           </div>
           <div className="flex flex-wrap items-center gap-1.5">
@@ -642,8 +642,8 @@ const FixedExpenseRow = React.memo<{
               </span>
             )}
             {expense.tag && (
-              <span className="text-xs bg-blue-200 text-blue-800 px-2 py-0.5 rounded-full flex-shrink-0" title={expense.tag}>
-                {expense.tag.length > 25 ? expense.tag.substring(0, 25) + '...' : expense.tag}
+              <span className="text-xs bg-blue-200 text-blue-800 px-2 py-0.5 rounded-full flex-shrink-0 whitespace-nowrap" title={expense.tag}>
+                {expense.tag}
               </span>
             )}
           </div>
@@ -679,15 +679,15 @@ const VariableRow = React.memo<{
     >
       <div className="flex items-center min-w-0 flex-1">
         <div className="flex items-center space-x-2 min-w-0 flex-1 mr-2">
-          <span className={`text-sm font-medium whitespace-normal leading-relaxed ${isUntagged ? 'text-gray-700' : 'text-orange-900'}`} style={{ wordWrap: 'break-word', overflowWrap: 'break-word' }}>
+          <span className={`text-sm font-medium whitespace-nowrap ${isUntagged ? 'text-gray-700' : 'text-orange-900'}`} title={variable.name}>
             {variable.name}
           </span>
           {!isUntagged && variable.tag && (
             <span 
-              className="text-xs bg-orange-200 text-orange-800 px-2 py-0.5 rounded-full flex-shrink-0" 
+              className="text-xs bg-orange-200 text-orange-800 px-2 py-0.5 rounded-full flex-shrink-0 whitespace-nowrap" 
               title={variable.tag}
             >
-              {variable.tag.length > 25 ? variable.tag.substring(0, 25) + '...' : variable.tag}
+              {variable.tag}
             </span>
           )}
         </div>
@@ -727,17 +727,17 @@ const TotalsSummary = React.memo<{ data: EnhancedSummaryData }>(({ data }) => {
         <div className="grid grid-cols-3 gap-6 max-w-2xl mx-auto">
           <div className="text-center">
             <p className="text-sm font-medium text-purple-700 mb-1">{data.member1}</p>
-            <p className={`text-2xl font-bold ${getAmountColorClass('expense')}`}>{formatAmount(data?.totals?.member1_total || 0, 'expense')}</p>
+            <p className={`text-lg font-bold ${getAmountColorClass('expense')}`}>{formatAmount(data?.totals?.member1_total || 0, 'expense')}</p>
           </div>
           
           <div className="text-center">
             <p className="text-sm font-medium text-purple-700 mb-1">TOTAL</p>
-            <p className={`text-3xl font-bold ${getAmountColorClass('expense')}`}>{formatAmount(data?.totals?.grand_total || 0, 'expense')}</p>
+            <p className={`text-xl font-bold ${getAmountColorClass('expense')}`}>{formatAmount(data?.totals?.grand_total || 0, 'expense')}</p>
           </div>
           
           <div className="text-center">
             <p className="text-sm font-medium text-purple-700 mb-1">{data.member2}</p>
-            <p className={`text-2xl font-bold ${getAmountColorClass('expense')}`}>{formatAmount(data?.totals?.member2_total || 0, 'expense')}</p>
+            <p className={`text-lg font-bold ${getAmountColorClass('expense')}`}>{formatAmount(data?.totals?.member2_total || 0, 'expense')}</p>
           </div>
         </div>
         
@@ -804,7 +804,7 @@ const MetricCard = React.memo<MetricCardProps>(({ title, value, color, icon, sub
         </div>
       </div>
       <div className="text-sm font-medium mb-1">{title}</div>
-      <div className={`text-xl font-bold ${isTotal ? 'text-2xl' : ''} ${
+      <div className={`text-lg font-bold ${isTotal ? 'text-xl' : ''} ${
         color === 'green' ? getAmountColorClass('saving') : 
         (color === 'blue' || color === 'orange') ? getAmountColorClass('expense') : 
         color === 'purple' ? getAmountColorClass('expense') : 
@@ -985,7 +985,7 @@ const RevenueTransactionsSection = React.memo<{
                         </div>
                       </div>
                       <div className="text-right">
-                        <div className={`text-2xl font-bold font-mono tabular-nums ${getAmountColorClass('revenue')}`}>
+                        <div className={`text-lg font-bold font-mono tabular-nums ${getAmountColorClass('revenue')}`}>
                           {formatAmount(totalVirements, 'revenue')}
                         </div>
                         <div className="text-xs text-green-600 mt-1 flex items-center justify-end space-x-1">
@@ -1016,7 +1016,7 @@ const RevenueTransactionsSection = React.memo<{
                         </div>
                       </div>
                       <div className="text-right">
-                        <div className={`text-2xl font-bold font-mono tabular-nums ${getAmountColorClass('revenue')}`}>
+                        <div className={`text-lg font-bold font-mono tabular-nums ${getAmountColorClass('revenue')}`}>
                           {formatAmount(totalAvoirs, 'revenue')}
                         </div>
                         <div className="text-xs text-emerald-600 mt-1 flex items-center justify-end space-x-1">
@@ -1129,12 +1129,8 @@ const RevenueDetailModal = React.memo<{
                 >
                   <div className="flex-1 min-w-0">
                     <div 
-                      className="text-sm font-medium text-emerald-900 whitespace-normal leading-relaxed mb-1" 
+                      className="text-sm font-medium text-emerald-900 whitespace-nowrap mb-1" 
                       title={transaction.label || 'Revenu'}
-                      style={{
-                        wordWrap: 'break-word',
-                        overflowWrap: 'break-word'
-                      }}
                     >
                       {transaction.label || 'Revenu'}
                     </div>
@@ -1170,7 +1166,7 @@ const RevenueDetailModal = React.memo<{
             <span className="text-lg font-semibold text-emerald-900">
               Total ({transactions.length} transaction{transactions.length !== 1 ? 's' : ''})
             </span>
-            <span className={`text-2xl font-bold font-mono tabular-nums ${getAmountColorClass('revenue')}`}>
+            <span className={`text-lg font-bold font-mono tabular-nums ${getAmountColorClass('revenue')}`}>
               {formatAmount(transactions.reduce((sum, tx) => sum + (tx.amount || 0), 0), 'revenue')}
             </span>
           </div>
