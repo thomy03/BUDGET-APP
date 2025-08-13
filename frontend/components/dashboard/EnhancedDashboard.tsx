@@ -313,8 +313,8 @@ const EnhancedDashboard = React.memo<EnhancedDashboardProps>(({ month, isAuthent
       </div>
       
       {/* Main Content - Equal Height 3-Column Layout avec centrage amélioré */}
-      <div className="flex justify-start pl-8">
-        <div className="flex flex-col 2xl:flex-row gap-6 min-h-[600px] w-full max-w-[1400px]">
+      <div className="flex justify-center">
+        <div className="flex flex-col 2xl:flex-row gap-6 min-h-[600px] w-full max-w-[1200px]">
         {/* LEFT: REVENUS (INCOME) */}
         <div className="flex flex-col h-full flex-1 min-w-0 2xl:min-w-[400px] 2xl:max-w-[500px]">
           <RevenueTransactionsSection data={data} month={month} />
