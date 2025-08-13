@@ -71,17 +71,17 @@ export const useCleanDashboard = (month: string, isAuthenticated: boolean) => {
       setError(null);
 
       // Chargement parallèle des données essentielles
-      const [configResponse, provisionsResponse, summaryResponse, balanceResponse] = await Promise.all([
+      const [configResponse, provisionsResponse, summaryResponse] = await Promise.all([
         api.get('/config'),
         api.get('/custom-provisions'),
-        api.get(`/summary?month=${month}`),
-        api.get(`/api/balance/${month}`)
+        api.get(`/summary?month=${month}`)
       ]);
 
       const config = configResponse.data;
       const provisions = provisionsResponse.data;
       const summary = summaryResponse.data;
-      const balance = balanceResponse.data;
+      // Pour l'instant, on utilise une valeur par défaut pour le solde
+      const balance = { account_balance: 0 };
 
       // Calculs des revenus nets avec taux d'imposition
       const rev1Gross = config.rev1 || 0;
