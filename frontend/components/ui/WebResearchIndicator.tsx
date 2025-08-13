@@ -51,7 +51,7 @@ export function WebResearchIndicator({
   }
 
   return (
-    <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-blue-200 rounded-lg shadow-lg z-10 p-3">
+    <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-blue-200 rounded-lg shadow-lg z-50 p-3">
       {isSearching ? (
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">

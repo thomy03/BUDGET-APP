@@ -63,6 +63,7 @@ const Select = forwardRef<HTMLSelectElement, SelectProps>(
         value={value}
         onChange={handleChange}
         disabled={disabled}
+        style={{ pointerEvents: disabled ? 'none' : 'auto' }}
         className={selectClasses}
         {...props}
       >

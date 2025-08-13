@@ -311,13 +311,13 @@ export function TransactionRow({ row, importId, onToggle, onSaveTags, onExpenseT
               onFocus={handleTagsFocus}
               onBlur={(value) => handleTagsSave(row.id, value)}
               placeholder={isExpense ? "Cliquer pour analyser avec l'IA..." : "courses, resto, santé…"}
-              disabled={isClassifying}
+              disabled={false}
               isClassifying={isClassifying}
             />
             
             {/* Indicateur de classification en cours - protection hydratation */}
             {isMounted && isClassifying && (
-              <div className="absolute right-2 top-1/2 transform -translate-y-1/2 animate-fade-in z-10">
+              <div className="absolute right-2 top-1/2 transform -translate-y-1/2 animate-fade-in z-20 pointer-events-none">
                 <div className="w-4 h-4 animate-spin rounded-full border-2 border-blue-600 border-t-transparent shadow-sm"></div>
               </div>
             )}
@@ -351,7 +351,7 @@ export function TransactionRow({ row, importId, onToggle, onSaveTags, onExpenseT
                 onChange={(value) => handleExpenseTypeToggle(value as 'fixed' | 'variable')}
                 variant="compact"
                 size="sm"
-                disabled={isUpdatingExpenseType}
+                disabled={false}
                 className="min-w-[90px] text-xs font-medium"
               />
               {isUpdatingExpenseType && (
@@ -396,7 +396,7 @@ export function TransactionRow({ row, importId, onToggle, onSaveTags, onExpenseT
                     onChange={(value) => handleExpenseTypeToggle(value as 'fixed' | 'variable')}
                     variant="compact"
                     size="sm"
-                    disabled={isUpdatingExpenseType}
+                    disabled={false}
                     className="min-w-[90px] text-xs font-medium"
                     placeholder="Choisir..."
                   />

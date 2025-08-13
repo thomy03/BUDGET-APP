@@ -87,7 +87,7 @@ export function TagsInput({
         setSearchTerm("");
         onBlur?.(e.target.value);
       }
-    }, 200);
+    }, 150); // Reduced delay to improve responsiveness
   };
 
   const handleTagSelect = (tagName: string) => {
@@ -142,7 +142,8 @@ export function TagsInput({
         onBlur={handleInputBlur}
         onKeyDown={handleKeyDown}
         placeholder={placeholder}
-        disabled={disabled || isClassifying}
+        disabled={disabled}
+        style={{ pointerEvents: disabled ? 'none' : 'auto' }}
       />
       
       {/* Dropdown */}
@@ -156,8 +157,15 @@ export function TagsInput({
               key={tag.name}
               type="button"
               className="w-full px-3 py-2 text-left text-sm hover:bg-zinc-50 focus:bg-zinc-50 focus:outline-none flex items-center justify-between"
-              onMouseDown={(e) => e.preventDefault()} // Prevent input blur
-              onClick={() => handleTagSelect(tag.name)}
+              onMouseDown={(e) => {
+                e.preventDefault(); // Prevent input blur
+                e.stopPropagation(); // Prevent event bubbling
+              }}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                handleTagSelect(tag.name);
+              }}
             >
               <span>{tag.name}</span>
               <span className={`text-xs px-2 py-1 rounded-full ${
@@ -177,8 +185,15 @@ export function TagsInput({
             <button
               type="button"
               className="w-full px-3 py-2 text-left text-sm text-blue-600 hover:bg-blue-50 focus:bg-blue-50 focus:outline-none border-t border-zinc-100"
-              onMouseDown={(e) => e.preventDefault()}
-              onClick={() => handleTagSelect(searchTerm)}
+              onMouseDown={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+              }}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                handleTagSelect(searchTerm);
+              }}
             >
               <span className="font-medium">Créer "{searchTerm}"</span>
             </button>
