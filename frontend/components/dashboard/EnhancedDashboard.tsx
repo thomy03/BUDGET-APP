@@ -38,6 +38,33 @@ const EnhancedDashboard = React.memo<EnhancedDashboardProps>(({ month, isAuthent
     categoryName?: string;
     tagFilter?: string;
   }>({ isOpen: false, title: '', category: 'variable' });
+  
+  // State for savings detail modal
+  const [savingsModalState, setSavingsModalState] = useState<{
+    isOpen: boolean;
+    category: string;
+    categoryName: string;
+    items: SavingsDetail[];
+  }>({
+    isOpen: false,
+    category: '',
+    categoryName: '',
+    items: []
+  });
+
+  // State for expense detail modal
+  const [expenseModalState, setExpenseModalState] = useState<{
+    isOpen: boolean;
+    category: string;
+    categoryName: string;
+    items: (FixedExpenseDetail | VariableDetail & { type: string })[];
+  }>({
+    isOpen: false,
+    category: '',
+    categoryName: '',
+    items: []
+  });
+  
   const router = useRouter();
 
   const handleConvertExpenseType = async (transactionId: number, newType: 'FIXED' | 'VARIABLE' | 'PROVISION') => {
@@ -147,9 +174,64 @@ const EnhancedDashboard = React.memo<EnhancedDashboardProps>(({ month, isAuthent
     setModalState({ isOpen: false, title: '', category: 'variable' });
   };
 
+  // Handlers for savings detail modal
+  const openSavingsModal = (category: string, categoryName: string, items: SavingsDetail[]) => {
+    setSavingsModalState({
+      isOpen: true,
+      category,
+      categoryName,
+      items
+    });
+  };
+
+  const closeSavingsModal = () => {
+    setSavingsModalState({
+      isOpen: false,
+      category: '',
+      categoryName: '',
+      items: []
+    });
+  };
+
+  // Handlers for expense detail modal
+  const openExpenseModal = (category: string, categoryName: string, items: (FixedExpenseDetail | VariableDetail & { type: string })[]) => {
+    setExpenseModalState({
+      isOpen: true,
+      category,
+      categoryName,
+      items
+    });
+  };
+
+  const closeExpenseModal = () => {
+    setExpenseModalState({
+      isOpen: false,
+      category: '',
+      categoryName: '',
+      items: []
+    });
+  };
+
+  // Reassignment handlers
+  const handleReassignSaving = (itemName: string, newCategory: string) => {
+    console.log('Reassigning saving:', itemName, 'to category:', newCategory);
+    // TODO: Implement actual reassignment logic
+    // This would update the categorization in the backend or local state
+    // For now, just log the action
+    alert(`Would reassign "${itemName}" to "${newCategory}"`);
+  };
+
+  const handleReassignExpense = (itemName: string, newCategory: string) => {
+    console.log('Reassigning expense:', itemName, 'to category:', newCategory);
+    // TODO: Implement actual reassignment logic
+    // This would update the categorization in the backend or local state
+    // For now, just log the action
+    alert(`Would reassign "${itemName}" to "${newCategory}"`);
+  };
+
   return (
     <ErrorBoundary>
-    <div className="w-full px-4 space-y-8">
+    <div className="max-w-[1600px] mx-auto px-6 space-y-8">
       {/* Revenue Details Section */}
       <RevenueSection data={data} />
       
@@ -191,25 +273,27 @@ const EnhancedDashboard = React.memo<EnhancedDashboardProps>(({ month, isAuthent
       </div>
       
       {/* Main Content - Equal Height 3-Column Layout */}
-      <div className="flex flex-col 2xl:flex-row gap-6 min-h-[600px]">
+      <div className="flex justify-center">
+        <div className="flex flex-col 2xl:flex-row gap-6 min-h-[600px] w-full max-w-[1600px]">
         {/* LEFT: REVENUS (INCOME) */}
-        <div className="flex flex-col h-full flex-1 min-w-[400px]">
+        <div className="flex flex-col h-full flex-1 min-w-0 2xl:min-w-[400px] 2xl:max-w-[500px]">
           <RevenueTransactionsSection data={data} month={month} />
         </div>
         
         {/* CENTER: ÉPARGNE (PROVISIONS) */}
-        <div className="flex flex-col h-full flex-1 min-w-[400px]">
-          <SavingsSection data={data} onCategoryClick={openModal} />
+        <div className="flex flex-col h-full flex-1 min-w-0 2xl:min-w-[400px] 2xl:max-w-[500px]">
+          <SavingsSection data={data} onCategoryClick={openSavingsModal} />
         </div>
         
         {/* RIGHT: DÉPENSES (FIXED + VARIABLES) */}
-        <div className="flex flex-col h-full flex-1 min-w-[400px]">
+        <div className="flex flex-col h-full flex-1 min-w-0 2xl:min-w-[400px] 2xl:max-w-[500px]">
           <ExpensesSection 
             data={data} 
             convertingIds={convertingIds}
             onConvertExpenseType={handleConvertExpenseType}
-            onCategoryClick={openModal}
+            onCategoryClick={openExpenseModal}
           />
+        </div>
         </div>
       </div>
       
@@ -225,6 +309,26 @@ const EnhancedDashboard = React.memo<EnhancedDashboardProps>(({ month, isAuthent
         categoryName={modalState.categoryName}
         month={month}
         tagFilter={modalState.tagFilter}
+      />
+      
+      {/* Savings Detail Modal */}
+      <SavingsDetailModal
+        isOpen={savingsModalState.isOpen}
+        onClose={closeSavingsModal}
+        category={savingsModalState.category}
+        categoryName={savingsModalState.categoryName}
+        items={savingsModalState.items}
+        onReassign={handleReassignSaving}
+      />
+      
+      {/* Expense Detail Modal */}
+      <ExpenseDetailModal
+        isOpen={expenseModalState.isOpen}
+        onClose={closeExpenseModal}
+        category={expenseModalState.category}
+        categoryName={expenseModalState.categoryName}
+        items={expenseModalState.items}
+        onReassign={handleReassignExpense}
       />
     </div>
     </ErrorBoundary>
@@ -264,7 +368,7 @@ const RevenueSection = React.memo<{ data: EnhancedSummaryData }>(({ data }) => {
         </div>
       </div>
 
-      <div className="flex flex-col sm:grid sm:grid-cols-2 2xl:flex 2xl:flex-row gap-6">
+      <div className="flex flex-col sm:grid sm:grid-cols-2 2xl:flex 2xl:flex-row gap-6 max-w-full">
         <div className="bg-white rounded-lg p-5 border border-emerald-100 flex-1">
           <div className="text-sm font-medium text-emerald-700 mb-2 whitespace-nowrap" title={safeData.member1 ?? 'Membre 1'}>{safeData.member1 ?? 'Membre 1'}</div>
           <div className={`text-lg font-bold ${getAmountColorClass('revenue')}`}>{formatAmount(revenues?.member1_revenue || 0, 'revenue')}</div>
@@ -367,7 +471,7 @@ const MetricsOverview = React.memo<{
       </Card>
       
       {/* Métriques détaillées */}
-      <div className="flex flex-col sm:grid sm:grid-cols-2 2xl:flex 2xl:flex-row gap-6">
+      <div className="flex flex-col sm:grid sm:grid-cols-2 2xl:flex 2xl:flex-row gap-6 max-w-full">
         <MetricCard 
           title="Épargne" 
           value={data?.savings?.total || 0} 
@@ -410,42 +514,157 @@ const MetricsOverview = React.memo<{
 
 MetricsOverview.displayName = 'MetricsOverview';
 
-// Savings Section Component (LEFT)
+// Define savings categories with intelligent grouping logic
+const savingsCategories = {
+  'objectifs': {
+    name: '🎯 Objectifs Court Terme',
+    keywords: ['vacances', 'voyage', 'projet', 'achat', 'cadeau', 'noel', 'anniversaire'],
+    items: [] as SavingsDetail[],
+    total: 0
+  },
+  'investissement': {
+    name: '📈 Investissements',
+    keywords: ['etf', 'pea', 'assurance-vie', 'investissement', 'placement', 'actions', 'bourse'],
+    items: [] as SavingsDetail[],
+    total: 0
+  },
+  'retraite': {
+    name: '👴 Retraite',
+    keywords: ['retraite', 'per', 'epargne-retraite', 'pension', 'rente'],
+    items: [] as SavingsDetail[],
+    total: 0
+  },
+  'urgence': {
+    name: '🚨 Épargne de Sécurité',
+    keywords: ['urgence', 'securite', 'precaution', 'sante', 'fonds', 'reserve'],
+    items: [] as SavingsDetail[],
+    total: 0
+  },
+  'autres': {
+    name: '📦 Autres Épargnes',
+    keywords: [],
+    items: [] as SavingsDetail[],
+    total: 0
+  }
+};
+
+// Intelligent categorization function for savings
+function categorizeSaving(saving: SavingsDetail) {
+  const savingName = saving.name?.toLowerCase() || '';
+  
+  // Check each category's keywords
+  for (const [key, category] of Object.entries(savingsCategories)) {
+    if (key === 'autres') continue; // Skip 'autres' in the loop
+    if (category.keywords.some(keyword => savingName.includes(keyword))) {
+      return key;
+    }
+  }
+  
+  // Default to 'autres'
+  return 'autres';
+}
+
+// Savings Section Component (LEFT) - Now with intelligent hierarchical grouping
 const SavingsSection = React.memo<{ 
   data: EnhancedSummaryData;
-  onCategoryClick: (category: 'provision' | 'fixed' | 'variable', categoryName?: string, tagFilter?: string) => void;
+  onCategoryClick: (category: string, categoryName: string, items: SavingsDetail[]) => void;
 }>(({ data, onCategoryClick }) => {
+  // Group savings by categories
+  const savingsGroups = React.useMemo(() => {
+    // Reset categories
+    const categories = JSON.parse(JSON.stringify(savingsCategories));
+    
+    // Categorize each saving
+    data.savings.detail.forEach(saving => {
+      const categoryKey = categorizeSaving(saving);
+      categories[categoryKey].items.push(saving);
+      categories[categoryKey].total += (saving.member1_amount || 0) + (saving.member2_amount || 0);
+    });
+    
+    // Remove empty categories (except 'autres')
+    const nonEmptyCategories: typeof categories = {};
+    Object.entries(categories).forEach(([key, category]) => {
+      if (category.items.length > 0 || key === 'autres') {
+        nonEmptyCategories[key] = category;
+      }
+    });
+    
+    return nonEmptyCategories;
+  }, [data.savings.detail]);
+  
+  const hasAnySavings = data.savings.detail.length > 0;
+  const nonEmptyGroups = Object.entries(savingsGroups).filter(([_, group]) => group.items.length > 0);
+
   return (
     <Card className="p-8 border-l-4 border-l-purple-500 bg-gradient-to-r from-purple-50 to-indigo-50 h-full flex flex-col">
       <div className="flex items-center mb-6 flex-shrink-0">
         <span className="text-2xl mr-3">🎯</span>
         <div>
           <h2 className="text-xl font-bold text-purple-900">ÉPARGNE</h2>
-          <p className="text-sm text-purple-700">Provisions pour objectifs futurs</p>
+          <p className="text-sm text-purple-700">Provisions groupées par objectifs</p>
         </div>
       </div>
 
       <div className="flex-1 flex flex-col min-h-0">
-        {data.savings.detail.length > 0 ? (
+        {hasAnySavings ? (
           <>
-            <div className="flex-1 overflow-y-auto space-y-3 pr-2 -mr-2">
-              {data.savings.detail.map((saving, index) => (
-                <SavingRow 
-                  key={index} 
-                  saving={saving} 
-                  member1={data.member1} 
-                  member2={data.member2}
-                  onClick={() => onCategoryClick('provision', saving.name)}
-                />
+            <div className="flex-1 overflow-y-auto space-y-4 pr-2 -mr-2">
+              {nonEmptyGroups.map(([key, group]) => (
+                <div 
+                  key={key}
+                  onClick={() => onCategoryClick(key, group.name, group.items)}
+                  className="bg-gradient-to-r from-purple-50 to-indigo-50 rounded-xl p-6 cursor-pointer hover:shadow-lg hover:scale-[1.02] transition-all duration-300 border-2 border-purple-200 group"
+                >
+                  <div className="flex justify-between items-start">
+                    <div className="flex-1">
+                      <h3 className="text-lg font-semibold text-purple-900 mb-2">{group.name}</h3>
+                      <p className="text-sm text-purple-700 mb-3">{group.items.length} provision{group.items.length > 1 ? 's' : ''}</p>
+                      
+                      {/* Show first few items as preview */}
+                      <div className="space-y-1 mb-2">
+                        {group.items.slice(0, 2).map((item, idx) => (
+                          <div key={idx} className="text-xs text-purple-600 flex items-center space-x-2">
+                            <span className="text-sm">{item.icon}</span>
+                            <span className="truncate">{item.name}</span>
+                          </div>
+                        ))}
+                        {group.items.length > 2 && (
+                          <div className="text-xs text-purple-500 italic">
+                            +{group.items.length - 2} autres...
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    <div className="text-right flex-shrink-0 ml-4">
+                      <p className={`text-lg font-bold font-mono tabular-nums ${getAmountColorClass('saving')}`}>
+                        {formatAmount(group.total, 'saving')}
+                      </p>
+                      <p className="text-xs text-purple-600 mt-1 flex items-center justify-end space-x-1 group-hover:translate-x-1 transition-transform duration-300">
+                        <span>Cliquer pour détails</span>
+                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                        </svg>
+                      </p>
+                    </div>
+                  </div>
+                </div>
               ))}
             </div>
             
-            <div className="border-t-2 border-purple-200 pt-3 mt-4 flex-shrink-0">
-              <div className="flex justify-between items-center font-bold text-purple-900">
-                <span>Total Épargne</span>
-                <div className="flex space-x-6">
-                  <span className={getAmountColorClass('saving')}>{formatAmount(data?.savings?.member1_total || 0, 'saving')}</span>
-                  <span className={getAmountColorClass('saving')}>{formatAmount(data?.savings?.member2_total || 0, 'saving')}</span>
+            <div className="border-t-2 border-purple-200 pt-4 mt-4 flex-shrink-0">
+              <div className="bg-white rounded-xl p-4 border border-purple-200 shadow-sm">
+                <div className="flex justify-between items-center font-bold text-purple-900">
+                  <span>Total Épargne</span>
+                  <div className="flex space-x-6 font-mono tabular-nums">
+                    <span className={getAmountColorClass('saving')}>{formatAmount(data?.savings?.member1_total || 0, 'saving')}</span>
+                    <span className={getAmountColorClass('saving')}>{formatAmount(data?.savings?.member2_total || 0, 'saving')}</span>
+                  </div>
+                </div>
+                <div className="flex justify-between items-center text-sm text-purple-700 mt-2">
+                  <span>{nonEmptyGroups.length} catégorie{nonEmptyGroups.length > 1 ? 's' : ''} active{nonEmptyGroups.length > 1 ? 's' : ''}</span>
+                  <span className={`font-mono tabular-nums ${getAmountColorClass('saving')}`}>
+                    {formatAmount(data?.savings?.total || 0, 'saving')}
+                  </span>
                 </div>
               </div>
             </div>
@@ -465,108 +684,232 @@ const SavingsSection = React.memo<{
 
 SavingsSection.displayName = 'SavingsSection';
 
-// Expenses Section Component (RIGHT)  
+// Define expense categories with intelligent grouping logic
+const expenseCategories = {
+  'logement': {
+    name: '🏠 Logement',
+    keywords: ['loyer', 'electricite', 'eau', 'gaz', 'internet', 'assurance-habitation', 'chauffage', 'edf', 'engie'],
+    tags: ['electricite', 'eau', 'gaz', 'internet', 'loyer'],
+    items: [] as (FixedExpenseDetail | VariableDetail)[],
+    total: 0
+  },
+  'transport': {
+    name: '🚗 Transport',
+    keywords: ['essence', 'parking', 'peage', 'transport', 'train', 'metro', 'bus', 'taxi', 'uber', 'voiture'],
+    tags: ['essence', 'parking', 'transport', 'peage'],
+    items: [] as (FixedExpenseDetail | VariableDetail)[],
+    total: 0
+  },
+  'alimentation': {
+    name: '🛒 Alimentation',
+    keywords: ['courses', 'restaurant', 'resto', 'supermarche', 'alimentaire', 'carrefour', 'leclerc', 'mcdo'],
+    tags: ['courses', 'resto', 'petite-depense'],
+    items: [] as (FixedExpenseDetail | VariableDetail)[],
+    total: 0
+  },
+  'loisirs': {
+    name: '🎭 Loisirs & Culture',
+    keywords: ['streaming', 'cinema', 'sport', 'loisir', 'culture', 'sortie', 'netflix', 'spotify', 'theatre'],
+    tags: ['streaming', 'voyage', 'hotel', 'loisir'],
+    items: [] as (FixedExpenseDetail | VariableDetail)[],
+    total: 0
+  },
+  'sante': {
+    name: '🏥 Santé',
+    keywords: ['pharmacie', 'medecin', 'sante', 'mutuelle', 'dentiste', 'hopital', 'medicament'],
+    tags: ['sante', 'pharmacie'],
+    items: [] as (FixedExpenseDetail | VariableDetail)[],
+    total: 0
+  },
+  'autres': {
+    name: '📦 Autres',
+    keywords: [],
+    tags: [],
+    items: [] as (FixedExpenseDetail | VariableDetail)[],
+    total: 0
+  }
+};
+
+// Intelligent categorization function for expenses
+function categorizeExpense(expense: FixedExpenseDetail | VariableDetail) {
+  const expenseName = expense.name?.toLowerCase() || '';
+  const expenseTag = expense.tag?.toLowerCase() || '';
+  
+  // Check by tag first
+  for (const [key, category] of Object.entries(expenseCategories)) {
+    if (key === 'autres') continue; // Skip 'autres' in the loop
+    if (category.tags.some(tag => expenseTag.includes(tag))) {
+      return key;
+    }
+  }
+  
+  // Check by name/label keywords
+  for (const [key, category] of Object.entries(expenseCategories)) {
+    if (key === 'autres') continue; // Skip 'autres' in the loop
+    if (category.keywords.some(keyword => expenseName.includes(keyword))) {
+      return key;
+    }
+  }
+  
+  // Default to 'autres'
+  return 'autres';
+}
+
+// Expenses Section Component (RIGHT) - Now with intelligent hierarchical grouping
 const ExpensesSection = React.memo<{ 
   data: EnhancedSummaryData;
   convertingIds: Set<number>;
   onConvertExpenseType: (transactionId: number, newType: 'FIXED' | 'VARIABLE' | 'PROVISION') => void;
-  onCategoryClick: (category: 'provision' | 'fixed' | 'variable', categoryName?: string, tagFilter?: string) => void;
+  onCategoryClick: (category: string, categoryName: string, items: (FixedExpenseDetail | VariableDetail & { type: string })[]) => void;
 }>(({ data, convertingIds, onConvertExpenseType, onCategoryClick }) => {
+  // Group expenses by categories
+  const expenseGroups = React.useMemo(() => {
+    // Reset categories
+    const categories = JSON.parse(JSON.stringify(expenseCategories));
+    
+    // Categorize fixed expenses
+    data.fixed_expenses.detail.forEach(expense => {
+      const categoryKey = categorizeExpense(expense);
+      categories[categoryKey].items.push({ ...expense, type: 'fixed' });
+      categories[categoryKey].total += (expense.member1_amount || 0) + (expense.member2_amount || 0);
+    });
+    
+    // Categorize variable expenses
+    data.variables.detail.forEach(expense => {
+      const categoryKey = categorizeExpense(expense);
+      categories[categoryKey].items.push({ ...expense, type: 'variable' });
+      categories[categoryKey].total += (expense.member1_amount || 0) + (expense.member2_amount || 0);
+    });
+    
+    // Remove empty categories (except 'autres')
+    const nonEmptyCategories: typeof categories = {};
+    Object.entries(categories).forEach(([key, category]) => {
+      if (category.items.length > 0 || key === 'autres') {
+        nonEmptyCategories[key] = category;
+      }
+    });
+    
+    return nonEmptyCategories;
+  }, [data.fixed_expenses.detail, data.variables.detail]);
+  
+  const hasAnyExpenses = data.fixed_expenses.detail.length > 0 || data.variables.detail.length > 0;
+  const nonEmptyGroups = Object.entries(expenseGroups).filter(([_, group]) => group.items.length > 0);
+
   return (
     <Card className="p-8 border-l-4 border-l-red-500 bg-gradient-to-r from-red-50 to-orange-50 h-full flex flex-col">
       <div className="flex items-center mb-6 flex-shrink-0">
         <span className="text-2xl mr-3">💸</span>
         <div>
           <h2 className="text-xl font-bold text-red-900">DÉPENSES</h2>
-          <p className="text-sm text-red-700">Charges fixes et variables</p>
+          <p className="text-sm text-red-700">Charges groupées par catégories</p>
         </div>
       </div>
 
-      <div className="flex-1 flex flex-col min-h-0 space-y-6">
-        {/* Fixed Expenses Subsection */}
-        {data.fixed_expenses.detail.length > 0 && (
-          <div className="flex-shrink-0">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-lg font-semibold text-blue-900 flex items-center">
-                <span className="mr-2">💳</span>
-                Charges Fixes
-              </h3>
-              <div className="flex items-center space-x-3 text-xs">
-                <div className="flex items-center space-x-1">
-                  <span>⚙️</span>
-                  <span className="text-blue-600">Manuelles</span>
+      <div className="flex-1 flex flex-col min-h-0">
+        {hasAnyExpenses ? (
+          <>
+            <div className="flex-1 overflow-y-auto space-y-4 pr-2 -mr-2">
+              {nonEmptyGroups.map(([key, group]) => {
+                const fixedItems = group.items.filter((item: any) => item.type === 'fixed');
+                const variableItems = group.items.filter((item: any) => item.type === 'variable');
+                
+                return (
+                  <div 
+                    key={key}
+                    onClick={() => onCategoryClick(key, group.name, group.items)}
+                    className="bg-gradient-to-r from-red-50 to-orange-50 rounded-xl p-6 cursor-pointer hover:shadow-lg hover:scale-[1.02] transition-all duration-300 border-2 border-red-200 group"
+                  >
+                    <div className="flex justify-between items-start">
+                      <div className="flex-1">
+                        <h3 className="text-lg font-semibold text-red-900 mb-2">{group.name}</h3>
+                        <p className="text-sm text-red-700 mb-3">
+                          {group.items.length} dépense{group.items.length > 1 ? 's' : ''}
+                          {fixedItems.length > 0 && variableItems.length > 0 && (
+                            <span className="ml-2 text-xs">({fixedItems.length} fixes, {variableItems.length} variables)</span>
+                          )}
+                        </p>
+                        
+                        {/* Show type indicators */}
+                        <div className="flex items-center space-x-2 mb-2">
+                          {fixedItems.length > 0 && (
+                            <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full flex items-center space-x-1">
+                              <span>💳</span>
+                              <span>{fixedItems.length} fixe{fixedItems.length > 1 ? 's' : ''}</span>
+                            </span>
+                          )}
+                          {variableItems.length > 0 && (
+                            <span className="text-xs bg-orange-100 text-orange-800 px-2 py-1 rounded-full flex items-center space-x-1">
+                              <span>📊</span>
+                              <span>{variableItems.length} variable{variableItems.length > 1 ? 's' : ''}</span>
+                            </span>
+                          )}
+                        </div>
+                        
+                        {/* Show first few items as preview */}
+                        <div className="space-y-1 mb-2">
+                          {group.items.slice(0, 2).map((item: any, idx) => (
+                            <div key={idx} className="text-xs text-red-600 flex items-center space-x-2">
+                              <span className="text-sm">{item.icon || (item.type === 'fixed' ? '💳' : '📊')}</span>
+                              <span className="truncate">{item.name}</span>
+                              {item.tag && (
+                                <span className="bg-red-100 px-1 py-0.5 rounded text-xs">{item.tag}</span>
+                              )}
+                            </div>
+                          ))}
+                          {group.items.length > 2 && (
+                            <div className="text-xs text-red-500 italic">
+                              +{group.items.length - 2} autres...
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      <div className="text-right flex-shrink-0 ml-4">
+                        <p className={`text-lg font-bold font-mono tabular-nums ${getAmountColorClass('expense')}`}>
+                          {formatAmount(group.total, 'expense')}
+                        </p>
+                        <p className="text-xs text-red-600 mt-1 flex items-center justify-end space-x-1 group-hover:translate-x-1 transition-transform duration-300">
+                          <span>Cliquer pour détails</span>
+                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                          </svg>
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            
+            <div className="border-t-2 border-red-200 pt-4 mt-4 flex-shrink-0">
+              <div className="bg-white rounded-xl p-4 border border-red-200 shadow-sm">
+                <div className="flex justify-between items-center font-bold text-red-900">
+                  <span>Total Dépenses</span>
+                  <div className="flex space-x-6 font-mono tabular-nums">
+                    <span className={getAmountColorClass('expense')}>
+                      {formatAmount((data?.fixed_expenses?.member1_total || 0) + (data?.variables?.member1_total || 0), 'expense')}
+                    </span>
+                    <span className={getAmountColorClass('expense')}>
+                      {formatAmount((data?.fixed_expenses?.member2_total || 0) + (data?.variables?.member2_total || 0), 'expense')}
+                    </span>
+                  </div>
                 </div>
-                <div className="flex items-center space-x-1">
-                  <span>🤖</span>
-                  <span className="text-purple-600">IA</span>
+                <div className="flex justify-between items-center text-sm text-red-700 mt-2">
+                  <span>{nonEmptyGroups.length} catégorie{nonEmptyGroups.length > 1 ? 's' : ''} active{nonEmptyGroups.length > 1 ? 's' : ''}</span>
+                  <span className={`font-mono tabular-nums ${getAmountColorClass('expense')}`}>
+                    {formatAmount(data?.totals?.total_expenses || 0, 'expense')}
+                  </span>
                 </div>
               </div>
             </div>
-            <div className="space-y-2 mb-4 max-h-48 overflow-y-auto pr-2 -mr-2">
-              {data.fixed_expenses.detail.map((expense, index) => (
-                <FixedExpenseRow 
-                  key={index} 
-                  expense={expense} 
-                  member1={data.member1} 
-                  member2={data.member2}
-                  onClick={() => onCategoryClick('fixed', expense.name, expense.tag)}
-                />
-              ))}
-            </div>
-            <div className="border-b border-blue-200 pb-2 mb-4">
-              <div className="flex justify-between items-center font-semibold text-blue-800">
-                <span>Sous-total Fixes</span>
-                <div className="flex space-x-6">
-                  <span className={getAmountColorClass('expense')}>{formatAmount(data?.fixed_expenses?.member1_total || 0, 'expense')}</span>
-                  <span className={getAmountColorClass('expense')}>{formatAmount(data?.fixed_expenses?.member2_total || 0, 'expense')}</span>
-                </div>
-              </div>
+          </>
+        ) : (
+          <div className="flex-1 flex items-center justify-center text-red-600">
+            <div className="text-center">
+              <p>Aucune dépense trouvée</p>
+              <p className="text-sm mt-2">Les dépenses apparaîtront automatiquement ici</p>
             </div>
           </div>
         )}
-
-        {/* Variables Subsection - DETAILED BY TAGS */}
-        <div className="flex-1 flex flex-col min-h-0">
-          <h3 className="text-lg font-semibold text-orange-900 mb-3 flex items-center flex-shrink-0">
-            <span className="mr-2">📊</span>
-            Dépenses Variables
-            <span className="ml-2 text-sm font-normal text-orange-600">
-              ({data.variables.tagged_count} tag{data.variables.tagged_count > 1 ? 's' : ''}, {data.variables.untagged_count} non-taggées)
-            </span>
-          </h3>
-          
-          {data.variables.detail.length > 0 ? (
-            <>
-              <div className="max-h-[240px] overflow-y-auto space-y-2 mb-4 pr-2 scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-gray-100">
-                {data.variables.detail.map((variable, index) => (
-                  <VariableRow 
-                    key={index} 
-                    variable={variable} 
-                    member1={data.member1} 
-                    member2={data.member2}
-                    convertingIds={convertingIds}
-                    onConvert={onConvertExpenseType}
-                    onClick={() => onCategoryClick('variable', variable.name, variable.tag)}
-                  />
-                ))}
-              </div>
-              
-              <div className="border-b border-orange-200 pb-2 flex-shrink-0">
-                <div className="flex justify-between items-center font-semibold text-orange-800">
-                  <span>Sous-total Variables</span>
-                  <div className="flex space-x-6">
-                    <span className={getAmountColorClass('expense')}>{formatAmount(data?.variables?.member1_total || 0, 'expense')}</span>
-                    <span className={getAmountColorClass('expense')}>{formatAmount(data?.variables?.member2_total || 0, 'expense')}</span>
-                  </div>
-                </div>
-              </div>
-            </>
-          ) : (
-            <div className="flex-1 flex items-center justify-center">
-              <p className="text-orange-600 text-sm">Aucune dépense variable ce mois</p>
-            </div>
-          )}
-        </div>
       </div>
     </Card>
   );
@@ -1177,5 +1520,214 @@ const RevenueDetailModal = React.memo<{
 });
 
 RevenueDetailModal.displayName = 'RevenueDetailModal';
+
+// Savings Detail Modal Component - Shows detailed savings list with reassignment
+const SavingsDetailModal = React.memo<{
+  isOpen: boolean;
+  onClose: () => void;
+  category: string;
+  categoryName: string;
+  items: SavingsDetail[];
+  onReassign: (itemName: string, newCategory: string) => void;
+}>(({ isOpen, onClose, category, categoryName, items, onReassign }) => {
+  if (!isOpen) return null;
+
+  const totalAmount = items.reduce((sum, item) => sum + (item.member1_amount || 0) + (item.member2_amount || 0), 0);
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center">
+      {/* Backdrop */}
+      <div 
+        className="absolute inset-0 bg-black bg-opacity-50 backdrop-blur-sm"
+        onClick={onClose}
+      ></div>
+      
+      {/* Modal Content */}
+      <div className="relative bg-white rounded-2xl shadow-2xl max-w-4xl w-full mx-4 max-h-[90vh] flex flex-col">
+        {/* Header */}
+        <div className="flex items-center justify-between p-6 border-b border-gray-200 flex-shrink-0">
+          <div className="flex items-center space-x-3">
+            <span className="text-2xl">🎯</span>
+            <h2 className="text-xl font-bold text-purple-900">{categoryName}</h2>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-2 hover:bg-gray-100 rounded-full transition-colors duration-200 group"
+          >
+            <svg className="w-5 h-5 text-gray-500 group-hover:text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+        
+        {/* Items List */}
+        <div className="flex-1 overflow-y-auto p-6">
+          <div className="space-y-2 max-h-[400px] overflow-y-auto">
+            {items.map((item, index) => (
+              <div 
+                key={index}
+                className="flex justify-between items-center p-3 bg-gradient-to-r from-purple-50 to-indigo-50 rounded-lg border border-purple-200 hover:shadow-md transition-all duration-200"
+              >
+                <div className="flex-1 min-w-0 pr-4">
+                  <div className="flex items-center space-x-3 mb-2">
+                    <span className="text-lg flex-shrink-0">{item.icon}</span>
+                    <p className="font-medium text-purple-900 truncate" title={item.name}>
+                      {item.name}
+                    </p>
+                  </div>
+                  <select 
+                    value={category}
+                    onChange={(e) => onReassign(item.name, e.target.value)}
+                    className="text-sm mt-1 p-2 border border-purple-200 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-purple-500 bg-white"
+                  >
+                    <option value="objectifs">🎯 Objectifs Court Terme</option>
+                    <option value="investissement">📈 Investissements</option>
+                    <option value="retraite">👴 Retraite</option>
+                    <option value="urgence">🚨 Épargne de Sécurité</option>
+                    <option value="autres">📦 Autres</option>
+                  </select>
+                </div>
+                <div className="text-right flex-shrink-0 min-w-[200px]">
+                  <div className="space-y-1">
+                    <p className={`font-mono text-sm ${getAmountColorClass('saving')}`}>
+                      {formatAmount(item.member1_amount, 'saving')}
+                    </p>
+                    <p className={`font-mono text-sm ${getAmountColorClass('saving')}`}>
+                      {formatAmount(item.member2_amount, 'saving')}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+        
+        {/* Footer with Total */}
+        <div className="border-t border-gray-200 p-6 flex-shrink-0">
+          <div className="flex justify-between items-center">
+            <span className="text-lg font-semibold text-purple-900">
+              Total ({items.length} provision{items.length !== 1 ? 's' : ''})
+            </span>
+            <span className={`text-lg font-bold font-mono tabular-nums ${getAmountColorClass('saving')}`}>
+              {formatAmount(totalAmount, 'saving')}
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+});
+
+SavingsDetailModal.displayName = 'SavingsDetailModal';
+
+// Expense Detail Modal Component - Shows detailed expense list with reassignment
+const ExpenseDetailModal = React.memo<{
+  isOpen: boolean;
+  onClose: () => void;
+  category: string;
+  categoryName: string;
+  items: (FixedExpenseDetail | VariableDetail & { type: string })[];
+  onReassign: (itemName: string, newCategory: string) => void;
+}>(({ isOpen, onClose, category, categoryName, items, onReassign }) => {
+  if (!isOpen) return null;
+
+  const totalAmount = items.reduce((sum, item) => sum + (item.member1_amount || 0) + (item.member2_amount || 0), 0);
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center">
+      {/* Backdrop */}
+      <div 
+        className="absolute inset-0 bg-black bg-opacity-50 backdrop-blur-sm"
+        onClick={onClose}
+      ></div>
+      
+      {/* Modal Content */}
+      <div className="relative bg-white rounded-2xl shadow-2xl max-w-4xl w-full mx-4 max-h-[90vh] flex flex-col">
+        {/* Header */}
+        <div className="flex items-center justify-between p-6 border-b border-gray-200 flex-shrink-0">
+          <div className="flex items-center space-x-3">
+            <span className="text-2xl">💸</span>
+            <h2 className="text-xl font-bold text-red-900">{categoryName}</h2>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-2 hover:bg-gray-100 rounded-full transition-colors duration-200 group"
+          >
+            <svg className="w-5 h-5 text-gray-500 group-hover:text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+        
+        {/* Items List */}
+        <div className="flex-1 overflow-y-auto p-6">
+          <div className="space-y-2 max-h-[400px] overflow-y-auto">
+            {items.map((item, index) => (
+              <div 
+                key={index}
+                className="flex justify-between items-center p-3 bg-gradient-to-r from-red-50 to-orange-50 rounded-lg border border-red-200 hover:shadow-md transition-all duration-200"
+              >
+                <div className="flex-1 min-w-0 pr-4">
+                  <div className="flex items-center space-x-3 mb-2">
+                    <span className="text-lg flex-shrink-0">{(item as any).icon || (item.type === 'fixed' ? '💳' : '📊')}</span>
+                    <p className="font-medium text-red-900 truncate" title={item.name || (item as any).tag}>
+                      {item.name || (item as any).tag}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-xs px-2 py-1 bg-gray-100 rounded">
+                      {item.type === 'fixed' ? 'Fixe' : 'Variable'}
+                    </span>
+                    {(item as any).tag && (
+                      <span className="text-xs px-2 py-1 bg-blue-100 text-blue-800 rounded">
+                        {(item as any).tag}
+                      </span>
+                    )}
+                  </div>
+                  <select 
+                    value={category}
+                    onChange={(e) => onReassign(item.name || (item as any).tag, e.target.value)}
+                    className="text-sm p-1 border border-red-200 rounded-md focus:ring-2 focus:ring-red-500 focus:border-red-500 bg-white w-full"
+                  >
+                    <option value="logement">🏠 Logement</option>
+                    <option value="transport">🚗 Transport</option>
+                    <option value="alimentation">🛒 Alimentation</option>
+                    <option value="loisirs">🎭 Loisirs & Culture</option>
+                    <option value="sante">🏥 Santé</option>
+                    <option value="autres">📦 Autres</option>
+                  </select>
+                </div>
+                <div className="text-right flex-shrink-0 min-w-[200px]">
+                  <div className="space-y-1">
+                    <p className={`font-mono text-sm ${getAmountColorClass('expense')}`}>
+                      {formatAmount(item.member1_amount, 'expense')}
+                    </p>
+                    <p className={`font-mono text-sm ${getAmountColorClass('expense')}`}>
+                      {formatAmount(item.member2_amount, 'expense')}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+        
+        {/* Footer with Total */}
+        <div className="border-t border-gray-200 p-6 flex-shrink-0">
+          <div className="flex justify-between items-center">
+            <span className="text-lg font-semibold text-red-900">
+              Total ({items.length} dépense{items.length !== 1 ? 's' : ''})
+            </span>
+            <span className={`text-lg font-bold font-mono tabular-nums ${getAmountColorClass('expense')}`}>
+              {formatAmount(totalAmount, 'expense')}
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+});
+
+ExpenseDetailModal.displayName = 'ExpenseDetailModal';
 
 export default EnhancedDashboard;
