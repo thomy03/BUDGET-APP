@@ -1,462 +1,351 @@
-# PRD — Budget Famille (v3 vision)
+# PRD - Budget Famille v2.3
+## Product Requirements Document
 
-**Version**: 0.3 (Intelligence Artificielle)
-
-**Date**: 12/08/2025 - Mise à jour majeure IA
-
-**Owner**: à définir (vous)
-
-**Equipe**: Produit, Dev (Frontend Next.js / Backend FastAPI), Design
+Document de spécifications produit pour l'application de gestion budgétaire familiale Budget Famille v2.3.
 
 ---
 
-## 1) Contexte & Problème
+## 1. Vue d'Ensemble Produit
 
-La gestion budgétaire familiale repose aujourd’hui sur un Excel (onglet *Calcul provision*). Cela rend difficile:
+### Vision Produit
+Budget Famille v2.3 est une application web moderne qui **simplifie la gestion budgétaire familiale** grâce à l'intelligence artificielle et une interface intuitive, permettant aux familles de **reprendre le contrôle de leurs finances** avec un suivi automatisé et des insights personnalisés.
 
-* la mise à jour rapide (imports bancaires, exclusions ponctuelles),
-* la transparence de la répartition entre membres du foyer,
-* le suivi des charges fixes/variables et des provisions (vacances, bébé, plaisir),
-* l’analyse par nature de dépenses dans le temps.
+### Mission
+Transformer la corvée budgétaire en expérience fluide et enrichissante, en automatisant 95% des tâches répétitives tout en offrant une visibilité claire sur la santé financière familiale.
 
-*Budget Famille* vise à offrir une webapp simple, fiable et “opinionated”, avec des automatisations utiles et une vision **mensuelle** claire: combien prévoir chacun, pourquoi, et d’où viennent les montants.
-
----
-
-## 2) Objectifs (SMART)
-
-1. **Provision mensuelle fiable**: calculer pour chaque mois la part de chacun (membre A / membre B) avec transparence poste par poste.
-2. **Import rapide**: charger un export bancaire CSV/XLSX (multi-mois), visualiser/exclure, tagger, agréger — en < 2 minutes.
-3. **Clé de répartition flexible**: par revenus (proportionnel) ou manuel (%), possibilité de **dérogation par poste fixe**.
-4. **Provisions intelligentes**: mensualiser automatiquement taxe foncière, copro, et provisions % de revenu fiscal N.
-5. **Analyses utiles**: dépenses par tags, tendances mensuelles, alertes (dépenses inhabituelles / dépassements).
-6. **Expérience cohérente**: sélection de **mois global** conservée d’une page à l’autre.
-
-**Non-objectifs (pour l’instant)**: gestion patrimoniale avancée, fiscalité détaillée, trading, multi-devises complexes, rapprochements bancaires au centime près.
+### Proposition de Valeur Unique
+- **IA Auto-tagging** : 95.4% précision, catégorisation automatique de toutes les transactions
+- **Dashboard Hiérarchique** : Navigation intuitive du global au détail en 3 clics
+- **Import Intelligent** : Traitement CSV/XLSX multi-banques avec détection automatique
+- **Provisions Personnalisées** : Objectifs d'épargne flexibles avec calculs automatiques
 
 ---
 
-## 3) Personae & Cas d’usage
+## 2. Analyse Marché et Utilisateurs
 
-* **Couple bi-revenus** (2 membres par défaut) — peut évoluer vers 3+ membres.
-* **Cas fréquents**:
+### Marché Cible
 
-  * Fin de mois: “Combien chacun doit verser ?”
-  * Milieu de mois: “Suis-je en avance/en retard sur mes variables ?”
-  * Dépense exceptionnelle: “Je l’exclus du calcul de provision.”
-  * Planif: “J’ajoute un poste fixe (assurance, internet) avec répartition 100%/50-50/manuelle.”
+#### Segment Primaire : Familles Tech-Friendly (70%)
+- **Profil** : Couples 28-45 ans, revenus combinés 50k-120k€/an
+- **Pain Points** : Manque de temps, complexité outils existants, pas de vision globale
+- **Motivations** : Contrôle finances, épargne projets, éducation financière enfants
 
----
+#### Segment Secondaire : Freelances et Indépendants (30%)
+- **Profil** : 25-40 ans, revenus variables, gestion pro/perso mélangée
+- **Pain Points** : Irrégularité revenus, séparation charges, provisions fiscales
+- **Motivations** : Lissage revenus, optimisation fiscale, projections business
 
-## 4) Principes Produit
+### Personas Principales
 
-* **Clarté avant tout**: toujours montrer le **détail** du calcul (crédit, autres fixes, provisions %, variables).
-* **Peu de champs, bien nommés**: réglages rapides sur le Dashboard.
-* **Éditable in-line**: moins d’allers-retours Paramètres ⇄ Dashboard.
-* **Sélecteur de mois global** persistant.
-* **Sans magie opaque**: les automatisations/ML proposent, l'utilisateur décide.
-* **Intelligence artificielle intégrée** (12/08/2025): Classification automatique des dépenses avec apprentissage continu
-* **Recherche web autonome** (12/08/2025): Enrichissement automatique des commerces via API ouvertes  
-* **Gestion complète des tags** (12/08/2025): Interface Settings pour modification Fixe ↔ Variable
+#### Marie & Julien - Famille Type
+- **Contexte** : 2 enfants, double revenus, maison avec crédit
+- **Besoins** : Suivi mensuel simple, objectifs vacances/travaux
+- **Usage** : 15min/semaine, principalement mobile le soir
+- **Quote** : *"On veut juste savoir où va notre argent sans y passer des heures"*
 
----
-
-## 5) Portée Fonctionnelle (vue d’ensemble)
-
-### 5.1 Membres & Clé de répartition
-
-* 2 membres (A/B) avec noms personnalisés.
-* Modes de clé: **par revenus** (proportion), **manuel** (%), **égale 50/50** pour certains postes.
-* Extension future: **N membres** (MVP 2 membres).
-
-### 5.2 Charges fixes
-
-* **Crédit immo + voiture**: montant mensuel total + option **50/50** ou **clé**.
-* **Autres fixes (v2 héritée)**:
-
-  * Mode *simple* (montant mensuel direct),
-  * Mode *détaillé* (Taxe foncière N-1 annuelle + Copro mensuelle/trimestrielle → mensualisation),
-  * Répartition: clé générale ou 50/50.
-* **Lignes fixes personnalisées (illimitées)**:
-
-  * Libellé, montant, **fréquence** (mensuelle/trimestrielle/annuelle),
-  * Répartition par ligne: **clé**, **50/50**, **100% Membre A**, **100% Membre B**, **manuelle (%)**.
-
-### 5.3 Dépenses variables
-
-* **Import** CSV/XLSX multi-mois; détection du **mois par dateOp**.
-* Visualisation ligne à ligne; **Exclude** toggle.
-* **Tags** éditables (champ libre, virgules) pour analyses.
-* Détection heuristique **revenus/transferts** → exclus par défaut.
-
-### 5.4 Provisions % de revenu fiscal
-
-* % configurable, base: **2 revenus**, **membre A**, **membre B**.
-* Mensualisation automatique.
-
-### 5.5 Calcul de provision mensuelle (sortie attendue)
-
-* Totaux par membre:
-
-  * Crédit (réparti), Autres fixes (et/ou lignes fixes), Provision %, Variables (réparties selon clé),
-  * **Somme finale par membre** (montant à prévoir/virer).
-* Transparence: tableau “Détail par poste”.
-
-### 5.6 Analyses & Rapports
-
-* **Par tags** (mois courant): total & %.
-* **Tendances**: variables par mois, top tags, évolution charges fixes (roadmap).
-* Export **CSV/XLSX/PDF** de la synthèse mensuelle (roadmap).
-
-### 5.7 Règles & Intelligence (roadmap)
-
-* **Règles de tags**: “si libellé contient *CARREFOUR*, alors tag *courses*”.
-* **Normalisation commerçants** (regex/lexique).
-* **Suggestions ML**: auto-tagging, détection d’anomalies (montant inhabituel), prévision fin de mois.
-* **Recommandations**: “Tu dépasseras le budget *resto* de 40€ vs moyenne, veux-tu augmenter la provision ?”.
-
-### 5.8 Notifications & Automations
-
-* Alerte après import si >X% de lignes **non taguées**.
-* Alerte “hausse inhabituelle” pour un tag (>2 écarts-types vs 3 derniers mois).
-* Rappel mensuel: “Clôture et virement de provisions”.
-
-### 5.9 Intégrations bancaires (optionnel)
-
-* Via agrégateurs **PSD2** (ex: Powens/Tink/Budget Insight/Linxo Connect). OAuth, SCA.
-* Synchronisation périodique (lecture seule), mapping vers schéma interne.
-
-### 5.10 Sauvegarde / Import-Export
-
-* Export config + transactions + tags en **ZIP**.
-* Import d’une sauvegarde (fusion/sur-écriture).
-
-### 5.11 Sécurité & Confidentialité
-
-* Données **locales** (SQLite) par défaut; aucune remontée tierce sans consentement.
-* HTTPS recommandé si déploiement.
-* Journalisation minimale (pas de logs de données sensibles en clair).
+#### Sophie - Indépendante
+- **Contexte** : Consultante, revenus irréguliers, charges déductibles
+- **Besoins** : Lissage revenus, provisions charges sociales
+- **Usage** : 1h/mois, desktop pour analyse détaillée
+- **Quote** : *"J'ai besoin de prévoir mes charges même quand les revenus varient"*
 
 ---
 
-## 6) Exigences détaillées (User stories & critères d’acceptation)
+## 3. Fonctionnalités Produit
 
-### 6.1 Import multi-mois
+### 3.1 Core Features (Must-Have)
 
-* **En tant qu’utilisateur**, je peux déposer un fichier CSV/XLSX contenant plusieurs mois.
-* **DoD**: chaque ligne reçoit `month=YYYY-MM` d’après `dateOp`. Après import, un message indique la **liste des mois détectés**.
+#### CleanDashboard Provision-First ✅ IMPLÉMENTÉ
+**Objectif** : Vue d'ensemble instantanée de la santé financière
+- **Design moderne** : 4 métriques clés avec animations CountUp
+- **Barre progression** : Provisions avec indicateur temporel (X/12 mois), visuel vert
+- **Calcul familial** : (Provisions + Dépenses - Solde compte) / revenus nets
+- **Quick Actions** : Navigation rapide vers fonctionnalités principales
+- **Drill-down complet** : Dépenses → Variables/Fixes → Tags → Transactions
+- **Filtrage strict** : Montants débiteurs uniquement, exclusion transactions marquées
 
-### 6.2 Exclusions & Tags
+#### Système de Tags Simplifié
+**Objectif** : Édition directe sans interruption
+- **Création automatique** : Nouveaux tags via TagAutomationService
+- **Workflow direct** : Modification immédiate sans modal
+- **Détection intelligente** : Filtrage strict des transactions
+- **Performance** : Aucune latence, mise à jour instantanée
 
-* Toggle **Exclude** sur chaque dépense → recalcul immédiat du total variables.
-* Champ **Tags** (liste via virgules). **Blur/Enter** enregistre; dédoublonnage.
-* **DoD**: l’agrégat par tags reflète la table en temps réel.
+#### Provisions Personnalisées ✅ IMPLÉMENTÉES
+**Objectif** : Épargne objectifs flexibles et automatisées
+- **Types** : Pourcentage revenus, montant fixe, formule personnalisée
+- **Calculs** : Répartition couple, dates début/fin, provisions temporaires
+- **Suivi** : Barre progression verte avec montant cumulé depuis janvier
+- **Progression annuelle** : Calcul automatique mois X/12 avec projections
+- **Catégories** : Vacances, travaux, véhicule, urgence, projets enfants
+- **Interface intégrée** : Gestion provisions dans détail catégorie du drill-down
 
-### 6.3 Lignes fixes personnalisées
+### 3.2 Advanced Features (Should-Have)
 
-* CRUD complet (ajout, édition, suppression).
-* Fréquence → mensualisation: mensuel (= montant), trimestriel (= /3), annuel (= /12).
-* Répartition par ligne: clé/50-50/100%A/100%B/manuel(%).
-* **DoD**: Dashboard affiche une ligne par poste fixe ajouté ("Fixe — Libellé").
+#### Analytics & Insights
+**Objectif** : Compréhension comportements financiers
+- **Tendances** : Évolution 12 mois, comparaisons périodiques
+- **Prédictions** : Projections 3-6 mois basées ML
+- **Alertes** : Dépassements budgets, objectifs atteignables
+- **Scoring** : Indice santé financière familiale
 
-### 6.4 Provisions % revenu fiscal
+#### Configuration Avancée
+**Objectif** : Adaptation tous profils familiaux
+- **Multi-membres** : Répartition charges/revenus personnalisée
+- **Calendrier** : Saisonnalité dépenses, événements récurrents
+- **Règles business** : Formules calculs, exceptions, cas particuliers
 
-* % configurable + base (2/A/B). Mensualisation.
-* **DoD**: visible dans le détail du Dashboard.
+### 3.3 Nice-to-Have Features
 
-### 6.5 Clé de répartition & cohérence UI
+#### Collaboration Famille
+- Comptes multiples, permissions granulaires
+- Commentaires transactions, validations croisées
+- Notifications objectifs partagés
 
-* Sélecteur de **mois global** (localStorage). Persiste entre pages.
-* Éditions côté Dashboard → bouton **Enregistrer**.
-
-### 6.6 Analyses par tags
-
-* Tableau: Tag | Total | %.
-* **DoD**: somme des tags = total variables (non exclues) du mois (les lignes sans tag → bucket “(non tagué)”).
-
-### 6.7 Export synthèse (roadmap)
-
-* PDF/CSV avec récap mensuel (totaux, détail par poste, top tags).
-
-### 6.8 Intégration bancaire (option)
-
-* Connecteur via agrégateur; import incrémental; retries; gestion SCA expirée.
-
----
-
-## 7) UX / IA (Information Architecture)
-
-* **Navbar**: Dashboard | Transactions | Paramètres | Analyses | (Règles – roadmap) + sélecteur de **mois global**.
-* **Dashboard**: métriques clés, détail par poste, réglages rapides.
-* **Transactions**: upload, table (date, libellé, catégorie, montant, exclude, tags).
-* **Paramètres**: membres & clé, charges fixes héritées, **lignes fixes personnalisées**.
-* **Analyses**: agrégats par tag (table + futurs graphiques).
-* **Règles (roadmap)**: table des règles de tags + test de correspondance.
-
-**Accessibilité**: focus states visibles, contrastes suffisants, navigation clavier.
-
----
-
-## 8) Mesures de succès (KPIs)
-
-* Taux d’import réussi (>95%).
-* Temps de mise à jour mensuelle < 2 min.
-* % de lignes taggées > 80% au 2e mois.
-* Nombre moyen de postes fixes personnalisés actifs (≥5) — signe d’adoption.
-* Satisfaction (NPS-likert interne) ≥ 8/10.
+#### Intégrations Externes
+- APIs bancaires PSD2 (connexion directe)
+- Export comptables (Ciel, Sage, Excel)
+- Synchronisation calendriers (vacances, échéances)
 
 ---
 
-## 9) Données & Modèle (high-level)
+## 4. Exigences Techniques
 
-* **Config**: membres, revenus, split\_mode, split1/2, loan\_equal, loan\_amount, other\_fixed\_\*, vac\_percent, vac\_base.
-* **Transaction**: id, date\_op, month, label, category, category\_parent, amount, account\_label, is\_expense, exclude, tags.
-* **FixedLine**: id, label, amount, freq (mensuelle/trimestrielle/annuelle), split\_mode (clé/50/50/m1/m2/manuel), split1/2, active.
-* **Rule (roadmap)**: id, pattern (regex/contient), action (add tags), scope (libellé/catégorie), ordre.
+### 4.1 Architecture Système
 
----
+#### Backend Requirements
+- **Framework** : FastAPI (performance, documentation automatique)
+- **Base de données** : SQLite → PostgreSQL (évolutivité)
+- **ML Pipeline** : Scikit-learn, modèles pré-entraînés + apprentissage
+- **APIs** : RESTful, documentation Swagger, versioning
+- **Performance** : <2s temps réponse, 1000+ requêtes/min
 
-## 10) API (existant & prévu)
+#### Frontend Requirements
+- **Framework** : Next.js 14 (SSR, optimisations)
+- **UI/UX** : Tailwind CSS, composants réutilisables, design system
+- **State Management** : React Context + Zustand pour états complexes
+- **Mobile** : PWA, responsive design, touch gestures
+- **Performance** : <3s First Contentful Paint, >90 Lighthouse score
 
-* `GET /config` | `POST /config`
-* `POST /import` (auto-mois)
-* `GET /transactions?month=YYYY-MM`
-* `PATCH /transactions/{id}` { exclude }
-* `PATCH /transactions/{id}/tags` { tags\[] }
-* `GET /tags` | `GET /tags-summary?month=YYYY-MM`
-* `GET /fixed-lines` | `POST /fixed-lines` | `PATCH /fixed-lines/{id}` | `DELETE /fixed-lines/{id}`
-* **Roadmap**: `/rules` CRUD, `/export?month=…&format=pdf|csv`, `/forecast?month=…`.
+#### Infrastructure Requirements
+- **Containerisation** : Docker (développement + production)
+- **CI/CD** : GitHub Actions, tests automatisés
+- **Monitoring** : Logs structurés, métriques performance
+- **Sécurité** : HTTPS, JWT, chiffrement données sensibles
 
----
+### 4.2 Compatibilité et Support
 
-## 11) Architecture & Tech
+#### Navigateurs
+- **Desktop** : Chrome 90+, Firefox 88+, Safari 14+, Edge 90+
+- **Mobile** : iOS Safari 14+, Android Chrome 90+
+- **PWA** : Installation native, fonctionnement offline
 
-* **Frontend**: Next.js (App Router), Tailwind; état local + appels REST.
-* **Backend**: FastAPI, SQLAlchemy, SQLite (dev). Option Postgres (prod).
-* **Parsing**: robust CSV/XLSX, normalisation colonnes FR.
-* **Sécurité**: CORS restreint (env), pas de secrets côté client.
-
----
-
-## 12) Roadmap & Phasage
-
-**V2.3 (livrée)**
-
-* Import auto-mois, tags sur transactions, lignes fixes personnalisées, mois global partagé, analyses par tags.
-
-**V3 (1–2 semaines) — Priorités validées**
-
-* **Design system** (shadcn/ui + Tailwind) avec thèmes clair/sombre, toasts, micro-interactions, composants table modernes (recherche/tri/sticky header), "chips" de tags.
-* **Règles de tags (moteur + UI)** : conditions *contient / regex* sur libellé & catégorie, actions *ajouter/supprimer tags*, ordre d’évaluation, aperçu avant application, exécution automatique à l’import + bouton "Appliquer maintenant".
-* **Charts** :
-
-  * Évolution des **dépenses variables** sur 12 mois,
-  * **Top tags** du mois,
-  * Donut **Fixes vs Variables**.
-* **Export PDF – Synthèse mensuelle** : 1 à 2 pages A4 avec résumé par poste, "qui doit combien", top 5 tags, total variables, liste d’exclusions. Nom de fichier: `Synthese-{YYYY-MM}.pdf`.
-
-**V3.1 (1 semaine)**
-
-* **Prévision fin de mois** (extrapolation historique lissé).
-* **Alertes** : dépassement vs moyenne 3 mois, % lignes non taguées élevé, dépense inhabituelle.
-* **Simulateur** : jouer la clé de répartition et le % de provision et voir l’impact en direct.
-
-**V3.2 (2 semaines)**
-
-* **Budgets par enveloppe** (courses, resto, etc.) avec jauges & objectifs mensuels.
-* **Multi-membres (3+)**.
-* **Moteur d’import avancé** (mapping de colonnes + presets banques).
+#### Systèmes
+- **Développement** : Windows WSL2, macOS, Linux Ubuntu
+- **Production** : Linux containers, cloud providers
+- **Base de données** : SQLite (dev), PostgreSQL (prod)
 
 ---
 
-## 13) Risques & Atténuations
+## 5. Expérience Utilisateur (UX)
 
-* **Qualité des exports bancaires** (colonnes variables) → normalisation robuste, mapping via UI si besoin (roadmap).
-* **Confidentialité** → local-first, export/import local, pas de cloud sans consentement.
-* **Complexité des règles** → commencer simple (contient/regex), garder audit des modifications de tags.
+### 5.1 Parcours Utilisateur Principal
 
----
+#### Onboarding (Premier usage)
+1. **Accueil** : Présentation valeur ajoutée, promesse "5 minutes setup"
+2. **Configuration** : Revenus couple, objectifs épargne principaux
+3. **Import initial** : Assistant CSV, détection automatique colonnes
+4. **Découverte** : Tour guidé interface, tips contextuels
 
-## 14) Plan de tests (extraits)
+#### Usage Récurrent (Hebdomadaire)
+1. **Check rapide** : Dashboard, alertes nouvelles
+2. **Transactions** : Validation auto-tagging, corrections manuelles
+3. **Objectifs** : Progression épargnes, ajustements provisions
 
-* Import CSV avec séparateurs différents (`,` `;` `\t`) → 100% ok.
-* Import multi-mois → transactions correctement ventilées par `month`.
-* Exclude/Tags → recalcul var\_total immédiat; analyses alignées.
-* Lignes fixes (mensuelle/trimestrielle/annuelle) → mensualisation correcte.
-* Changement clé → répartition poste par poste ajustée.
-* Sélecteur mois global → persistance cross-pages.
+### 5.2 Principes Design
 
----
+#### Simplicité
+- **Règle 3 clics** : Toute information accessible en maximum 3 clics
+- **Progressive disclosure** : Information complexe masquée par défaut
+- **Defaults intelligents** : Configuration pré-remplie, suggestions contextuelles
 
-## 15) Questions ouvertes
+#### Feedback Visuel
+- **Micro-interactions** : Confirmations actions, transitions fluides
+- **État système** : Loading states, progress bars, indicateurs santé
+- **Accessibility** : Contraste, tailles texte, navigation clavier
 
-1. **N membres**: à quelle échéance le support >2 est-il prioritaire ?
-2. **Banque**: agrégateur préféré ? (coût & friction SCA)
-3. **Export officiel**: format souhaité (PDF signé, CSV, XLSX) ?
-4. **Seuils d’alertes**: valeurs par défaut ? (ex: +25% vs moyenne 3 mois)
-5. **Catégorisation**: dictionnaire commerçants à initialiser ?
-
----
-
-## 16) Annexes (idées d’évolutions “intelligentes”)
-
-* **Prévision fin de mois**: extrapolation des variables à J+30 basée historique.
-* **Rebalancing**: suggestion de virement équilibrage mid-month.
-* **Conseils**: “Si tu augmentes la provision vacances à 6%, tu atteins X€ d’ici août 2026.”
-* **Détection doublons** (opérations identiques rapprochées) & auto-exclusion.
-* **Rapprochement virements internes** (débit/crédit liés) pour ne pas gonfler les variables.
-
-## 17) Backlog V3 détaillé & critères d’acceptation
-
-### A. Design system
-
-* **Livrables** : thème clair/sombre, boutons, inputs, tables, tags chips, toasts, skeletons, transitions.
-* **CA** : contraste AA, focus visibles, pas de *layout shift* perceptible, navigation clavier OK.
-
-### B. Règles de tags
-
-* **Livrables** : CRUD règles ; conditions (*contient* / *regex*) sur `label` / `category` ; actions add/remove tags ; ordre ; aperçu ; exécution auto à l’import + bulk "Appliquer maintenant".
-* **CA** : création/édition/suppression en <3 clics ; import 5k lignes s’exécute en <10s sur machine standard ; dédoublonnage de tags ; journal minimal (qui/quoi/quand) en base.
-
-### C. Charts
-
-* **Livrables** : ligne 12 mois (variables), barres *Top tags (mois)*, donut *Fixes vs Variables*.
-* **CA** : données cohérentes avec Dashboard (écart < 0,01€) ; export PNG rapide ; sélection du mois global respectée.
-
-### D. Export PDF Synthèse
-
-* **Livrables** : PDF A4 1–2 pages ; sections *Détail par poste*, *Qui doit combien*, *Top tags* ; option pour inclure/exclure la liste des opérations exclues.
-* **CA** : nom `Synthese-YYYY-MM.pdf` ; total = Dashboard ; génération < 2s pour 1 mois standard.
-
-### E. Qualité & Perf
-
-* **Livrables** : tests unitaires calculs, tests API principaux, index DB, pagination transactions.
-* **CA** : Taux d'import réussi ≥ 95% ; temps mise à jour mensuelle < 2 min ; Lighthouse perf ≥ 90 (local).
+#### Performance Perçue
+- **Skeleton screens** : Chargement progressif
+- **Cache intelligent** : Données fréquentes en local
+- **Lazy loading** : Images et composants lourds différés
 
 ---
 
-## 📋 STATUT D'AVANCEMENT - SESSION 2025-08-13
+## 6. Modèle de Données
 
-### ✅ BUGS CRITIQUES CORRIGÉS
+### 6.1 Entités Principales
 
-#### Édition Transactions (100% Débloquée)
-- **Problème résolu**: Sélecteurs type/tags bloqués dans l'interface
-- **Solution**: Suppression `pointer-events: none` et `preventDefault()` excessifs
-- **Validation**: Modification libre des tags et types de dépense
-- **Fichiers**: `TagsInput.tsx`, `Select.tsx`, `TransactionRow.tsx`
+#### Transaction
+```sql
+- id, date, amount, description, account
+- category (auto + manual), subcategory  
+- is_expense, is_fixed, exclude_from_budget
+- tags[], ml_confidence_score
+- created_at, updated_at, user_id
+```
 
-#### Validation API (Erreurs 422 Résolues)
-- **Problème résolu**: Incompatibilité Pydantic v2 avec syntaxe v1
-- **Solution**: Migration complète vers Pydantic v2 (`@field_validator`)
-- **Validation**: PUT /transactions/{id}/tag et PATCH /expense-type fonctionnels
-- **Performance**: Validation instantanée des schémas
+#### CustomProvision (Épargne)
+```sql
+- id, name, description, icon, color
+- percentage, fixed_amount, base_calculation
+- split_mode, split_member1, split_member2
+- target_amount, current_amount, category
+- is_active, is_temporary, start_date, end_date
+- created_by, created_at, updated_at
+```
 
-#### Dashboard Optimisé (Interface Améliorée)
-- **Problèmes résolus**: Texte tronqué, filtrage modal défaillant, revenus mélangés
-- **Solutions**: 
-  - Séparation revenus/dépenses (3 colonnes)
-  - Pagination revenus (10 par page)
-  - Tooltips sur textes longs
-  - Grille responsive `lg:grid-cols-2 xl:grid-cols-3`
-- **Validation**: Dashboard 100% lisible et fonctionnel
+#### Config (Utilisateur)
+```sql
+- id, user_id, member1_name, member2_name
+- member1_salary, member2_salary
+- tax_rate1, tax_rate2 (taux d'imposition en %)
+- split_fixed_charges, split_variable_charges
+- created_at, updated_at
+```
 
-### ✅ RÉALISATIONS SESSION 2025-08-11
+### 6.2 Relations et Contraintes
 
-#### Import CSV (100% Fonctionnel)
-- **Problème résolu**: "aucun mois détecté" malgré traitement backend réussi
-- **Solution**: Alignement des types TypeScript frontend-backend
-- **Validation**: 176 transactions importées pour juillet 2025
-- **Performance**: Temps d'import < 30s pour CSV 176 lignes
+#### Intégrité Données
+- **Cascade Delete** : Suppression utilisateur → données associées
+- **Validation** : Montants positifs, dates cohérentes, pourcentages 0-100%
+- **Index** : Performance requêtes (date, user_id, category)
 
-#### Communication Frontend-Backend (100% Stable) 
-- **Problème résolu**: Erreurs CORS bloquant accès aux endpoints `/transactions`
-- **Solution**: Correction import path backend + amélioration gestion des erreurs
-- **Validation**: Communication fluide localhost:45678 ↔ localhost:8000
+#### Évolutivité
+- **Migrations** : Scripts automatisés, rollback possibles
+- **Versioning** : Schema evolution, backward compatibility
+- **Backup** : Stratégie sauvegarde, restore procédures
 
-#### Interface Utilisateur (100% Opérationnelle)
-- **Problème résolu**: `row.tags.join is not a function` dans affichage transactions
-- **Solution**: Retour des tags comme `List[str]` au lieu de `string`
-- **Validation**: Édition et affichage des tags 100% fonctionnels
+---
 
-## 🎉 STATUT FINAL - PHASE 1 COMPLÉTÉE (SESSION 2025-08-12)
+## 7. Sécurité et Conformité
 
-### ✅ APPLICATION 100% FONCTIONNELLE - OBJECTIFS PRD DÉPASSÉS
+### 7.1 Protection Données
 
-#### Gestion Provisions & Dépenses Fixes (100% Opérationnelle)
-- **Problèmes résolus**: Erreurs 405 Method Not Allowed sur POST/PUT endpoints
-- **Solutions**: Ajout endpoints PUT /fixed-lines/{id} et POST /custom-provisions
-- **Validation**: Création/modification provisions et dépenses fixes sans erreur
-- **Impact**: Page settings entièrement fonctionnelle
+#### Authentification
+- **JWT Tokens** : Expiration automatique, refresh token
+- **Sécurité mot de passe** : Hachage bcrypt, complexité minimum
+- **Session management** : Timeout inactivité, logout automatique
 
-#### Configuration Revenus (100% Fonctionnelle)
-- **Problème résolu**: PUT /config → 405 empêchant sauvegarde configuration
-- **Solution**: Création endpoint PUT /config avec audit logging  
-- **Validation**: Configuration revenus membres persistante
-- **Metrics**: 4 champs de configuration sauvegardés avec succès
+#### Chiffrement
+- **HTTPS obligatoire** : TLS 1.3, certificats automatiques
+- **Données sensibles** : Chiffrement AES-256 en base
+- **API Keys** : Stockage sécurisé, rotation périodique
 
-#### Interface Calculs & Affichage (100% Corrigée)
-- **Problème résolu**: Affichage "NaN €" et "(undefined%)" dans dépenses fixes
-- **Solution**: Synchronisation types frontend/backend (name→label, active→is_active)
-- **Validation**: Calculs monétaires précis, formatage euros correct
-- **Impact**: UX restaurée, plus aucun affichage corrompu
+#### Audit et Monitoring
+- **Logs sécurité** : Tentatives connexion, actions sensibles
+- **Alertes** : Détection intrusions, comportements anormaux
+- **Compliance** : RGPD, droit suppression, portabilité données
 
-#### Architecture CORS & Docker (100% Stabilisée)
-- **Problème résolu**: CORS persistant bloquant communication Docker frontend
-- **Solution**: Correction Pydantic v2 validator + ajout OPTIONS dans allow_methods
-- **Validation**: Communication localhost:45678 ↔ localhost:8000 sans restriction
-- **Performance**: 0 erreur cross-origin sur tous les endpoints
+### 7.2 Resilience
 
-### 🎯 CRITÈRES D'ACCEPTATION ATTEINTS
+#### Backup et Recovery
+- **Backup automatique** : Quotidien, rétention 30 jours
+- **Test restore** : Vérification mensuelle procédures
+- **Disaster recovery** : RTO <4h, RPO <1h
 
-#### Import Rapide ✅
-- ✅ Import CSV/XLSX multi-mois fonctionnel
-- ✅ Visualisation immédiate des transactions  
-- ✅ Exclusion/tags/agrégation opérationnels
-- ✅ Temps d'import < 2 minutes (objectif PRD atteint)
+---
 
-#### Provision Mensuelle Fiable ✅
-- ✅ Création provisions personnalisées fonctionnelle
-- ✅ Modification dépenses fixes opérationnelle
-- ✅ Calculs transparents poste par poste
-- ✅ Configuration revenus persistante
+## 8. Métriques et KPIs
 
-#### Expérience Cohérente ✅
-- ✅ Sélection mois global conservée entre pages
-- ✅ Navigation fluide toutes pages (import → transactions → dashboard → settings)
-- ✅ Interface responsive et moderne (Next.js 14 + Tailwind + Docker)
-- ✅ Calculs temps réel sans erreurs d'affichage
+### 8.1 Métriques Produit
 
-#### Clé de Répartition Flexible ✅
-- ✅ Configuration par revenus (proportionnel) fonctionnelle
-- ✅ Configuration manuelle (%) opérationnelle
-- ✅ Dérogation par poste fixe disponible
-- ✅ Split modes: clé/50-50/m1/m2/manuel
+#### Adoption
+- **MAU** (Monthly Active Users) : Objectif 1000+ utilisateurs
+- **Retention** : J7 >40%, J30 >20%, J90 >15%
+- **Time to Value** : <10 minutes premier import réussi
 
-### 📊 MÉTRIQUES ACTUELLES (SESSION 2025-08-13)
-- **Taux d'import réussi**: 100% (267/267 transactions importées)
-- **Endpoints fonctionnels**: 100% (GET/POST/PUT/PATCH sur tous routers)
-- **CORS erreurs**: 0 (communication Docker parfaite)
-- **Interface erreurs**: 0 (plus de NaN/undefined)
-- **Configuration**: 100% persistante (revenus, splits, provisions)
-- **Temps sauvegarde**: < 1s pour toute configuration
-- **Architecture**: Modulaire (routers/services/models) et maintenable
-- **Temps mise à jour mensuelle**: ~45 secondes (objectif < 2 min ✅)
-- **Performance utilisateur**: Interface réactive, aucune latence perceptible
-- **Fiabilité**: Application stable depuis corrections du 13/08/2025
-- **Auto-tagging IA**: 78+ transactions/seconde, 95.4% taux succès
-- **Confiance ML**: 67.7% moyenne, seuil 50% respecté
-- **Tags contextuels**: 100+ patterns marchands, enrichissement web
+#### Engagement
+- **Session duration** : Objectif 8-12 minutes moyenne
+- **Pages par session** : >5 pages (navigation hiérarchique)
+- **Feature adoption** : >80% utilisation dashboard, >60% provisions
 
-### 🚀 TRANSITION VERS PHASE 2 - FONCTIONNALITÉS AVANCÉES
+### 8.2 Métriques Techniques
 
-**Phase 1 - FOUNDATION complétée avec dépassement des objectifs :**
-- ✅ **Tous objectifs SMART atteints** (Import <2min ✅, Provision mensuelle ✅, Clé flexible ✅)
-- ✅ **Système IA intégré** (non prévu dans PRD initial - bonus majeur)
-- ✅ **Performance exceptionnelle** : 45s vs objectif 2min (1300% amélioration)
+#### Performance
+- **API Response Time** : P95 <2s, P99 <5s
+- **Frontend Performance** : FCP <3s, TTI <5s, CLS <0.1
+- **Uptime** : >99.5% (objectif 99.9%)
 
-**Phase 2 priorités identifiées :**
-- 🎯 Règles de tags automatiques (moteur + UI)
-- 📊 Charts et visualisations avancées  
-- 📄 Export PDF synthèse mensuelle
-- 🎨 Design system complet (shadcn/ui)
-- 🔔 Alertes et notifications intelligentes
+#### Qualité
+- **ML Accuracy** : Auto-tagging >95% (objectif 97%)
+- **Error Rate** : <1% erreurs utilisateur, <0.1% erreurs système
+- **Support Tickets** : <5% utilisateurs actifs/mois
+
+---
+
+## 9. Roadmap et Releases
+
+### 9.1 Release Planning
+
+#### v2.3.3 (Août 2025) - Current
+- ✅ CleanDashboard Provision-First avec design moderne
+- ✅ Drill-down dépenses hiérarchique complet
+- ✅ Système de tags simplifié sans modal IA
+- ✅ Import CSV/XLSX intelligent multi-format
+- ✅ Provisions personnalisées avec barre progression verte
+- ✅ Système fiscal avec taux d'imposition individuels
+- ✅ Calcul revenus nets et répartition équitable automatisée
+- ✅ Navigation hiérarchique : Dépenses → Variables/Fixes → Tags → Transactions
+- ✅ Quick Actions opérationnels avec animations CountUp
+
+#### v2.4 (Octobre 2025) - Stabilisation
+- 🎯 Correction bugs critiques (CORS, authentification)
+- 🎯 PWA et optimisations mobile
+- 🎯 Tests end-to-end complets
+- 🎯 Performance <1s API response
+
+#### v2.5 (Décembre 2025) - Intelligence
+- 🎯 Prédictions ML (dépenses, épargne)
+- 🎯 Analytics avancés et insights
+- 🎯 Alertes et recommandations
+- 🎯 Export PDF automatisé
+
+### 9.2 Feature Flags
+
+#### Experimental Features
+- **ML Predictions** : Rollout progressif 10→50→100%
+- **PSD2 Integrations** : Beta testing utilisateurs volontaires
+- **Advanced Analytics** : A/B test vs interface actuelle
+
+---
+
+## 10. Risques et Mitigation
+
+### 10.1 Risques Techniques
+
+#### Performance et Scalabilité
+- **Risque** : Dégradation performance avec croissance données
+- **Mitigation** : Pagination, cache Redis, optimisation requêtes
+
+#### Complexité ML
+- **Risque** : Maintenance modèles, drift accuracy
+- **Mitigation** : Pipeline automatisé, monitoring qualité
+
+### 10.2 Risques Produit
+
+#### Adoption Utilisateur
+- **Risque** : Courbe apprentissage trop complexe
+- **Mitigation** : Onboarding guidé, documentation interactive
+
+#### Concurrence
+- **Risque** : Nouveaux entrants avec features similaires
+- **Mitigation** : Innovation continue, fidélisation utilisateurs
+
+---
+
+**Document Version** : 2.3.3  
+**Auteur** : Équipe Produit Budget Famille  
+**Dernière mise à jour** : 2025-08-13  
+**Prochaine révision** : 2025-09-30  
+
+*Ce PRD est un document évolutif, mis à jour en fonction des retours utilisateurs et de l'évolution du marché.*

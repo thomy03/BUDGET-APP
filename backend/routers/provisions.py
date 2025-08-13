@@ -192,3 +192,133 @@ def get_provisions_summary_endpoint(
     
     logger.info(f"Résumé provisions calculé: {summary.total_monthly_amount}€/mois")
     return summary
+
+@router.put("/{provision_id}", response_model=CustomProvisionResponse)
+def update_provision(
+    provision_id: int,
+    payload: CustomProvisionUpdate,
+    current_user = Depends(get_current_user), 
+    db: Session = Depends(get_db)
+):
+    """Update an existing custom provision"""
+    audit_logger = get_audit_logger()
+    logger.info(f"Modification provision ID {provision_id} par utilisateur: {current_user.username}")
+    
+    # Vérifier que la provision existe et appartient à l'utilisateur
+    provision = db.query(CustomProvision).filter(
+        CustomProvision.id == provision_id,
+        CustomProvision.created_by == current_user.username
+    ).first()
+    
+    if not provision:
+        raise HTTPException(
+            status_code=404, 
+            detail=f"Provision {provision_id} non trouvée"
+        )
+    
+    # Vérifier les doublons de nom (sauf pour la provision actuelle)
+    if payload.name and payload.name != provision.name:
+        existing = db.query(CustomProvision).filter(
+            CustomProvision.created_by == current_user.username,
+            CustomProvision.name == payload.name,
+            CustomProvision.id != provision_id
+        ).first()
+        
+        if existing:
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Une autre provision nommée '{payload.name}' existe déjà"
+            )
+    
+    # Mettre à jour les champs modifiés
+    update_data = payload.model_dump(exclude_unset=True)
+    for field, value in update_data.items():
+        setattr(provision, field, value)
+    
+    db.commit()
+    db.refresh(provision)
+    
+    # Log audit
+    audit_logger.log_event(
+        AuditEventType.CONFIG_UPDATE,
+        username=current_user.username,
+        details={"provision_id": provision_id, "action": "update"},
+        success=True
+    )
+    
+    logger.info(f"✅ Provision {provision_id} mise à jour")
+    
+    # Calculate amounts for response
+    config = ensure_default_config(db)
+    monthly_amount, _, _ = calculate_provision_amount(provision, config)
+    progress_percentage = None
+    if provision.target_amount and provision.target_amount > 0:
+        progress_percentage = min(100.0, (provision.current_amount / provision.target_amount) * 100)
+    
+    return CustomProvisionResponse(
+        id=provision.id,
+        name=provision.name,
+        description=provision.description or "",
+        percentage=provision.percentage,
+        base_calculation=provision.base_calculation,
+        fixed_amount=provision.fixed_amount or 0.0,
+        split_mode=provision.split_mode,
+        split_member1=provision.split_member1,
+        split_member2=provision.split_member2,
+        icon=provision.icon,
+        color=provision.color,
+        display_order=provision.display_order,
+        is_active=provision.is_active,
+        is_temporary=provision.is_temporary,
+        start_date=provision.start_date,
+        end_date=provision.end_date,
+        target_amount=provision.target_amount or 0.0,
+        category=provision.category,
+        current_amount=provision.current_amount or 0.0,
+        created_at=provision.created_at,
+        updated_at=provision.updated_at,
+        created_by=provision.created_by,
+        monthly_amount=monthly_amount,
+        progress_percentage=progress_percentage or 0.0
+    )
+
+@router.delete("/{provision_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_provision(
+    provision_id: int,
+    current_user = Depends(get_current_user), 
+    db: Session = Depends(get_db)
+):
+    """Delete a custom provision"""
+    audit_logger = get_audit_logger()
+    logger.info(f"Suppression provision ID {provision_id} par utilisateur: {current_user.username}")
+    
+    # Vérifier que la provision existe et appartient à l'utilisateur
+    provision = db.query(CustomProvision).filter(
+        CustomProvision.id == provision_id,
+        CustomProvision.created_by == current_user.username
+    ).first()
+    
+    if not provision:
+        raise HTTPException(
+            status_code=404, 
+            detail=f"Provision {provision_id} non trouvée"
+        )
+    
+    provision_name = provision.name  # Sauvegarder pour le log
+    
+    # Supprimer la provision
+    db.delete(provision)
+    db.commit()
+    
+    # Log audit
+    audit_logger.log_event(
+        AuditEventType.CONFIG_UPDATE,
+        username=current_user.username,
+        details={"provision_id": provision_id, "provision_name": provision_name, "action": "delete"},
+        success=True
+    )
+    
+    logger.info(f"✅ Provision '{provision_name}' (ID {provision_id}) supprimée")
+    
+    # Return 204 No Content (pas de body)
+    return

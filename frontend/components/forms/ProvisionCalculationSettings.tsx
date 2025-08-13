@@ -33,7 +33,9 @@ const ProvisionCalculationSettings = React.memo<ProvisionCalculationSettingsProp
         return formData.fixed_amount || 0;
     }
 
-    return (base * formData.percentage / 100) / 12;
+    // Les revenus dans config sont déjà mensuels
+    // On applique le pourcentage directement pour obtenir le montant mensuel
+    return base * formData.percentage / 100;
   };
 
   const calculateMemberSplit = (monthlyAmount: number) => {
@@ -41,10 +43,14 @@ const ProvisionCalculationSettings = React.memo<ProvisionCalculationSettingsProp
 
     switch (formData.split_mode) {
       case 'key':
-        const totalRev = (config.rev1 || 0) + (config.rev2 || 0);
-        if (totalRev > 0) {
-          const r1 = (config.rev1 || 0) / totalRev;
-          const r2 = (config.rev2 || 0) / totalRev;
+        // Calcul basé sur les revenus NETS après impôts pour une répartition plus équitable
+        const rev1Net = (config.rev1 || 0) * (1 - (config.tax_rate1 || 0) / 100);
+        const rev2Net = (config.rev2 || 0) * (1 - (config.tax_rate2 || 0) / 100);
+        const totalRevNet = rev1Net + rev2Net;
+        
+        if (totalRevNet > 0) {
+          const r1 = rev1Net / totalRevNet;
+          const r2 = rev2Net / totalRevNet;
           return { member1: monthlyAmount * r1, member2: monthlyAmount * r2 };
         }
         return { member1: monthlyAmount * 0.5, member2: monthlyAmount * 0.5 };
@@ -98,13 +104,14 @@ const ProvisionCalculationSettings = React.memo<ProvisionCalculationSettingsProp
         />
       ) : (
         <Input
-          label="Pourcentage annuel (%)"
+          label="Pourcentage du revenu mensuel (%)"
           type="number"
           value={formData.percentage}
           onChange={(e) => onChange('percentage', Number(e.target.value))}
           min="0"
           max="100"
           step="0.1"
+          hint="Exemple: 10% du revenu mensuel pour l'épargne"
         />
       )}
 
@@ -152,7 +159,7 @@ const ProvisionCalculationSettings = React.memo<ProvisionCalculationSettingsProp
           <h5 className="font-medium text-blue-900 mb-2">Aperçu mensuel</h5>
           <div className="space-y-1 text-sm">
             <div className="flex justify-between">
-              <span>Total mensuel :</span>
+              <span>Total mensuel (calculé sur revenus bruts) :</span>
               <span className="font-mono font-semibold">{previewAmount.toFixed(2)} €</span>
             </div>
             <div className="flex justify-between text-blue-800">
@@ -163,6 +170,11 @@ const ProvisionCalculationSettings = React.memo<ProvisionCalculationSettingsProp
               <span>{config.member2} :</span>
               <span className="font-mono">{memberSplit.member2.toFixed(2)} €</span>
             </div>
+            {formData.split_mode === 'key' && (config.tax_rate1 > 0 || config.tax_rate2 > 0) && (
+              <div className="mt-2 pt-2 border-t border-blue-200 text-xs text-blue-700">
+                💡 Répartition basée sur les revenus nets après impôts
+              </div>
+            )}
           </div>
         </div>
       )}

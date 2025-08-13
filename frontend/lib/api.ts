@@ -1,7 +1,7 @@
 import axios, { AxiosError, AxiosResponse, InternalAxiosRequestConfig } from "axios";
 
 // Configuration de l'API
-export const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || process.env.NEXT_PUBLIC_API_BASE || "http://127.0.0.1:8000";
+export const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || process.env.NEXT_PUBLIC_API_BASE || "http://host.docker.internal:8000";
 
 // Types de données de l'application
 export type ConfigOut = {
@@ -10,6 +10,8 @@ export type ConfigOut = {
   member2: string;
   rev1: number;
   rev2: number;
+  tax_rate1: number;
+  tax_rate2: number;
   split_mode: "revenus" | "manuel";
   split1: number;
   split2: number;

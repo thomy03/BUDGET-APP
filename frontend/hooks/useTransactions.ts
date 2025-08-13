@@ -26,7 +26,7 @@ interface UseTransactionsReturn {
   refresh: (isAuthenticated: boolean, month: string | null) => Promise<void>;
   toggle: (id: number, exclude: boolean) => Promise<void>;
   saveTags: (id: number, tagsCSV: string) => Promise<void>;
-  bulkToggleIncome: (exclude: boolean) => Promise<void>;
+  bulkUnexcludeAll: () => Promise<void>;
   updateExpenseType: (id: number, expenseType: 'fixed' | 'variable') => Promise<void>;
 }
 
@@ -187,22 +187,32 @@ export function useTransactions(): UseTransactionsReturn {
     }
   };
 
-  const bulkToggleIncome = async (exclude: boolean) => {
+  const bulkUnexcludeAll = async () => {
     try {
-      const incomeTransactions = rows.filter(tx => tx.amount >= 0);
-      const updates = incomeTransactions.map(tx => 
-        api.patch(`/transactions/${tx.id}`, { exclude })
+      // Trouver toutes les transactions exclues
+      const excludedTransactions = rows.filter(tx => tx.exclude);
+      
+      if (excludedTransactions.length === 0) {
+        console.log('Aucune transaction exclue à réinclure');
+        return;
+      }
+      
+      // Créer les requêtes pour réinclure toutes les transactions exclues
+      const updates = excludedTransactions.map(tx => 
+        api.patch(`/transactions/${tx.id}`, { exclude: false })
       );
       
       await Promise.all(updates);
       
-      // Update local state
+      // Mettre à jour l'état local
       setRows(prev => prev.map(tx => 
-        tx.amount >= 0 ? { ...tx, exclude } : tx
+        tx.exclude ? { ...tx, exclude: false } : tx
       ));
+      
+      console.log(`✅ ${excludedTransactions.length} transactions réincluses`);
     } catch (err: any) {
-      console.error('Error bulk toggling income:', err);
-      setError('Erreur lors de la modification en masse des revenus');
+      console.error('Erreur lors de la réinclusion en masse:', err);
+      setError('Erreur lors de la réinclusion en masse des transactions');
     }
   };
 
@@ -229,7 +239,7 @@ export function useTransactions(): UseTransactionsReturn {
     refresh,
     toggle,
     saveTags,
-    bulkToggleIncome,
+    bulkUnexcludeAll,
     updateExpenseType
   };
 }

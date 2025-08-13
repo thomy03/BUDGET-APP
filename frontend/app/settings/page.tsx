@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "../../lib/auth";
 import { LoadingSpinner, Alert, Button } from "../../components/ui";
@@ -17,6 +17,7 @@ import { useSettings } from "../../hooks/useSettings";
 export default function Settings() {
   const { isAuthenticated, loading: authLoading } = useAuth();
   const router = useRouter();
+  const [activeTab, setActiveTab] = useState('budget');
   const {
     cfg,
     lines,
@@ -71,7 +72,7 @@ export default function Settings() {
       id: 'budget',
       title: 'Budget & Provisions',
       icon: '📊',
-      description: 'Configuration de vos revenus, budget mensuel et répartition des dépenses',
+      description: 'Configuration des revenus et gestion complète de vos provisions',
       component: (
         <BudgetConfiguration
           cfg={cfg}
@@ -84,7 +85,7 @@ export default function Settings() {
       id: 'expenses',
       title: 'Mes Dépenses',
       icon: '💳',
-      description: 'Gestion de vos dépenses fixes et provisions personnalisées',
+      description: 'Dépenses fixes récurrentes et classification par type/IA',
       component: (
         <ExpenseManagement 
           config={cfg} 
@@ -118,7 +119,9 @@ export default function Settings() {
 
       <SettingsLayout 
         sections={settingsSections}
-        defaultTab="tags"
+        defaultTab="budget"
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
       >
         <Button 
           onClick={load}

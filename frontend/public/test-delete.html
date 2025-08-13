@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Delete Provisions</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        h1 { color: #333; }
+        button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background: #45a049; }
+        button.danger { background: #f44336; }
+        button.danger:hover { background: #da190b; }
+        .log {
+            background: #f4f4f4;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+            font-family: monospace;
+            white-space: pre-wrap;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .success { color: green; }
+        .error { color: red; }
+        .info { color: blue; }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 10px 0;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background: #f4f4f4;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 Test Delete Provisions API</h1>
+
+    <div class="container">
+        <h2>1. Authentification</h2>
+        <button onclick="testAuth()">🔑 Se connecter (admin/secret)</button>
+        <button onclick="checkToken()">🔍 Vérifier le token</button>
+        <div id="authResult" class="log"></div>
+    </div>
+
+    <div class="container">
+        <h2>2. Liste des Provisions</h2>
+        <button onclick="listProvisions()">📋 Lister les provisions</button>
+        <div id="provisionsList"></div>
+    </div>
+
+    <div class="container">
+        <h2>3. Test de suppression</h2>
+        <input type="number" id="provisionId" placeholder="ID de la provision" value="7">
+        <button onclick="testDelete()" class="danger">🗑️ Supprimer la provision</button>
+        <div id="deleteResult" class="log"></div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:8000';
+
+        function log(elementId, message, type = 'info') {
+            const element = document.getElementById(elementId);
+            const timestamp = new Date().toLocaleTimeString();
+            const colorClass = type === 'success' ? 'success' : type === 'error' ? 'error' : 'info';
+            element.innerHTML += `<span class="${colorClass}">[${timestamp}] ${message}</span>\n`;
+            element.scrollTop = element.scrollHeight;
+        }
+
+        async function testAuth() {
+            try {
+                log('authResult', 'Connexion en cours...', 'info');
+                
+                const response = await fetch(`${API_BASE}/token`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: 'username=admin&password=secret'
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    localStorage.setItem('auth_token', data.access_token);
+                    localStorage.setItem('token_type', data.token_type);
+                    localStorage.setItem('username', 'admin');
+                    
+                    log('authResult', '✅ Connexion réussie!', 'success');
+                    log('authResult', `Token: ${data.access_token.substring(0, 50)}...`, 'info');
+                    log('authResult', `Type: ${data.token_type}`, 'info');
+                } else {
+                    log('authResult', `❌ Erreur: ${data.detail}`, 'error');
+                }
+            } catch (error) {
+                log('authResult', `❌ Erreur réseau: ${error.message}`, 'error');
+            }
+        }
+
+        function checkToken() {
+            const token = localStorage.getItem('auth_token');
+            const tokenType = localStorage.getItem('token_type');
+            
+            if (token) {
+                log('authResult', '📦 Token stocké dans localStorage:', 'info');
+                log('authResult', `Token: ${token.substring(0, 50)}...`, 'info');
+                log('authResult', `Type: ${tokenType}`, 'info');
+                log('authResult', `Longueur: ${token.length} caractères`, 'info');
+                
+                // Vérifier le format JWT
+                const parts = token.split('.');
+                if (parts.length === 3) {
+                    log('authResult', '✅ Format JWT valide (3 segments)', 'success');
+                } else {
+                    log('authResult', `❌ Format JWT invalide (${parts.length} segments au lieu de 3)`, 'error');
+                }
+            } else {
+                log('authResult', '❌ Aucun token trouvé', 'error');
+            }
+        }
+
+        async function listProvisions() {
+            try {
+                const token = localStorage.getItem('auth_token');
+                const tokenType = localStorage.getItem('token_type') || 'Bearer';
+                
+                if (!token) {
+                    log('provisionsList', '❌ Veuillez vous connecter d\'abord', 'error');
+                    return;
+                }
+                
+                const response = await fetch(`${API_BASE}/custom-provisions`, {
+                    headers: {
+                        'Authorization': `${tokenType} ${token}`
+                    }
+                });
+                
+                if (response.ok) {
+                    const provisions = await response.json();
+                    
+                    let html = '<table><tr><th>ID</th><th>Nom</th><th>Montant</th><th>Active</th><th>Actions</th></tr>';
+                    provisions.forEach(p => {
+                        html += `<tr>
+                            <td>${p.id}</td>
+                            <td>${p.name}</td>
+                            <td>${p.monthly_amount?.toFixed(2) || '0.00'} €</td>
+                            <td>${p.is_active ? '✅' : '❌'}</td>
+                            <td><button onclick="document.getElementById('provisionId').value=${p.id}; testDelete()" class="danger">Supprimer</button></td>
+                        </tr>`;
+                    });
+                    html += '</table>';
+                    
+                    document.getElementById('provisionsList').innerHTML = html;
+                } else {
+                    const error = await response.text();
+                    document.getElementById('provisionsList').innerHTML = `<div class="error">❌ Erreur ${response.status}: ${error}</div>`;
+                }
+            } catch (error) {
+                document.getElementById('provisionsList').innerHTML = `<div class="error">❌ Erreur: ${error.message}</div>`;
+            }
+        }
+
+        async function testDelete() {
+            const provisionId = document.getElementById('provisionId').value;
+            if (!provisionId) {
+                log('deleteResult', '❌ Veuillez entrer un ID de provision', 'error');
+                return;
+            }
+            
+            const token = localStorage.getItem('auth_token');
+            const tokenType = localStorage.getItem('token_type') || 'Bearer';
+            
+            if (!token) {
+                log('deleteResult', '❌ Veuillez vous connecter d\'abord', 'error');
+                return;
+            }
+            
+            log('deleteResult', `🔄 Suppression de la provision ${provisionId}...`, 'info');
+            log('deleteResult', `URL: ${API_BASE}/custom-provisions/${provisionId}`, 'info');
+            log('deleteResult', `Authorization: ${tokenType} ${token.substring(0, 30)}...`, 'info');
+            
+            try {
+                const response = await fetch(`${API_BASE}/custom-provisions/${provisionId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `${tokenType} ${token}`
+                    }
+                });
+                
+                log('deleteResult', `Response status: ${response.status} ${response.statusText}`, 'info');
+                
+                if (response.status === 204) {
+                    log('deleteResult', `✅ Provision ${provisionId} supprimée avec succès!`, 'success');
+                    // Recharger la liste
+                    listProvisions();
+                } else {
+                    const error = await response.text();
+                    log('deleteResult', `❌ Erreur ${response.status}: ${error}`, 'error');
+                }
+            } catch (error) {
+                log('deleteResult', `❌ Erreur réseau: ${error.message}`, 'error');
+            }
+        }
+
+        // Auto-check token on load
+        window.onload = () => {
+            checkToken();
+        };
+    </script>
+</body>
+</html>

@@ -14,11 +14,24 @@ interface SettingsSection {
 interface SettingsLayoutProps {
   sections: SettingsSection[];
   defaultTab?: string;
+  activeTab?: string;
+  onTabChange?: (tabId: string) => void;
   children?: React.ReactNode;
 }
 
-export function SettingsLayout({ sections, children }: SettingsLayoutProps) {
-  const [activeSection, setActiveSection] = useState('budget');
+export function SettingsLayout({ sections, defaultTab, activeTab, onTabChange, children }: SettingsLayoutProps) {
+  const [internalActiveSection, setInternalActiveSection] = useState(defaultTab || 'budget');
+  
+  // Utiliser activeTab externe si fourni, sinon utiliser l'état interne
+  const activeSection = activeTab !== undefined ? activeTab : internalActiveSection;
+  
+  const handleSectionChange = (sectionId: string) => {
+    if (onTabChange) {
+      onTabChange(sectionId);
+    } else {
+      setInternalActiveSection(sectionId);
+    }
+  };
 
   const currentSection = sections.find(s => s.id === activeSection) || sections[0];
 
@@ -46,7 +59,7 @@ export function SettingsLayout({ sections, children }: SettingsLayoutProps) {
             {sections.map((section, index) => (
               <button
                 key={section.id}
-                onClick={() => setActiveSection(section.id)}
+                onClick={() => handleSectionChange(section.id)}
                 className={`w-full text-left px-4 py-3 rounded-lg transition-all duration-200 ${
                   activeSection === section.id
                     ? 'bg-blue-50 text-blue-700 shadow-sm border border-blue-200'

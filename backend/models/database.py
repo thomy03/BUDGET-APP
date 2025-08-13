@@ -121,8 +121,10 @@ class Config(Base):
     # Member configuration
     member1 = Column(String, default="diana")
     member2 = Column(String, default="thomas")
-    rev1 = Column(Float, default=0.0)
-    rev2 = Column(Float, default=0.0)
+    rev1 = Column(Float, default=0.0)  # Revenu brut membre 1
+    rev2 = Column(Float, default=0.0)  # Revenu brut membre 2
+    tax_rate1 = Column(Float, default=0.0)  # Taux d'imposition membre 1 (%)
+    tax_rate2 = Column(Float, default=0.0)  # Taux d'imposition membre 2 (%)
     
     # Split configuration
     split_mode = Column(String, default="revenus")  # revenus | manuel

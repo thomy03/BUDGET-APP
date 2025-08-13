@@ -4,15 +4,17 @@ Shared data models for API requests/responses
 """
 import datetime as dt
 from typing import List, Optional, Dict, Union, Any
-from pydantic import BaseModel, field_validator, model_validator, Field
+from pydantic import BaseModel, validator, Field, root_validator
 from email_validator import validate_email, EmailNotValidError
 
 # Configuration Schemas
 class ConfigIn(BaseModel):
     member1: str = Field(default="diana", description="Nom membre 1")
     member2: str = Field(default="thomas", description="Nom membre 2")
-    rev1: float = Field(default=0.0, ge=0, description="Revenu membre 1")
-    rev2: float = Field(default=0.0, ge=0, description="Revenu membre 2")
+    rev1: float = Field(default=0.0, ge=0, description="Revenu brut membre 1")
+    rev2: float = Field(default=0.0, ge=0, description="Revenu brut membre 2")
+    tax_rate1: float = Field(default=0.0, ge=0, le=100, description="Taux d'imposition membre 1 (%)")
+    tax_rate2: float = Field(default=0.0, ge=0, le=100, description="Taux d'imposition membre 2 (%)")
     split_mode: str = Field(default="revenus", pattern="^(revenus|manuel)$", description="Mode de répartition")
     split1: float = Field(default=0.5, ge=0, le=1, description="Split membre 1 (si manuel)")
     split2: float = Field(default=0.5, ge=0, le=1, description="Split membre 2 (si manuel)")
@@ -21,11 +23,12 @@ class ConfigIn(BaseModel):
     max_var: float = Field(default=0.0, ge=0, description="Maximum variable")
     min_fixed: float = Field(default=0.0, ge=0, description="Minimum fixe")
 
-    @model_validator(mode='after')
-    def validate_split(self):
-        if abs(self.split1 + self.split2 - 1.0) > 0.01:  # Allow small float errors
-            raise ValueError('Les répartitions split1 et split2 doivent totaliser 1.0')
-        return self
+    @validator('split2', always=True)
+    def validate_split(cls, v, values):
+        if 'split1' in values:
+            if abs(values['split1'] + v - 1.0) > 0.01:  # Allow small float errors
+                raise ValueError('Les répartitions split1 et split2 doivent totaliser 1.0')
+        return v
 
 class ConfigOut(ConfigIn):
     id: int
@@ -62,8 +65,7 @@ class TagsIn(BaseModel):
         example="urgent,personnel,impôts"
     )
     
-    @field_validator('tags', mode='before')
-    @classmethod
+    @validator('tags', pre=True)
     def normalize_tags(cls, v):
         """Normalize tags input to string format"""
         if isinstance(v, list):
@@ -95,9 +97,8 @@ class TransactionUpdate(BaseModel):
         description="Type de dépense - FIXED pour charges fixes, VARIABLE pour dépenses variables, PROVISION pour épargne"
     )
     
-    @field_validator('tags', mode='before')
-    @classmethod
-    def normalize_tags(cls, v):
+    @validator('tags', pre=True)
+    def normalize_tags_update(cls, v):
         """Normalize tags input to string format"""
         if v is None:
             return None
@@ -139,17 +140,18 @@ class FixedLineIn(BaseModel):
     label: str = Field(min_length=1, max_length=200, description="Libellé de la ligne fixe")
     amount: float = Field(description="Montant de la ligne fixe")
     freq: str = Field(pattern="^(mensuelle|trimestrielle|annuelle)$", description="Fréquence")
-    split_mode: str = Field(default="clé", pattern="^(clé|50/50|m1|m2|manuel)$", description="Mode de répartition")
+    split_mode: str = Field(default="clé", pattern="^(clé|50/50|m1|m2|manuel|proportionnel)$", description="Mode de répartition")
     split1: float = Field(default=50.0, ge=0, le=100, description="Répartition membre 1 (%)")
     split2: float = Field(default=50.0, ge=0, le=100, description="Répartition membre 2 (%)")
     category: str = Field(default="autres", pattern="^(logement|transport|services|loisirs|santé|autres)$", description="Catégorie")
     active: bool = Field(default=True, description="Ligne active")
 
-    @model_validator(mode='after')
-    def validate_split_percentages(self):
-        if abs(self.split1 + self.split2 - 100) > 0.1:  # Allow small float errors
-            raise ValueError('Les répartitions split1 et split2 doivent totaliser 100%')
-        return self
+    @validator('split2', always=True)
+    def validate_split_percentages(cls, v, values):
+        if 'split1' in values:
+            if abs(values['split1'] + v - 100) > 0.1:  # Allow small float errors
+                raise ValueError('Les répartitions split1 et split2 doivent totaliser 100%')
+        return v
 
 class FixedLineOut(FixedLineIn):
     id: int
@@ -177,23 +179,24 @@ class CustomProvisionBase(BaseModel):
     target_amount: Optional[float] = Field(None, ge=0, description="Montant cible à atteindre")
     category: str = Field(default="épargne", max_length=50, description="Catégorie de la provision")
 
-    @model_validator(mode='after')
-    def validate_split_percentages_provision(self):
-        if abs(self.split_member1 + self.split_member2 - 100) > 0.1:
-            raise ValueError('Les répartitions split_member1 et split_member2 doivent totaliser 100%')
-        return self
+    @validator('split_member2', always=True)
+    def validate_split_percentages_provision(cls, v, values):
+        if 'split_member1' in values:
+            if abs(values['split_member1'] + v - 100) > 0.1:
+                raise ValueError('Les répartitions split_member1 et split_member2 doivent totaliser 100%')
+        return v
 
-    @model_validator(mode='after')
-    def validate_end_date_after_start(self):
-        if self.start_date and self.end_date and self.end_date <= self.start_date:
+    @validator('end_date', always=True)
+    def validate_end_date_after_start(cls, v, values):
+        if values.get('start_date') and v and v <= values['start_date']:
             raise ValueError('La date de fin doit être postérieure à la date de début')
-        return self
+        return v
 
-    @model_validator(mode='after')
-    def validate_fixed_amount(self):
-        if self.base_calculation == 'fixed' and not self.fixed_amount:
+    @validator('fixed_amount', always=True)
+    def validate_fixed_amount(cls, v, values):
+        if values.get('base_calculation') == 'fixed' and not v:
             raise ValueError('fixed_amount est requis quand base_calculation = "fixed"')
-        return self
+        return v
 
 class CustomProvisionCreate(BaseModel):
     """Schema for creating custom provisions - very permissive for frontend compatibility"""
@@ -215,18 +218,17 @@ class CustomProvisionCreate(BaseModel):
     target_amount: Optional[float] = Field(default=None, description="Montant cible")
     category: Optional[str] = Field(default="épargne", max_length=50, description="Catégorie")
     
-    @field_validator('color', mode='before')
-    @classmethod
+    @validator('color', pre=True)
     def validate_color(cls, v):
         if v and not str(v).startswith('#'):
             return f"#{v}"
         return v or "#3B82F6"
     
-    @model_validator(mode='after')
-    def validate_fixed_amount_create(self):
-        if self.base_calculation == 'fixed' and (self.fixed_amount is None or self.fixed_amount <= 0):
+    @validator('fixed_amount', always=True)
+    def validate_fixed_amount_create(cls, v, values):
+        if values.get('base_calculation') == 'fixed' and (v is None or v <= 0):
             raise ValueError('fixed_amount doit être > 0 quand base_calculation = "fixed"')
-        return self
+        return v
 
 class CustomProvisionUpdate(BaseModel):
     name: Optional[str] = Field(min_length=1, max_length=100)
@@ -570,7 +572,7 @@ class TagPatterns(BaseModel):
     """Schema for adding tag patterns"""
     patterns: List[str] = Field(description="Liste des patterns à ajouter pour reconnaissance automatique")
     
-    @field_validator('patterns')
+    @validator('patterns')
     @classmethod
     def validate_patterns(cls, v):
         if not v or len(v) == 0:
@@ -949,7 +951,7 @@ class TransactionTagUpdate(BaseModel):
     """Schema for updating transaction tags"""
     tags: str = Field(description="Tags séparés par des virgules")
     
-    @field_validator('tags', mode='before')
+    @validator('tags', pre=True)
     @classmethod
     def clean_tags(cls, v):
         if isinstance(v, str):

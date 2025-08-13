@@ -9,3 +9,4 @@ export { ConfidenceBadge, CompactConfidenceBadge } from './ConfidenceBadge';
 export { TagClassificationBadge, CompactTagClassificationBadge, HistoryTagClassificationBadge } from './TagClassificationBadge';
 export { AutoTaggingButton } from './AutoTaggingButton';
 export { AutoTaggingProgress } from './AutoTaggingProgress';
+export { TransactionFilters, type FilterState } from './TransactionFilters';

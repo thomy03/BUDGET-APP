@@ -481,6 +481,62 @@ def update_tags(tx_id: int, payload: TagsIn, current_user = Depends(get_current_
     
     return tx_to_response(tx)
 
+@router.put("/{tx_id}", response_model=TxOut)
+def update_transaction(
+    tx_id: int,
+    payload: TransactionUpdate,
+    current_user = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Update a transaction
+    """
+    tx = db.query(Transaction).filter(Transaction.id == tx_id).first()
+    if not tx:
+        raise HTTPException(status_code=404, detail=f"Transaction {tx_id} not found")
+    
+    # Update fields if provided
+    if payload.label is not None:
+        tx.label = payload.label
+    if payload.amount is not None:
+        tx.amount = payload.amount
+    if payload.category is not None:
+        tx.category = payload.category
+    if payload.subcategory is not None:
+        tx.subcategory = payload.subcategory
+    if payload.expense_type is not None:
+        tx.expense_type = payload.expense_type.upper()
+    if payload.tags is not None:
+        tx.tags = payload.tags
+    if payload.exclude is not None:
+        tx.exclude = payload.exclude
+    
+    db.add(tx)
+    db.commit()
+    db.refresh(tx)
+    
+    logger.info(f"✅ Transaction {tx_id} updated by {current_user.username}")
+    return tx_to_response(tx)
+
+@router.delete("/{tx_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_transaction(
+    tx_id: int,
+    current_user = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Delete a transaction
+    """
+    tx = db.query(Transaction).filter(Transaction.id == tx_id).first()
+    if not tx:
+        raise HTTPException(status_code=404, detail=f"Transaction {tx_id} not found")
+    
+    db.delete(tx)
+    db.commit()
+    
+    logger.info(f"✅ Transaction {tx_id} deleted by {current_user.username}")
+    return None
+
 @router.get("/tags", response_model=List[str])
 def list_tags(db: Session = Depends(get_db)):
     """

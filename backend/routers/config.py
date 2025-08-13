@@ -32,6 +32,8 @@ def _build_config_response(cfg: Config) -> ConfigOut:
         member2=cfg.member2,
         rev1=cfg.rev1,
         rev2=cfg.rev2,
+        tax_rate1=getattr(cfg, 'tax_rate1', 0.0),
+        tax_rate2=getattr(cfg, 'tax_rate2', 0.0),
         split_mode=cfg.split_mode,
         split1=cfg.split1,
         split2=cfg.split2,

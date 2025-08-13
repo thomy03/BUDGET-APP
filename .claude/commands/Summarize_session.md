@@ -5,7 +5,7 @@ Document session progress and achievements in project documentation on dedicated
 ## Instructions
 
 At the end of the development session, create a comprehensive summary:
-1. Document all completed tasks and achievements during this session
+1. Document all completed tasks and achievements during this session. Delete/update past features that has been updated/deleted to be up to date.
 2. Note any problems solved and solutions implemented  
 3. Record any new issues discovered or blockers encountered
 4. Update progress status for ongoing features

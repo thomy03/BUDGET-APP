@@ -50,7 +50,7 @@ def validate_jwt_key_consistency():
 # Initialize JWT secret key once at module level to prevent changes during runtime
 SECRET_KEY = get_secure_jwt_key()
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
+ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 * 7  # 7 jours
 
 # Log initialization for debugging
 logger.info(f"🔐 JWT SECRET_KEY initialisé: {SECRET_KEY[:8]}...{SECRET_KEY[-8:]} (longueur: {len(SECRET_KEY)})")

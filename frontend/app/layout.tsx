@@ -7,7 +7,7 @@ import { usePathname } from "next/navigation";
 import Link from "next/link";
 import MonthPicker from "../components/MonthPicker";
 import { useAuth } from "../lib/auth";
-import { ToastProvider } from "../components/ui";
+import { ToastProvider, SessionStatus } from "../components/ui";
 
 export default function RootLayout({
   children,
@@ -118,6 +118,7 @@ export default function RootLayout({
         <main className={isLoginPage ? "" : "min-h-screen bg-zinc-50"}>
           <ToastProvider>
             {children}
+            {isAuthenticated && <SessionStatus />}
           </ToastProvider>
         </main>
       </body>

@@ -7,6 +7,7 @@ import { useAuth } from "../lib/auth";
 import { LoadingSpinner } from "../components/ui";
 import { KeyMetrics, EnhancedDashboard } from "../components/dashboard";
 import ProvisionsWidget from "../components/ProvisionsWidget";
+import CleanDashboard from "../components/dashboard/CleanDashboard";
 import { useDashboardData } from "../hooks/useDashboardData";
 
 export default function DashboardPage() {
@@ -37,39 +38,43 @@ export default function DashboardPage() {
   }
 
   return (
-    <main className="container py-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="h1">Tableau de bord</h1>
+    <main className="min-h-screen bg-gray-50">
+      {error && (
+        <div className="container py-4">
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl">
+            {error}
+          </div>
+        </div>
+      )}
+
+      {/* NEW CLEAN DASHBOARD - Design épuré et ultra-lisible */}
+      <div className="container py-8">
+        <CleanDashboard 
+          month={month}
+          isAuthenticated={isAuthenticated}
+        />
       </div>
 
-      {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl">
-          {error}
-        </div>
-      )}
-
-      {/* Enhanced Dashboard - NEW RESTRUCTURED INTERFACE */}
-      <EnhancedDashboard 
+      {/* Enhanced Dashboard - OLD INTERFACE (can be removed after validation) */}
+      {/* <EnhancedDashboard 
         month={month}
         isAuthenticated={isAuthenticated}
-      />
+      /> */}
 
-      {/* Legacy Provisions Widget - Keep for now as complementary info */}
-      {summary && config && (
-        <ProvisionsWidget config={config} />
-      )}
-
-      {/* Legacy Key Metrics - Keep for backward compatibility */}
-      {summary && config && (
-        <div className="mt-8 p-4 bg-gray-50 rounded-lg">
-          <h3 className="text-sm font-medium text-gray-600 mb-4">🔍 Métriques de contrôle (legacy)</h3>
-          <KeyMetrics 
-            summary={summary} 
-            config={config} 
-            provisions={provisions} 
-            fixedExpenses={fixedExpenses}
-          />
-        </div>
+      {/* Legacy Components - Hidden for clean design */}
+      {false && summary && config && (
+        <>
+          <ProvisionsWidget config={config} />
+          <div className="mt-8 p-4 bg-gray-50 rounded-lg">
+            <h3 className="text-sm font-medium text-gray-600 mb-4">🔍 Métriques de contrôle (legacy)</h3>
+            <KeyMetrics 
+              summary={summary} 
+              config={config} 
+              provisions={provisions} 
+              fixedExpenses={fixedExpenses}
+            />
+          </div>
+        </>
       )}
     </main>
   );

@@ -450,6 +450,16 @@ async def legacy_token_endpoint(form_data: OAuth2PasswordRequestForm = Depends()
     )
     return {"access_token": access_token, "token_type": "bearer"}
 
+@app.get("/keep-alive")
+async def keep_alive(current_user = Depends(get_current_user)):
+    """Endpoint pour maintenir la session active et vérifier la validité du token"""
+    return {
+        "status": "ok", 
+        "user": current_user.username, 
+        "timestamp": dt.datetime.utcnow().isoformat(),
+        "message": "Session active"
+    }
+
 @app.post("/debug/jwt")
 def legacy_debug_jwt(request_data: dict):
     """Legacy debug JWT endpoint for backward compatibility"""
@@ -496,6 +506,39 @@ async def legacy_create_custom_provision(payload: dict, current_user = Depends(g
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Invalid provision data: {str(e)}"
+        )
+
+@app.put("/custom-provisions/{provision_id}")
+async def legacy_update_custom_provision(provision_id: int, payload: dict, current_user = Depends(get_current_user), db: Session = Depends(get_db)):
+    """Legacy custom-provisions PUT endpoint for frontend compatibility"""
+    # Delegate to the provisions router implementation
+    from routers.provisions import update_provision
+    from models.schemas import CustomProvisionUpdate
+    
+    # Convert dict payload to Pydantic model for validation
+    try:
+        provision_data = CustomProvisionUpdate(**payload)
+        return update_provision(provision_id=provision_id, payload=provision_data, current_user=current_user, db=db)
+    except Exception as e:
+        logger.error(f"Error updating custom provision {provision_id}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid provision data: {str(e)}"
+        )
+
+@app.delete("/custom-provisions/{provision_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def legacy_delete_custom_provision(provision_id: int, current_user = Depends(get_current_user), db: Session = Depends(get_db)):
+    """Legacy custom-provisions DELETE endpoint for frontend compatibility"""
+    # Delegate to the provisions router implementation  
+    from routers.provisions import delete_provision
+    
+    try:
+        return delete_provision(provision_id=provision_id, current_user=current_user, db=db)
+    except Exception as e:
+        logger.error(f"Error deleting custom provision {provision_id}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to delete provision: {str(e)}"
         )
 
 # Compatibility route for tags-summary (frontend expects this endpoint)

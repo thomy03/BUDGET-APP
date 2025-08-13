@@ -18,7 +18,7 @@ interface TransactionsTableProps {
   onToggle: (id: number, exclude: boolean) => void;
   onSaveTags: (id: number, tagsCSV: string) => void;
   onExpenseTypeChange?: (id: number, expenseType: 'fixed' | 'variable') => void;
-  onBulkToggleIncome?: (exclude: boolean) => void;
+  onBulkUnexcludeAll?: () => void;
 }
 
 export function TransactionsTable({ 
@@ -28,43 +28,22 @@ export function TransactionsTable({
   onToggle, 
   onSaveTags,
   onExpenseTypeChange,
-  onBulkToggleIncome
+  onBulkUnexcludeAll
 }: TransactionsTableProps) {
   const { addToast } = useToast();
   
-  // Calculer les revenus et leur état
-  const incomeTransactions = useMemo(() => 
-    rows.filter(row => row.amount >= 0), [rows]);
+  // Calculer le nombre de transactions exclues
+  const excludedCount = useMemo(() => 
+    rows.filter(row => row.exclude).length, [rows]);
   
-  const incomeStats = useMemo(() => {
-    const total = incomeTransactions.length;
-    const excluded = incomeTransactions.filter(row => row.exclude).length;
-    const included = total - excluded;
-    return { total, excluded, included };
-  }, [incomeTransactions]);
-  
-  // État de la checkbox principale (indéterminé si partiellement sélectionné)
-  const bulkIncomeState = useMemo(() => {
-    if (incomeStats.total === 0) return { checked: false, indeterminate: false };
-    if (incomeStats.excluded === 0) return { checked: false, indeterminate: false }; // Tous inclus
-    if (incomeStats.excluded === incomeStats.total) return { checked: true, indeterminate: false }; // Tous exclus
-    return { checked: false, indeterminate: true }; // Partiellement exclus
-  }, [incomeStats]);
-  
-  // Gestionnaire pour la sélection en masse des revenus
-  const handleBulkIncomeToggle = () => {
-    if (!onBulkToggleIncome) return;
+  // Gestionnaire pour tout réinclure
+  const handleUnexcludeAll = () => {
+    if (!onBulkUnexcludeAll || excludedCount === 0) return;
     
-    // Si tous sont exclus OU état indéterminé, inclure tous
-    // Si tous sont inclus, exclure tous
-    const shouldExclude = !bulkIncomeState.checked && !bulkIncomeState.indeterminate;
-    
-    onBulkToggleIncome(shouldExclude);
+    onBulkUnexcludeAll();
     
     addToast({
-      message: shouldExclude 
-        ? `${incomeStats.total} revenus exclus du calcul`
-        : `${incomeStats.total} revenus inclus dans le calcul`,
+      message: `${excludedCount} transactions réincluses dans le calcul`,
       type: "success",
       duration: 2000
     });
@@ -81,22 +60,14 @@ export function TransactionsTable({
             <th className="text-center p-3 font-medium">
               <div className="flex flex-col items-center gap-1">
                 <span>Exclure</span>
-                {incomeStats.total > 0 && (
-                  <div className="flex items-center gap-1 text-xs">
-                    <input
-                      type="checkbox"
-                      checked={bulkIncomeState.checked}
-                      ref={(el) => {
-                        if (el) el.indeterminate = bulkIncomeState.indeterminate;
-                      }}
-                      onChange={handleBulkIncomeToggle}
-                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 scale-75"
-                      title={`Sélectionner tous les revenus (${incomeStats.total})`}
-                    />
-                    <span className="text-gray-600 whitespace-nowrap">
-                      Revenus ({incomeStats.included}/{incomeStats.total})
-                    </span>
-                  </div>
+                {excludedCount > 0 && (
+                  <button
+                    onClick={handleUnexcludeAll}
+                    className="text-xs text-blue-600 hover:text-blue-800 underline"
+                    title={`Réinclure les ${excludedCount} transactions exclues`}
+                  >
+                    Tout réinclure
+                  </button>
                 )}
               </div>
             </th>

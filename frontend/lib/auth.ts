@@ -23,9 +23,11 @@ class AuthService {
     loading: true,
   };
   private listeners: Set<() => void> = new Set();
+  private refreshTimer: NodeJS.Timeout | null = null;
   
   private constructor() {
     this.initializeAuth();
+    this.setupTokenRefresh();
   }
 
   public static getInstance(): AuthService {
@@ -91,10 +93,43 @@ class AuthService {
     }
   }
 
+  private setupTokenRefresh() {
+    // Vérifier le token toutes les heures et le rafraîchir si nécessaire
+    if (typeof window !== "undefined") {
+      setInterval(() => {
+        const token = localStorage.getItem("auth_token");
+        if (token && this.isTokenExpired(token, 60 * 60 * 24)) { // Rafraîchir si expire dans moins de 24h
+          this.refreshToken();
+        }
+      }, 60 * 60 * 1000); // Vérifier toutes les heures
+    }
+  }
+
+  private async refreshToken() {
+    try {
+      const username = localStorage.getItem("username");
+      const password = localStorage.getItem("user_password"); // Si on stocke le mot de passe chiffré
+      
+      if (username) {
+        // En production, utilisez un refresh token au lieu de stocker le mot de passe
+        console.log("🔄 Rafraîchissement du token...");
+        // Pour l'instant, on garde juste le token existant car il dure 7 jours
+      }
+    } catch (error) {
+      console.error("Erreur lors du rafraîchissement du token:", error);
+    }
+  }
+
   private clearAuthData() {
+    if (this.refreshTimer) {
+      clearTimeout(this.refreshTimer);
+      this.refreshTimer = null;
+    }
+    
     localStorage.removeItem("auth_token");
     localStorage.removeItem("token_type");
     localStorage.removeItem("username");
+    localStorage.removeItem("token_expiry");
     delete api.defaults.headers.common["Authorization"];
     this.updateAuthState({
       isAuthenticated: false,
@@ -136,6 +171,10 @@ class AuthService {
       localStorage.setItem("auth_token", access_token);
       localStorage.setItem("token_type", token_type);
       localStorage.setItem("username", username);
+      
+      // Stocker le timestamp de connexion pour suivre l'expiration
+      const loginTime = Date.now();
+      localStorage.setItem("login_time", loginTime.toString());
       
       // Configurer axios avec vérification
       const authHeader = `${token_type} ${access_token}`;
@@ -187,7 +226,7 @@ class AuthService {
     }
   }
 
-  public isTokenExpired(token: string): boolean {
+  public isTokenExpired(token: string, marginSeconds: number = 300): boolean {
     try {
       if (!token || token.split('.').length !== 3) {
         return true;
@@ -200,8 +239,8 @@ class AuthService {
       const payload = JSON.parse(atob(tokenParts[1]));
       const currentTime = Date.now() / 1000;
       
-      // Ajouter une marge de 5 minutes pour éviter les expirations de dernière minute
-      return payload.exp < (currentTime + 300);
+      // Vérifier si le token expire dans moins de marginSeconds secondes
+      return payload.exp < (currentTime + marginSeconds);
     } catch (error) {
       console.error("Erreur vérification expiration token:", error);
       return true; // Considérer comme expiré si erreur de parsing

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useGlobalMonthWithUrl } from "../../lib/month";
 import { useAuth } from "../../lib/auth";
@@ -8,7 +8,7 @@ import { LoadingSpinner, Card, Alert } from "../../components/ui";
 import ImportSuccessBanner from "../../components/ImportSuccessBanner";
 import { useTransactions } from "../../hooks/useTransactions";
 import { useAutoTagging } from "../../hooks/useAutoTagging";
-import { TransactionsSummary, TransactionsTable, AutoTaggingButton, AutoTaggingProgress } from "../../components/transactions";
+import { TransactionsSummary, TransactionsTable, AutoTaggingButton, AutoTaggingProgress, TransactionFilters, FilterState } from "../../components/transactions";
 
 export default function TransactionsPage() {
   const { isAuthenticated, loading: authLoading } = useAuth();
@@ -25,9 +25,68 @@ export default function TransactionsPage() {
     refresh,
     toggle,
     saveTags,
-    bulkToggleIncome,
+    bulkUnexcludeAll,
     updateExpenseType
   } = useTransactions();
+  
+  // State for filters
+  const [filters, setFilters] = useState<FilterState>({
+    searchText: '',
+    dateFrom: '',
+    dateTo: '',
+    amountMin: '',
+    amountMax: '',
+    excludeFilter: 'all',
+    transactionType: 'all'
+  });
+  
+  // Apply filters to transactions
+  const filteredRows = useMemo(() => {
+    let filtered = [...rows];
+    
+    // Filter by search text (libellé)
+    if (filters.searchText) {
+      const searchLower = filters.searchText.toLowerCase();
+      filtered = filtered.filter(row => 
+        row.label?.toLowerCase().includes(searchLower) ||
+        row.name?.toLowerCase().includes(searchLower)
+      );
+    }
+    
+    // Filter by date range
+    if (filters.dateFrom) {
+      filtered = filtered.filter(row => row.date >= filters.dateFrom);
+    }
+    if (filters.dateTo) {
+      filtered = filtered.filter(row => row.date <= filters.dateTo);
+    }
+    
+    // Filter by amount range
+    if (filters.amountMin) {
+      const min = parseFloat(filters.amountMin);
+      filtered = filtered.filter(row => Math.abs(row.amount) >= min);
+    }
+    if (filters.amountMax) {
+      const max = parseFloat(filters.amountMax);
+      filtered = filtered.filter(row => Math.abs(row.amount) <= max);
+    }
+    
+    // Filter by transaction type
+    if (filters.transactionType === 'income') {
+      filtered = filtered.filter(row => row.amount >= 0);
+    } else if (filters.transactionType === 'expense') {
+      filtered = filtered.filter(row => row.amount < 0);
+    }
+    
+    // Filter by exclusion status
+    if (filters.excludeFilter === 'included') {
+      filtered = filtered.filter(row => !row.exclude);
+    } else if (filters.excludeFilter === 'excluded') {
+      filtered = filtered.filter(row => row.exclude);
+    }
+    
+    return filtered;
+  }, [rows, filters]);
 
   // Auto-tagging functionality
   const {
@@ -55,10 +114,10 @@ export default function TransactionsPage() {
     await updateExpenseType(id, expenseType);
   };
 
-  // Gestionnaire pour la sélection en masse des revenus
-  const handleBulkToggleIncome = async (exclude: boolean) => {
-    console.log(`📊 Bulk toggling income transactions: exclude=${exclude}`);
-    await bulkToggleIncome(exclude);
+  // Gestionnaire pour réinclure toutes les transactions
+  const handleBulkUnexcludeAll = async () => {
+    console.log(`📊 Réinclusion de toutes les transactions exclues`);
+    await bulkUnexcludeAll();
   };
 
   // Gestionnaire pour démarrer l'auto-tagging
@@ -88,8 +147,8 @@ export default function TransactionsPage() {
     }
   };
 
-  // Calculate untagged count for the button
-  const untaggedCount = getUntaggedCount(rows);
+  // Calculate untagged count for the button (use filtered rows)
+  const untaggedCount = getUntaggedCount(filteredRows);
 
   useEffect(() => {
     if (!authLoading) {
@@ -143,11 +202,16 @@ export default function TransactionsPage() {
         </button>
       </div>
 
-      {/* Auto-tagging button */}
+      {/* Filters */}
       {!loading && rows.length > 0 && (
+        <TransactionFilters onFiltersChange={setFilters} />
+      )}
+      
+      {/* Auto-tagging button */}
+      {!loading && filteredRows.length > 0 && (
         <div className="flex justify-center">
           <AutoTaggingButton
-            totalTransactions={rows.length}
+            totalTransactions={filteredRows.length}
             untaggedCount={untaggedCount}
             isProcessing={isAutoTagging}
             onStartAutoTagging={handleStartAutoTagging}
@@ -191,7 +255,14 @@ export default function TransactionsPage() {
 
       {/* Rappel des totaux du mois */}
       {!loading && rows.length > 0 && (
-        <TransactionsSummary month={month} calculations={calculations} />
+        <>
+          <TransactionsSummary month={month} calculations={calculations} />
+          {filteredRows.length < rows.length && (
+            <Alert variant="info">
+              🔍 Affichage de {filteredRows.length} transactions sur {rows.length} total (filtres actifs)
+            </Alert>
+          )}
+        </>
       )}
 
       {/* Bandeau d'import success si importId présent */}
@@ -209,14 +280,17 @@ export default function TransactionsPage() {
           <div className="flex justify-center py-8">
             <LoadingSpinner text="Chargement des transactions..." />
           </div>
-        ) : rows.length === 0 ? (
+        ) : filteredRows.length === 0 ? (
           <div className="text-center py-12">
             <div className="text-6xl mb-4">💳</div>
             <h3 className="text-lg font-medium text-gray-900 mb-2">
               Aucune transaction trouvée
             </h3>
             <p className="text-gray-600 mb-4">
-              Aucune transaction n'a été importée pour le mois de {month}.
+              {rows.length > 0 
+                ? "Aucune transaction ne correspond aux filtres sélectionnés."
+                : `Aucune transaction n'a été importée pour le mois de ${month}.`
+              }
             </p>
             <button 
               onClick={() => refresh(isAuthenticated, month)}
@@ -227,13 +301,13 @@ export default function TransactionsPage() {
           </div>
         ) : (
           <TransactionsTable
-            rows={rows}
+            rows={filteredRows}
             importId={importId}
             calculations={calculations}
             onToggle={toggle}
             onSaveTags={saveTags}
             onExpenseTypeChange={handleExpenseTypeChange}
-            onBulkToggleIncome={handleBulkToggleIncome}
+            onBulkUnexcludeAll={handleBulkUnexcludeAll}
           />
         )}
       </Card>

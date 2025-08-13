@@ -90,15 +90,19 @@ def calculate_provision_amount(provision: CustomProvision, config: Config) -> Tu
     if provision.base_calculation == "fixed":
         monthly_amount = base  # Already monthly
     else:
-        monthly_amount = (base * provision.percentage / 100.0) / 12.0 if base else 0.0
+        # Les revenus dans config sont déjà mensuels, pas besoin de diviser par 12
+        monthly_amount = (base * provision.percentage / 100.0) if base else 0.0
     
     # Calculate distribution
     if provision.split_mode == "key":
-        # Use global split ratio
-        total_rev = (config.rev1 or 0) + (config.rev2 or 0)
-        if total_rev > 0:
-            r1 = (config.rev1 or 0) / total_rev
-            r2 = (config.rev2 or 0) / total_rev
+        # Calculer la répartition basée sur les revenus NETS après impôts
+        rev1_net = (config.rev1 or 0) * (1 - (getattr(config, 'tax_rate1', 0) or 0) / 100)
+        rev2_net = (config.rev2 or 0) * (1 - (getattr(config, 'tax_rate2', 0) or 0) / 100)
+        total_rev_net = rev1_net + rev2_net
+        
+        if total_rev_net > 0:
+            r1 = rev1_net / total_rev_net
+            r2 = rev2_net / total_rev_net
         else:
             r1 = r2 = 0.5
         member1_amount = monthly_amount * r1

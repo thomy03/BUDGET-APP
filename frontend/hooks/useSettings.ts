@@ -52,14 +52,29 @@ export function useSettings(isAuthenticated: boolean): UseSettingsReturn {
       setError('');
       setMessage('');
       
+      const splitMode = formData.get('split_mode') as string || 'revenus';
+      
+      // Convertir les pourcentages en fractions si mode manuel
+      let split1 = 0.5;
+      let split2 = 0.5;
+      
+      if (splitMode === 'manuel') {
+        const split1Percent = parseFloat(formData.get('split1') as string) || 50;
+        const split2Percent = parseFloat(formData.get('split2') as string) || 50;
+        split1 = split1Percent / 100;
+        split2 = split2Percent / 100;
+      }
+      
       const payload = {
         member1: formData.get('member1') as string,
         member2: formData.get('member2') as string,
         rev1: parseFloat(formData.get('rev1') as string) || 0,
         rev2: parseFloat(formData.get('rev2') as string) || 0,
-        split1: parseFloat(formData.get('split1') as string) || 0.5,
-        split2: parseFloat(formData.get('split2') as string) || 0.5,
-        split_mode: formData.get('split_mode') as string || 'revenus'
+        tax_rate1: parseFloat(formData.get('tax_rate1') as string) || 0,
+        tax_rate2: parseFloat(formData.get('tax_rate2') as string) || 0,
+        split1,
+        split2,
+        split_mode: splitMode
       };
       
       console.log('Saving configuration:', payload);

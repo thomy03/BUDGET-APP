@@ -14,6 +14,7 @@ export { Tabs, TabsList, TabsTrigger, TabsContent } from "./Tabs";
 export { ErrorBoundary, withErrorBoundary, useErrorHandler } from "./ErrorBoundary";
 export { default as Select } from "./Select";
 export { TagsInput } from "./TagsInput";
+export { SessionStatus } from "./SessionStatus";
 
 export type { default as ButtonProps } from "./Button";
 export type { default as InputProps } from "./Input";

@@ -22,7 +22,7 @@ import { TransactionDetailModal } from './TransactionDetailModal';
 import { HierarchicalNavigationModal } from './HierarchicalNavigationModal';
 import { AccountBalanceComponent } from './AccountBalance';
 import { useRouter } from 'next/navigation';
-import { api } from '../../lib/api';
+import { api, balanceApi } from '../../lib/api';
 
 interface EnhancedDashboardProps {
   month: string;
@@ -32,6 +32,22 @@ interface EnhancedDashboardProps {
 const EnhancedDashboard = React.memo<EnhancedDashboardProps>(({ month, isAuthenticated }) => {
   const { data, loading, error, reload, convertExpenseType, bulkConvertExpenseType } = useEnhancedDashboard(month, isAuthenticated);
   const [convertingIds, setConvertingIds] = useState<Set<number>>(new Set());
+  const [accountBalance, setAccountBalance] = useState<number>(0);
+  
+  // Charger le solde au démarrage
+  useEffect(() => {
+    const loadBalance = async () => {
+      try {
+        const balanceData = await balanceApi.get(month);
+        setAccountBalance(balanceData.account_balance);
+      } catch (error) {
+        console.error('Erreur chargement solde:', error);
+      }
+    };
+    if (month && isAuthenticated) {
+      loadBalance();
+    }
+  }, [month, isAuthenticated]);
   const [modalState, setModalState] = useState<{
     isOpen: boolean;
     title: string;
@@ -269,10 +285,13 @@ const EnhancedDashboard = React.memo<EnhancedDashboardProps>(({ month, isAuthent
     <ErrorBoundary>
     <div className="max-w-[1600px] mx-auto px-6 space-y-8">
       {/* Revenue Details Section */}
-      <RevenueSection data={data} />
+      <RevenueSection data={data} accountBalance={accountBalance} />
       
       {/* Account Balance Section */}
-      <AccountBalanceComponent month={month} onBalanceUpdate={reload} />
+      <AccountBalanceComponent month={month} onBalanceUpdate={(balance) => {
+        setAccountBalance(balance);
+        reload();
+      }} />
       
       {/* Key Metrics Overview */}
       <MetricsOverview 
@@ -314,7 +333,7 @@ const EnhancedDashboard = React.memo<EnhancedDashboardProps>(({ month, isAuthent
       
       {/* Main Content - Equal Height 3-Column Layout avec centrage amélioré */}
       <div className="flex justify-center">
-        <div className="flex flex-col 2xl:flex-row gap-6 min-h-[600px] w-full max-w-[1200px]">
+        <div className="flex flex-col 2xl:flex-row gap-6 min-h-[600px] w-full max-w-[1400px]">
         {/* LEFT: REVENUS (INCOME) */}
         <div className="flex flex-col h-full flex-1 min-w-0 2xl:min-w-[400px] 2xl:max-w-[500px]">
           <RevenueTransactionsSection data={data} month={month} />
@@ -343,7 +362,7 @@ const EnhancedDashboard = React.memo<EnhancedDashboardProps>(({ month, isAuthent
       </div>
       
       {/* Summary Totals */}
-      <TotalsSummary data={data} />
+      <TotalsSummary data={data} accountBalance={accountBalance} />
       
       {/* Transaction Detail Modal */}
       <TransactionDetailModal
@@ -394,7 +413,7 @@ const EnhancedDashboard = React.memo<EnhancedDashboardProps>(({ month, isAuthent
 EnhancedDashboard.displayName = 'EnhancedDashboard';
 
 // Revenue Section Component
-const RevenueSection = React.memo<{ data: EnhancedSummaryData }>(({ data }) => {
+const RevenueSection = React.memo<{ data: EnhancedSummaryData; accountBalance?: number }>(({ data, accountBalance = 0 }) => {
   // Defensive checks for revenue data
   const safeData = data ?? {
     revenues: { member1_revenue: 0, member2_revenue: 0, total_revenue: 0, provision_needed: 0 },
@@ -408,11 +427,27 @@ const RevenueSection = React.memo<{ data: EnhancedSummaryData }>(({ data }) => {
   // Always show the revenue section, even with zero values
   const revenues = data?.revenues ?? safeData.revenues;
   
-  // Calculate recommended provision amount: Total Fixed Expenses + Suggested Provisions
-  const recommendedProvision = (
+  // Calculate recommended provision amount: Total Fixed Expenses + Suggested Provisions - Account Balance
+  // If balance is positive, it reduces the need to provision. If negative, it increases it.
+  const baseProvision = (
     (safeData.fixed_expenses?.total ?? 0) + 
     (safeData.savings?.total ?? 0)
   );
+  const recommendedProvision = Math.max(0, baseProvision - accountBalance);
+  
+  // Calculate split between members (assuming 50/50 or based on income ratio)
+  const member1Income = revenues?.member1_revenue || 0;
+  const member2Income = revenues?.member2_revenue || 0;
+  const totalIncome = member1Income + member2Income;
+  
+  let member1Provision = recommendedProvision / 2;
+  let member2Provision = recommendedProvision / 2;
+  
+  if (totalIncome > 0) {
+    // Split based on income ratio
+    member1Provision = recommendedProvision * (member1Income / totalIncome);
+    member2Provision = recommendedProvision * (member2Income / totalIncome);
+  }
   
   return (
     <Card className="p-8 border-l-4 border-l-emerald-500 bg-gradient-to-r from-emerald-50 to-green-50">
@@ -443,25 +478,59 @@ const RevenueSection = React.memo<{ data: EnhancedSummaryData }>(({ data }) => {
         <div className="bg-gradient-to-r from-yellow-50 to-orange-50 rounded-lg p-5 border border-orange-200 flex-1">
           <div className="text-sm font-medium text-orange-700 mb-2 whitespace-nowrap">Montant à Provisionner</div>
           <div className={`text-lg font-bold ${getAmountColorClass('expense')}`}>{formatAmount(recommendedProvision || 0, 'expense')}</div>
-          <div className="text-xs text-orange-600 mt-2 leading-relaxed">Charges fixes + Épargne</div>
+          <div className="text-xs text-orange-600 mt-2 leading-relaxed">
+            {accountBalance !== 0 && (
+              <span className="block">
+                Solde: {accountBalance >= 0 ? '+' : ''}{accountBalance.toFixed(2)}€
+              </span>
+            )}
+            Charges + Épargne {accountBalance > 0 ? '- Solde' : accountBalance < 0 ? '+ Déficit' : ''}
+          </div>
         </div>
       </div>
 
       {/* Detailed calculation breakdown */}
       <div className="mt-4 bg-white rounded-lg p-4 border border-emerald-100">
         <div className="text-sm font-medium text-emerald-700 mb-2">Calcul du montant à provisionner:</div>
-        <div className="grid grid-cols-3 gap-4 text-xs">
+        <div className="grid grid-cols-4 gap-3 text-xs">
           <div className="text-center">
             <div className={`font-semibold ${getAmountColorClass('expense')}`}>{formatAmount(safeData?.fixed_expenses?.total || 0, 'expense')}</div>
             <div className="text-gray-600">Charges fixes</div>
           </div>
           <div className="text-center">
             <div className={`font-semibold ${getAmountColorClass('expense')}`}>{formatAmount(safeData?.savings?.total || 0, 'expense')}</div>
-            <div className="text-gray-600">Provisions épargne</div>
+            <div className="text-gray-600">Provisions</div>
+          </div>
+          <div className="text-center">
+            <div className={`font-semibold ${accountBalance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+              {accountBalance >= 0 ? '-' : '+'}{Math.abs(accountBalance).toFixed(2)} €
+            </div>
+            <div className="text-gray-600">Solde compte</div>
           </div>
           <div className="text-center">
             <div className={`font-bold ${getAmountColorClass('expense')}`}>{formatAmount(recommendedProvision || 0, 'expense')}</div>
-            <div className="text-gray-600">Total recommandé</div>
+            <div className="text-gray-600">Total à provisionner</div>
+          </div>
+        </div>
+        
+        {/* Répartition entre membres */}
+        <div className="mt-4 pt-4 border-t border-emerald-100">
+          <div className="text-sm font-medium text-emerald-700 mb-2">Répartition à provisionner:</div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="bg-emerald-50 rounded-lg p-3 text-center">
+              <div className="text-xs text-emerald-600 mb-1">{safeData.member1 ?? 'Membre 1'}</div>
+              <div className="font-bold text-emerald-900">{formatAmount(member1Provision, 'expense')}</div>
+              <div className="text-xs text-emerald-600 mt-1">
+                {totalIncome > 0 ? `${((member1Income / totalIncome) * 100).toFixed(0)}% des revenus` : '50%'}
+              </div>
+            </div>
+            <div className="bg-emerald-50 rounded-lg p-3 text-center">
+              <div className="text-xs text-emerald-600 mb-1">{safeData.member2 ?? 'Membre 2'}</div>
+              <div className="font-bold text-emerald-900">{formatAmount(member2Provision, 'expense')}</div>
+              <div className="text-xs text-emerald-600 mt-1">
+                {totalIncome > 0 ? `${((member2Income / totalIncome) * 100).toFixed(0)}% des revenus` : '50%'}
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -1191,24 +1260,33 @@ const VariableRow = React.memo<{
 VariableRow.displayName = 'VariableRow';
 
 // Totals Summary Component
-const TotalsSummary = React.memo<{ data: EnhancedSummaryData }>(({ data }) => {
+const TotalsSummary = React.memo<{ data: EnhancedSummaryData; accountBalance?: number }>(({ data, accountBalance = 0 }) => {
+  // Calcul du budget disponible : solde + revenus - (provisions + fixes + variables)
+  const totalRevenues = data?.revenues?.total_revenue || 0;
+  const totalProvisions = data?.savings?.total || 0;
+  const totalFixed = data?.fixed_expenses?.total || 0;
+  const totalVariables = data?.variables?.total || 0;
+  const totalExpenses = totalProvisions + totalFixed + totalVariables;
+  const budgetDisponible = accountBalance + totalRevenues - totalExpenses;
   return (
     <Card className="p-6 border-2 border-purple-300 bg-gradient-to-r from-purple-50 to-indigo-50">
       <div className="text-center">
         <h2 className="text-2xl font-bold text-purple-900 mb-4 flex items-center justify-center">
           <span className="mr-3">🏆</span>
-          BUDGET TOTAL - {data.month}
+          BUDGET DISPONIBLE - {data.month}
         </h2>
         
-        <div className="grid grid-cols-3 gap-6 max-w-2xl mx-auto">
+        <div className="grid grid-cols-3 gap-6 max-w-2xl mx-auto mb-6">
           <div className="text-center">
             <p className="text-sm font-medium text-purple-700 mb-1">{data.member1}</p>
             <p className={`text-lg font-bold ${getAmountColorClass('expense')}`}>{formatAmount(data?.totals?.member1_total || 0, 'expense')}</p>
           </div>
           
           <div className="text-center">
-            <p className="text-sm font-medium text-purple-700 mb-1">TOTAL</p>
-            <p className={`text-xl font-bold ${getAmountColorClass('expense')}`}>{formatAmount(data?.totals?.grand_total || 0, 'expense')}</p>
+            <p className="text-sm font-medium text-purple-700 mb-1">BUDGET DISPONIBLE</p>
+            <p className={`text-3xl font-bold ${budgetDisponible >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+              {budgetDisponible >= 0 ? '+' : ''}{budgetDisponible.toFixed(2)} €
+            </p>
           </div>
           
           <div className="text-center">
@@ -1217,8 +1295,39 @@ const TotalsSummary = React.memo<{ data: EnhancedSummaryData }>(({ data }) => {
           </div>
         </div>
         
-        <div className="mt-4 text-xs text-purple-600">
-          Calcul: {data.metadata.active_provisions} provisions + {data.metadata.active_fixed_expenses} charges fixes + {data.variables.total_transactions} variables ({data.metadata.unique_tags} tags uniques)
+        <div className="bg-white rounded-lg p-4 border border-purple-200">
+          <div className="grid grid-cols-2 gap-4 text-sm">
+            <div>
+              <span className="font-medium text-purple-700">Solde début de mois:</span>
+              <span className={`ml-2 font-mono ${accountBalance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                {accountBalance >= 0 ? '+' : ''}{accountBalance.toFixed(2)} €
+              </span>
+            </div>
+            <div>
+              <span className="font-medium text-purple-700">Revenus:</span>
+              <span className="ml-2 font-mono text-green-600">+{totalRevenues.toFixed(2)} €</span>
+            </div>
+            <div>
+              <span className="font-medium text-purple-700">Provisions:</span>
+              <span className="ml-2 font-mono text-purple-600">-{totalProvisions.toFixed(2)} €</span>
+            </div>
+            <div>
+              <span className="font-medium text-purple-700">Charges fixes:</span>
+              <span className="ml-2 font-mono text-blue-600">-{totalFixed.toFixed(2)} €</span>
+            </div>
+            <div>
+              <span className="font-medium text-purple-700">Variables:</span>
+              <span className="ml-2 font-mono text-orange-600">-{totalVariables.toFixed(2)} €</span>
+            </div>
+            <div>
+              <span className="font-medium text-purple-700">Total dépenses:</span>
+              <span className="ml-2 font-mono text-red-600">-{totalExpenses.toFixed(2)} €</span>
+            </div>
+          </div>
+        </div>
+        
+        <div className="mt-4 text-xs text-purple-600 text-center">
+          Formule: Solde + Revenus - (Provisions + Fixes + Variables) = Budget disponible
         </div>
       </div>
     </Card>

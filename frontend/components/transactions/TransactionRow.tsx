@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { Tx, expenseClassificationApi, mlFeedbackApi } from '../../lib/api';
 import { ExpenseTypeBadge, PendingClassificationBadge } from './ExpenseTypeBadge';
 import { ExpenseTypeModal, ClassificationChoice } from './ExpenseTypeModal';
-import { ClassificationModal } from './ClassificationModal';
+// import { ClassificationModal } from './ClassificationModal'; // Supprimé - édition directe
 import { InfoButton } from './InfoButton';
 import { CompactConfidenceBadge } from './ConfidenceBadge';
 import { CompactToggleSwitch } from '../ui/ToggleSwitch';
@@ -44,32 +44,10 @@ export function TransactionRow({ row, importId, onToggle, onSaveTags, onExpenseT
   const isExpense = row.amount < 0; // Les dépenses sont négatives
   const currentExpenseType = (row.expense_type || (isExpense ? 'VARIABLE' : null))?.toLowerCase();
   
-  // Nouveau workflow : classification intelligente immédiate au focus
+  // Focus sur tags - édition directe SANS modal IA
   const handleTagsFocus = async () => {
-    if (!isExpense) return;
-    
-    // Si déjà en cours de classification pour cette transaction, ne pas relancer
-    if (classificationState.isLoading && classificationState.currentTransaction?.id === row.id) {
-      return;
-    }
-    
-    // Si la transaction a déjà une classification IA en attente, ouvrir directement la modal
-    if (classificationState.pendingClassification && classificationState.currentTransaction?.id === row.id) {
-      console.log('📋 Opening existing classification modal immediately');
-      return;
-    }
-    
-    console.log(`🚀 Auto-triggering AI classification on focus for transaction ${row.id}`);
-    
-    // Utiliser les tags existants, ou le label comme fallback
-    const currentTags = Array.isArray(row.tags) ? row.tags.join(", ") : (row.tags || "");
-    const tagsForClassification = currentTags.trim() || row.label;
-    
-    const success = await classificationActions.classifyAfterTagUpdate(row, tagsForClassification);
-    
-    if (!success && classificationState.showModal) {
-      console.log('🤔 Auto-classification needs user input, modal opened');
-    }
+    // L'utilisateur peut éditer directement les tags sans modal de suggestion IA
+    console.log('📝 Tags focus for transaction', row.id, '- Direct editing enabled');
   };
 
   // Sauvegarde des tags avec feedback API et optimistic update
@@ -439,19 +417,7 @@ export function TransactionRow({ row, importId, onToggle, onSaveTags, onExpenseT
         </td>
       </tr>
 
-      {/* Modal intelligente de classification (nouveau workflow) - protection hydratation */}
-      {isMounted && 
-       classificationState.showModal && 
-       classificationState.pendingClassification && 
-       classificationState.currentTransaction?.id === row.id && (
-        <ClassificationModal
-          isOpen={classificationState.showModal}
-          onClose={() => classificationActions.rejectSuggestion()}
-          onDecision={handleClassificationDecision}
-          tagName={Array.isArray(row.tags) ? row.tags.join(", ") : (row.tags || "nouveau tag")}
-          classification={classificationState.pendingClassification}
-        />
-      )}
+      {/* Modal IA de classification supprimée - édition directe des tags */}
 
       {/* Modal legacy pour les cas de classification déjà faite - protection hydratation */}
       {isMounted && isLegacyModalOpen && row.expense_type_auto_detected && (
