@@ -1,6 +1,20 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+
+// Utility function for consistent number formatting
+const formatAmount = (amount: number, type: 'revenue' | 'expense' | 'saving' = 'saving'): string => {
+  if (type === 'revenue') return `+${amount.toFixed(2)} €`;
+  if (type === 'expense') return `-${amount.toFixed(2)} €`;
+  return `${amount.toFixed(2)} €`;
+};
+
+// Utility function for consistent text color classes
+const getAmountColorClass = (type: 'revenue' | 'expense' | 'saving'): string => {
+  if (type === 'revenue') return 'text-green-600';
+  if (type === 'expense') return 'text-red-600';
+  return 'text-purple-600';
+};
 import { useEnhancedDashboard, EnhancedSummaryData, SavingsDetail, FixedExpenseDetail, VariableDetail } from '../../hooks/useEnhancedDashboard';
 import { Card, LoadingSpinner } from '../ui';
 import { ErrorBoundary } from './ErrorBoundary';
@@ -135,7 +149,7 @@ const EnhancedDashboard = React.memo<EnhancedDashboardProps>(({ month, isAuthent
 
   return (
     <ErrorBoundary>
-    <div className="space-y-8">
+    <div className="max-w-full mx-auto space-y-8">
       {/* Revenue Details Section */}
       <RevenueSection data={data} />
       
@@ -177,7 +191,7 @@ const EnhancedDashboard = React.memo<EnhancedDashboardProps>(({ month, isAuthent
       </div>
       
       {/* Main Content - Equal Height 3-Column Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 min-h-[600px]">
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-10 min-h-[600px] max-w-none">
         {/* LEFT: REVENUS (INCOME) */}
         <div className="flex flex-col h-full">
           <RevenueTransactionsSection data={data} month={month} />
@@ -241,7 +255,7 @@ const RevenueSection = React.memo<{ data: EnhancedSummaryData }>(({ data }) => {
   );
   
   return (
-    <Card className="p-6 border-l-4 border-l-emerald-500 bg-gradient-to-r from-emerald-50 to-green-50">
+    <Card className="p-8 border-l-4 border-l-emerald-500 bg-gradient-to-r from-emerald-50 to-green-50">
       <div className="flex items-center mb-6">
         <span className="text-2xl mr-3">💰</span>
         <div>
@@ -250,26 +264,26 @@ const RevenueSection = React.memo<{ data: EnhancedSummaryData }>(({ data }) => {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white rounded-lg p-4 border border-emerald-100">
-          <div className="text-sm font-medium text-emerald-700 mb-1">{safeData.member1 ?? 'Membre 1'}</div>
-          <div className="text-xl font-bold text-emerald-900">{(revenues?.member1_revenue || 0).toFixed(2)} €</div>
-          <div className="text-xs text-emerald-600 mt-1">Revenus individuels</div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6">
+        <div className="bg-white rounded-lg p-5 border border-emerald-100">
+          <div className="text-sm font-medium text-emerald-700 mb-2 whitespace-nowrap overflow-hidden text-ellipsis" title={safeData.member1 ?? 'Membre 1'}>{safeData.member1 ?? 'Membre 1'}</div>
+          <div className={`text-xl font-bold ${getAmountColorClass('revenue')}`}>{formatAmount(revenues?.member1_revenue || 0, 'revenue')}</div>
+          <div className="text-xs text-emerald-600 mt-2 leading-relaxed">Revenus individuels</div>
         </div>
-        <div className="bg-white rounded-lg p-4 border border-emerald-100">
-          <div className="text-sm font-medium text-emerald-700 mb-1">{safeData.member2 ?? 'Membre 2'}</div>
-          <div className="text-xl font-bold text-emerald-900">{(revenues?.member2_revenue || 0).toFixed(2)} €</div>
-          <div className="text-xs text-emerald-600 mt-1">Revenus individuels</div>
+        <div className="bg-white rounded-lg p-5 border border-emerald-100">
+          <div className="text-sm font-medium text-emerald-700 mb-2 whitespace-nowrap overflow-hidden text-ellipsis" title={safeData.member2 ?? 'Membre 2'}>{safeData.member2 ?? 'Membre 2'}</div>
+          <div className={`text-xl font-bold ${getAmountColorClass('revenue')}`}>{formatAmount(revenues?.member2_revenue || 0, 'revenue')}</div>
+          <div className="text-xs text-emerald-600 mt-2 leading-relaxed">Revenus individuels</div>
         </div>
-        <div className="bg-white rounded-lg p-4 border border-emerald-100 ring-2 ring-emerald-200">
-          <div className="text-sm font-medium text-emerald-700 mb-1">Total Revenus</div>
-          <div className="text-xl font-bold text-emerald-900">{(revenues?.total_revenue || 0).toFixed(2)} €</div>
-          <div className="text-xs text-emerald-600 mt-1">Revenus combinés</div>
+        <div className="bg-white rounded-lg p-5 border border-emerald-100 ring-2 ring-emerald-200">
+          <div className="text-sm font-medium text-emerald-700 mb-2 whitespace-nowrap">Total Revenus</div>
+          <div className={`text-xl font-bold ${getAmountColorClass('revenue')}`}>{formatAmount(revenues?.total_revenue || 0, 'revenue')}</div>
+          <div className="text-xs text-emerald-600 mt-2 leading-relaxed">Revenus combinés</div>
         </div>
-        <div className="bg-gradient-to-r from-yellow-50 to-orange-50 rounded-lg p-4 border border-orange-200">
-          <div className="text-sm font-medium text-orange-700 mb-1">Montant à Provisionner</div>
-          <div className="text-xl font-bold text-orange-900">{(recommendedProvision || 0).toFixed(2)} €</div>
-          <div className="text-xs text-orange-600 mt-1">Charges fixes + Épargne</div>
+        <div className="bg-gradient-to-r from-yellow-50 to-orange-50 rounded-lg p-5 border border-orange-200">
+          <div className="text-sm font-medium text-orange-700 mb-2 whitespace-normal leading-relaxed">Montant à Provisionner</div>
+          <div className={`text-xl font-bold ${getAmountColorClass('expense')}`}>{formatAmount(recommendedProvision || 0, 'expense')}</div>
+          <div className="text-xs text-orange-600 mt-2 leading-relaxed">Charges fixes + Épargne</div>
         </div>
       </div>
 
@@ -278,15 +292,15 @@ const RevenueSection = React.memo<{ data: EnhancedSummaryData }>(({ data }) => {
         <div className="text-sm font-medium text-emerald-700 mb-2">Calcul du montant à provisionner:</div>
         <div className="grid grid-cols-3 gap-4 text-xs">
           <div className="text-center">
-            <div className="text-blue-600 font-semibold">{(safeData?.fixed_expenses?.total || 0).toFixed(2)} €</div>
+            <div className={`font-semibold ${getAmountColorClass('expense')}`}>{formatAmount(safeData?.fixed_expenses?.total || 0, 'expense')}</div>
             <div className="text-gray-600">Charges fixes</div>
           </div>
           <div className="text-center">
-            <div className="text-green-600 font-semibold">+ {(safeData?.savings?.total || 0).toFixed(2)} €</div>
+            <div className={`font-semibold ${getAmountColorClass('expense')}`}>{formatAmount(safeData?.savings?.total || 0, 'expense')}</div>
             <div className="text-gray-600">Provisions épargne</div>
           </div>
           <div className="text-center">
-            <div className="text-orange-600 font-bold">{(recommendedProvision || 0).toFixed(2)} €</div>
+            <div className={`font-bold ${getAmountColorClass('expense')}`}>{formatAmount(recommendedProvision || 0, 'expense')}</div>
             <div className="text-gray-600">Total recommandé</div>
           </div>
         </div>
@@ -329,31 +343,31 @@ const MetricsOverview = React.memo<{
           </h3>
           
           {/* Main total */}
-          <div className="text-4xl font-bold text-red-900 mb-4">{(data?.totals?.total_expenses || 0).toFixed(2)} €</div>
+          <div className={`text-4xl font-bold mb-4 ${getAmountColorClass('expense')}`}>{formatAmount(data?.totals?.total_expenses || 0, 'expense')}</div>
           
           {/* Breakdown with visual separation */}
           <div className="grid grid-cols-2 gap-4 max-w-md mx-auto">
             <div className="bg-white rounded-lg p-4 border-l-4 border-l-orange-400">
               <div className="text-sm font-medium text-orange-700 mb-1">Variables</div>
-              <div className="text-xl font-bold text-orange-900">{(data?.variables?.total || 0).toFixed(2)} €</div>
+              <div className={`text-xl font-bold ${getAmountColorClass('expense')}`}>{formatAmount(data?.variables?.total || 0, 'expense')}</div>
               <div className="text-xs text-orange-600 mt-1">{data?.variables?.total_transactions || 0} transactions</div>
             </div>
             <div className="bg-white rounded-lg p-4 border-l-4 border-l-blue-400">
               <div className="text-sm font-medium text-blue-700 mb-1">Fixes</div>
-              <div className="text-xl font-bold text-blue-900">{(data?.fixed_expenses?.total || 0).toFixed(2)} €</div>
+              <div className={`text-xl font-bold ${getAmountColorClass('expense')}`}>{formatAmount(data?.fixed_expenses?.total || 0, 'expense')}</div>
               <div className="text-xs text-blue-600 mt-1">{data?.fixed_expenses?.count || 0} charges</div>
             </div>
           </div>
           
           {/* Sum equation */}
-          <div className="text-sm text-red-700 mt-4 font-medium">
-            {(data?.variables?.total || 0).toFixed(2)} € + {(data?.fixed_expenses?.total || 0).toFixed(2)} € = {(data?.totals?.total_expenses || 0).toFixed(2)} €
+          <div className={`text-sm mt-4 font-medium ${getAmountColorClass('expense')}`}>
+            {formatAmount(data?.variables?.total || 0, 'expense')} + {formatAmount(data?.fixed_expenses?.total || 0, 'expense')} = {formatAmount(data?.totals?.total_expenses || 0, 'expense')}
           </div>
         </div>
       </Card>
       
       {/* Métriques détaillées */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6">
         <MetricCard 
           title="Épargne" 
           value={data?.savings?.total || 0} 
@@ -402,7 +416,7 @@ const SavingsSection = React.memo<{
   onCategoryClick: (category: 'provision' | 'fixed' | 'variable', categoryName?: string, tagFilter?: string) => void;
 }>(({ data, onCategoryClick }) => {
   return (
-    <Card className="p-6 border-l-4 border-l-purple-500 bg-gradient-to-r from-purple-50 to-indigo-50 h-full flex flex-col">
+    <Card className="p-8 border-l-4 border-l-purple-500 bg-gradient-to-r from-purple-50 to-indigo-50 h-full flex flex-col">
       <div className="flex items-center mb-6 flex-shrink-0">
         <span className="text-2xl mr-3">🎯</span>
         <div>
@@ -430,8 +444,8 @@ const SavingsSection = React.memo<{
               <div className="flex justify-between items-center font-bold text-purple-900">
                 <span>Total Épargne</span>
                 <div className="flex space-x-6">
-                  <span>{(data?.savings?.member1_total || 0).toFixed(2)} €</span>
-                  <span>{(data?.savings?.member2_total || 0).toFixed(2)} €</span>
+                  <span className={getAmountColorClass('saving')}>{formatAmount(data?.savings?.member1_total || 0, 'saving')}</span>
+                  <span className={getAmountColorClass('saving')}>{formatAmount(data?.savings?.member2_total || 0, 'saving')}</span>
                 </div>
               </div>
             </div>
@@ -459,7 +473,7 @@ const ExpensesSection = React.memo<{
   onCategoryClick: (category: 'provision' | 'fixed' | 'variable', categoryName?: string, tagFilter?: string) => void;
 }>(({ data, convertingIds, onConvertExpenseType, onCategoryClick }) => {
   return (
-    <Card className="p-6 border-l-4 border-l-red-500 bg-gradient-to-r from-red-50 to-orange-50 h-full flex flex-col">
+    <Card className="p-8 border-l-4 border-l-red-500 bg-gradient-to-r from-red-50 to-orange-50 h-full flex flex-col">
       <div className="flex items-center mb-6 flex-shrink-0">
         <span className="text-2xl mr-3">💸</span>
         <div>
@@ -503,8 +517,8 @@ const ExpensesSection = React.memo<{
               <div className="flex justify-between items-center font-semibold text-blue-800">
                 <span>Sous-total Fixes</span>
                 <div className="flex space-x-6">
-                  <span>{(data?.fixed_expenses?.member1_total || 0).toFixed(2)} €</span>
-                  <span>{(data?.fixed_expenses?.member2_total || 0).toFixed(2)} €</span>
+                  <span className={getAmountColorClass('expense')}>{formatAmount(data?.fixed_expenses?.member1_total || 0, 'expense')}</span>
+                  <span className={getAmountColorClass('expense')}>{formatAmount(data?.fixed_expenses?.member2_total || 0, 'expense')}</span>
                 </div>
               </div>
             </div>
@@ -541,8 +555,8 @@ const ExpensesSection = React.memo<{
                 <div className="flex justify-between items-center font-semibold text-orange-800">
                   <span>Sous-total Variables</span>
                   <div className="flex space-x-6">
-                    <span>{(data?.variables?.member1_total || 0).toFixed(2)} €</span>
-                    <span>{(data?.variables?.member2_total || 0).toFixed(2)} €</span>
+                    <span className={getAmountColorClass('expense')}>{formatAmount(data?.variables?.member1_total || 0, 'expense')}</span>
+                    <span className={getAmountColorClass('expense')}>{formatAmount(data?.variables?.member2_total || 0, 'expense')}</span>
                   </div>
                 </div>
               </div>
@@ -583,8 +597,8 @@ const SavingRow = React.memo<{
         </div>
       </div>
       <div className="flex space-x-6 text-sm font-mono tabular-nums flex-shrink-0 min-w-[160px]">
-        <span className="text-purple-800">{(saving?.member1_amount || 0).toFixed(2)} €</span>
-        <span className="text-purple-800">{(saving?.member2_amount || 0).toFixed(2)} €</span>
+        <span className={getAmountColorClass('saving')}>{formatAmount(saving?.member1_amount || 0, 'saving')}</span>
+        <span className={getAmountColorClass('saving')}>{formatAmount(saving?.member2_amount || 0, 'saving')}</span>
       </div>
     </div>
   );
@@ -615,7 +629,7 @@ const FixedExpenseRow = React.memo<{
       <div className="flex items-start space-x-3 min-w-0 flex-1">
         <span className="text-lg flex-shrink-0 mt-0.5">{expense.icon}</span>
         <div className="min-w-0 flex-1 space-y-1">
-          <div className="text-sm font-medium text-blue-900 truncate" title={expense.name}>
+          <div className="text-sm font-medium text-blue-900 whitespace-normal leading-relaxed" title={expense.name} style={{ wordWrap: 'break-word', overflowWrap: 'break-word' }}>
             {expense.name}
           </div>
           <div className="flex flex-wrap items-center gap-1.5">
@@ -636,8 +650,8 @@ const FixedExpenseRow = React.memo<{
         </div>
       </div>
       <div className="flex space-x-6 text-sm font-mono tabular-nums flex-shrink-0 min-w-[160px]">
-        <span className="text-blue-800">{(expense?.member1_amount || 0).toFixed(2)} €</span>
-        <span className="text-blue-800">{(expense?.member2_amount || 0).toFixed(2)} €</span>
+        <span className={getAmountColorClass('expense')}>{formatAmount(expense?.member1_amount || 0, 'expense')}</span>
+        <span className={getAmountColorClass('expense')}>{formatAmount(expense?.member2_amount || 0, 'expense')}</span>
       </div>
     </div>
   );
@@ -665,7 +679,7 @@ const VariableRow = React.memo<{
     >
       <div className="flex items-center min-w-0 flex-1">
         <div className="flex items-center space-x-2 min-w-0 flex-1 mr-2">
-          <span className={`text-sm font-medium truncate ${isUntagged ? 'text-gray-700' : 'text-orange-900'}`}>
+          <span className={`text-sm font-medium whitespace-normal leading-relaxed ${isUntagged ? 'text-gray-700' : 'text-orange-900'}`} style={{ wordWrap: 'break-word', overflowWrap: 'break-word' }}>
             {variable.name}
           </span>
           {!isUntagged && variable.tag && (
@@ -691,8 +705,8 @@ const VariableRow = React.memo<{
         )}
       </div>
       <div className="flex space-x-6 text-sm font-mono tabular-nums flex-shrink-0 min-w-[160px]">
-        <span className="text-orange-800">{(variable?.member1_amount || 0).toFixed(2)} €</span>
-        <span className="text-orange-800">{(variable?.member2_amount || 0).toFixed(2)} €</span>
+        <span className={getAmountColorClass('expense')}>{formatAmount(variable?.member1_amount || 0, 'expense')}</span>
+        <span className={getAmountColorClass('expense')}>{formatAmount(variable?.member2_amount || 0, 'expense')}</span>
       </div>
     </div>
   );
@@ -713,17 +727,17 @@ const TotalsSummary = React.memo<{ data: EnhancedSummaryData }>(({ data }) => {
         <div className="grid grid-cols-3 gap-6 max-w-2xl mx-auto">
           <div className="text-center">
             <p className="text-sm font-medium text-purple-700 mb-1">{data.member1}</p>
-            <p className="text-2xl font-bold text-purple-900">{(data?.totals?.member1_total || 0).toFixed(2)} €</p>
+            <p className={`text-2xl font-bold ${getAmountColorClass('expense')}`}>{formatAmount(data?.totals?.member1_total || 0, 'expense')}</p>
           </div>
           
           <div className="text-center">
             <p className="text-sm font-medium text-purple-700 mb-1">TOTAL</p>
-            <p className="text-3xl font-bold text-purple-900">{(data?.totals?.grand_total || 0).toFixed(2)} €</p>
+            <p className={`text-3xl font-bold ${getAmountColorClass('expense')}`}>{formatAmount(data?.totals?.grand_total || 0, 'expense')}</p>
           </div>
           
           <div className="text-center">
             <p className="text-sm font-medium text-purple-700 mb-1">{data.member2}</p>
-            <p className="text-2xl font-bold text-purple-900">{(data?.totals?.member2_total || 0).toFixed(2)} €</p>
+            <p className={`text-2xl font-bold ${getAmountColorClass('expense')}`}>{formatAmount(data?.totals?.member2_total || 0, 'expense')}</p>
           </div>
         </div>
         
@@ -765,7 +779,7 @@ const MetricCard = React.memo<MetricCardProps>(({ title, value, color, icon, sub
 
   return (
     <Card 
-      className={`p-4 border-l-4 ${colorClasses[color as keyof typeof colorClasses]} ${
+      className={`p-5 border-l-4 ${colorClasses[color as keyof typeof colorClasses]} ${
         isTotal ? 'ring-2 ring-purple-200 shadow-lg' : ''
       } ${
         clickable ? 'cursor-pointer hover:shadow-lg hover:scale-105 transition-all duration-200 hover:ring-2 hover:ring-opacity-30' : ''
@@ -790,7 +804,17 @@ const MetricCard = React.memo<MetricCardProps>(({ title, value, color, icon, sub
         </div>
       </div>
       <div className="text-sm font-medium mb-1">{title}</div>
-      <div className={`text-xl font-bold ${isTotal ? 'text-2xl' : ''}`}>{safeValue.toFixed(2)} €</div>
+      <div className={`text-xl font-bold ${isTotal ? 'text-2xl' : ''} ${
+        color === 'green' ? getAmountColorClass('saving') : 
+        (color === 'blue' || color === 'orange') ? getAmountColorClass('expense') : 
+        color === 'purple' ? getAmountColorClass('expense') : 
+        'text-gray-900'
+      }`}>
+        {color === 'green' ? formatAmount(safeValue, 'saving') : 
+         (color === 'blue' || color === 'orange') ? formatAmount(safeValue, 'expense') :
+         color === 'purple' ? formatAmount(safeValue, 'expense') :
+         `${safeValue.toFixed(2)} €`}
+      </div>
       {subtitle && <div className="text-xs opacity-75 mt-1">{subtitle}</div>}
     </Card>
   );
@@ -853,21 +877,19 @@ const TypeToggleButton = React.memo<{
 
 TypeToggleButton.displayName = 'TypeToggleButton';
 
-// Revenue Transactions Section Component - Shows all positive transactions
+// Revenue Transactions Section Component - Shows Virements and Avoirs separately
 const RevenueTransactionsSection = React.memo<{ 
   data: EnhancedSummaryData;
   month: string;
 }>(({ data, month }) => {
   const [revenueTransactions, setRevenueTransactions] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
-  const [currentPage, setCurrentPage] = useState(0);
-  
-  // Pagination variables
-  const itemsPerPage = 10;
-  const totalPages = Math.ceil(revenueTransactions.length / itemsPerPage);
-  const startIndex = currentPage * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  const currentPageTransactions = revenueTransactions.slice(startIndex, endIndex);
+  const [modalState, setModalState] = useState<{
+    isOpen: boolean;
+    title: string;
+    type: 'virements' | 'avoirs' | null;
+    transactions: any[];
+  }>({ isOpen: false, title: '', type: null, transactions: [] });
   
   // Load revenue transactions from the API
   useEffect(() => {
@@ -888,8 +910,6 @@ const RevenueTransactionsSection = React.memo<{
         // Filter to only positive amounts on the client side for safety
         const positiveTransactions = response.data.filter((tx: any) => tx.amount > 0);
         setRevenueTransactions(positiveTransactions);
-        // Reset to first page when new data loads
-        setCurrentPage(0);
       } catch (error) {
         console.error('Error loading revenue transactions:', error);
       } finally {
@@ -900,13 +920,44 @@ const RevenueTransactionsSection = React.memo<{
     loadRevenueTransactions();
   }, [month]);
   
+  // Separate transactions by type
+  const virements = revenueTransactions.filter(tx => 
+    tx.label?.toUpperCase().startsWith('VIR') || 
+    tx.label?.toLowerCase().includes('virement')
+  );
+  
+  const avoirs = revenueTransactions.filter(tx => 
+    tx.label?.toUpperCase().startsWith('AVOIR') || 
+    tx.label?.toLowerCase().includes('avoir')
+  );
+  
+  // Calculate totals
+  const totalVirements = virements.reduce((sum, tx) => sum + (tx.amount || 0), 0);
+  const totalAvoirs = avoirs.reduce((sum, tx) => sum + (tx.amount || 0), 0);
+  
+  // Modal handlers
+  const openModal = (type: 'virements' | 'avoirs') => {
+    const transactions = type === 'virements' ? virements : avoirs;
+    const title = type === 'virements' ? 'Détail des Virements' : 'Détail des Avoirs';
+    setModalState({
+      isOpen: true,
+      title,
+      type,
+      transactions
+    });
+  };
+  
+  const closeModal = () => {
+    setModalState({ isOpen: false, title: '', type: null, transactions: [] });
+  };
+  
   return (
-    <Card className="p-6 border-l-4 border-l-emerald-500 bg-gradient-to-r from-emerald-50 to-green-50 h-full flex flex-col">
+    <Card className="p-8 border-l-4 border-l-emerald-500 bg-gradient-to-r from-emerald-50 to-green-50 h-full flex flex-col">
       <div className="flex items-center mb-6 flex-shrink-0">
         <span className="text-2xl mr-3">💰</span>
         <div>
           <h2 className="text-xl font-bold text-emerald-900">REVENUS</h2>
-          <p className="text-sm text-emerald-700">Transactions positives (montants &gt; 0)</p>
+          <p className="text-sm text-emerald-700">Virements et Avoirs séparés</p>
         </div>
       </div>
 
@@ -917,134 +968,92 @@ const RevenueTransactionsSection = React.memo<{
           </div>
         ) : revenueTransactions.length > 0 ? (
           <>
-            <div className="flex-1 overflow-y-auto space-y-3 pr-2 -mr-2">
-              {currentPageTransactions.map((transaction, index) => (
+            <div className="flex-1 space-y-4">
+              {/* Virements Summary Card */}
+              {virements.length > 0 && (
                 <div 
-                  key={startIndex + index} 
-                  className="flex justify-between items-center py-2 px-3 bg-white rounded-lg border border-emerald-100 hover:bg-emerald-50 transition-colors duration-200"
+                  onClick={() => openModal('virements')}
+                  className="cursor-pointer transition-all duration-300 transform hover:scale-[1.02] hover:shadow-lg group"
                 >
-                  <div className="flex-1 min-w-0">
-                    <div 
-                      className="text-sm font-medium text-emerald-900" 
-                      title={transaction.label || 'Revenu'}
-                      style={{
-                        whiteSpace: 'nowrap',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis'
-                      }}
-                    >
-                      {transaction.label || 'Revenu'}
-                    </div>
-                    <div className="text-xs text-emerald-600">
-                      {transaction.date_op ? new Date(transaction.date_op).toLocaleDateString('fr-FR') : ''}
-                    </div>
-                  </div>
-                  <div className="text-right flex-shrink-0 min-w-[100px]">
-                    <div className="text-sm font-bold text-emerald-800 font-mono tabular-nums">
-                      +{(transaction.amount || 0).toFixed(2)} €
-                    </div>
-                    {transaction.category && (
-                      <div className="text-xs text-emerald-600">
-                        {transaction.category}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-            
-            {/* Fixed bottom section with pagination and total */}
-            <div className="flex-shrink-0 mt-4 space-y-4">
-              {/* Modern Pagination Controls */}
-              {totalPages > 1 && (
-                <div className="bg-gradient-to-r from-emerald-50 to-green-50 rounded-xl p-4 border border-emerald-200 shadow-sm">
-                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                    {/* Navigation Buttons */}
-                    <div className="flex items-center justify-center sm:justify-start space-x-3">
-                      <button
-                        onClick={() => setCurrentPage(prev => Math.max(0, prev - 1))}
-                        disabled={currentPage === 0}
-                        className={`group flex items-center space-x-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all duration-300 transform ${
-                          currentPage === 0
-                            ? 'bg-gray-100 text-gray-400 cursor-not-allowed opacity-50'
-                            : 'bg-gradient-to-r from-emerald-500 to-green-500 text-white hover:from-emerald-600 hover:to-green-600 hover:scale-105 hover:shadow-lg active:scale-95 shadow-md'
-                        }`}
-                      >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                        </svg>
-                        <span>Précédent</span>
-                      </button>
-                      
-                      <button
-                        onClick={() => setCurrentPage(prev => Math.min(totalPages - 1, prev + 1))}
-                        disabled={currentPage === totalPages - 1}
-                        className={`group flex items-center space-x-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all duration-300 transform ${
-                          currentPage === totalPages - 1
-                            ? 'bg-gray-100 text-gray-400 cursor-not-allowed opacity-50'
-                            : 'bg-gradient-to-r from-emerald-500 to-green-500 text-white hover:from-emerald-600 hover:to-green-600 hover:scale-105 hover:shadow-lg active:scale-95 shadow-md'
-                        }`}
-                      >
-                        <span>Suivant</span>
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                        </svg>
-                      </button>
-                    </div>
-                    
-                    {/* Page Info and Statistics */}
-                    <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-6 space-y-2 sm:space-y-0 text-center sm:text-right">
-                      <div className="bg-white rounded-lg px-3 py-2 shadow-sm border border-emerald-200">
-                        <div className="flex items-center justify-center sm:justify-end space-x-2">
-                          <span className="text-emerald-600 font-medium text-sm">
-                            Page
-                          </span>
-                          <span className="bg-gradient-to-r from-emerald-600 to-green-600 text-white px-3 py-1 rounded-lg font-bold text-sm min-w-[2.5rem] text-center">
-                            {currentPage + 1}
-                          </span>
-                          <span className="text-emerald-600 font-medium text-sm">
-                            sur {totalPages}
-                          </span>
+                  <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl p-6 border-2 border-green-200 group-hover:border-green-300 group-hover:shadow-md">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-3">
+                        <span className="text-3xl group-hover:scale-110 transition-transform duration-300">💸</span>
+                        <div>
+                          <h3 className="text-lg font-bold text-green-900">Virements</h3>
+                          <p className="text-sm text-green-700">{virements.length} transaction{virements.length > 1 ? 's' : ''}</p>
                         </div>
                       </div>
-                      
-                      <div className="bg-white rounded-lg px-3 py-2 shadow-sm border border-emerald-200">
-                        <div className="text-sm text-emerald-700 font-medium">
-                          <span className="text-emerald-800 font-semibold">
-                            {startIndex + 1}-{Math.min(endIndex, revenueTransactions.length)}
-                          </span>
-                          <span className="mx-1 text-emerald-600">sur</span>
-                          <span className="text-emerald-800 font-semibold">
-                            {revenueTransactions.length}
-                          </span>
-                          <span className="ml-1 text-emerald-600">revenus</span>
+                      <div className="text-right">
+                        <div className={`text-2xl font-bold font-mono tabular-nums ${getAmountColorClass('revenue')}`}>
+                          {formatAmount(totalVirements, 'revenue')}
+                        </div>
+                        <div className="text-xs text-green-600 mt-1 flex items-center justify-end space-x-1">
+                          <span>Cliquer pour détails</span>
+                          <svg className="w-3 h-3 group-hover:translate-x-1 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                          </svg>
                         </div>
                       </div>
-                    </div>
-                  </div>
-                  
-                  {/* Progress Indicator */}
-                  <div className="mt-3">
-                    <div className="flex justify-between text-xs text-emerald-700 mb-2">
-                      <span>Navigation</span>
-                      <span>{((currentPage + 1) / totalPages * 100).toFixed(0)}%</span>
-                    </div>
-                    <div className="w-full bg-emerald-200 rounded-full h-1.5">
-                      <div 
-                        className="bg-gradient-to-r from-emerald-500 to-green-500 h-1.5 rounded-full transition-all duration-500 ease-out"
-                        style={{ width: `${((currentPage + 1) / totalPages) * 100}%` }}
-                      ></div>
                     </div>
                   </div>
                 </div>
               )}
               
-              <div className="border-t-2 border-emerald-200 pt-3">
+              {/* Avoirs Summary Card */}
+              {avoirs.length > 0 && (
+                <div 
+                  onClick={() => openModal('avoirs')}
+                  className="cursor-pointer transition-all duration-300 transform hover:scale-[1.02] hover:shadow-lg group"
+                >
+                  <div className="bg-gradient-to-r from-emerald-50 to-green-50 rounded-xl p-6 border-2 border-emerald-200 group-hover:border-emerald-300 group-hover:shadow-md">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-3">
+                        <span className="text-3xl group-hover:scale-110 transition-transform duration-300">💰</span>
+                        <div>
+                          <h3 className="text-lg font-bold text-emerald-900">Avoirs</h3>
+                          <p className="text-sm text-emerald-700">{avoirs.length} transaction{avoirs.length > 1 ? 's' : ''}</p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className={`text-2xl font-bold font-mono tabular-nums ${getAmountColorClass('revenue')}`}>
+                          {formatAmount(totalAvoirs, 'revenue')}
+                        </div>
+                        <div className="text-xs text-emerald-600 mt-1 flex items-center justify-end space-x-1">
+                          <span>Cliquer pour détails</span>
+                          <svg className="w-3 h-3 group-hover:translate-x-1 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                          </svg>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+              
+              {/* Empty state for specific types */}
+              {virements.length === 0 && avoirs.length === 0 && (
+                <div className="bg-white rounded-xl p-6 border-2 border-emerald-200 text-center">
+                  <div className="text-emerald-600">
+                    <p>Aucun virement ou avoir trouvé</p>
+                    <p className="text-sm mt-2">Les revenus de ce mois ne correspondent pas aux catégories VIR ou AVOIR</p>
+                  </div>
+                </div>
+              )}
+            </div>
+            
+            {/* Total Section */}
+            <div className="border-t-2 border-emerald-200 pt-4 mt-6 flex-shrink-0">
+              <div className="bg-white rounded-xl p-4 border border-emerald-200 shadow-sm">
                 <div className="flex justify-between items-center font-bold text-emerald-900">
                   <span>Total Revenus</span>
-                  <span className="font-mono tabular-nums">
-                    {revenueTransactions.reduce((sum, tx) => sum + (tx.amount || 0), 0).toFixed(2)} €
+                  <span className={`font-mono tabular-nums ${getAmountColorClass('revenue')}`}>
+                    {formatAmount(revenueTransactions.reduce((sum, tx) => sum + (tx.amount || 0), 0), 'revenue')}
                   </span>
+                </div>
+                <div className="flex justify-between items-center text-sm text-emerald-700 mt-2">
+                  <span>Virements: {formatAmount(totalVirements, 'revenue')}</span>
+                  <span>Avoirs: {formatAmount(totalAvoirs, 'revenue')}</span>
                 </div>
               </div>
             </div>
@@ -1058,10 +1067,119 @@ const RevenueTransactionsSection = React.memo<{
           </div>
         )}
       </div>
+      
+      {/* Revenue Detail Modal */}
+      {modalState.isOpen && (
+        <RevenueDetailModal
+          isOpen={modalState.isOpen}
+          onClose={closeModal}
+          title={modalState.title}
+          transactions={modalState.transactions}
+        />
+      )}
     </Card>
   );
 });
 
 RevenueTransactionsSection.displayName = 'RevenueTransactionsSection';
+
+// Revenue Detail Modal Component - Shows detailed transaction list
+const RevenueDetailModal = React.memo<{
+  isOpen: boolean;
+  onClose: () => void;
+  title: string;
+  transactions: any[];
+}>(({ isOpen, onClose, title, transactions }) => {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center">
+      {/* Backdrop */}
+      <div 
+        className="absolute inset-0 bg-black bg-opacity-50 backdrop-blur-sm"
+        onClick={onClose}
+      ></div>
+      
+      {/* Modal Content */}
+      <div className="relative bg-white rounded-2xl shadow-2xl max-w-4xl w-full mx-4 max-h-[90vh] flex flex-col">
+        {/* Header */}
+        <div className="flex items-center justify-between p-6 border-b border-gray-200 flex-shrink-0">
+          <div className="flex items-center space-x-3">
+            <span className="text-2xl">💰</span>
+            <h2 className="text-xl font-bold text-emerald-900">{title}</h2>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-2 hover:bg-gray-100 rounded-full transition-colors duration-200 group"
+          >
+            <svg className="w-5 h-5 text-gray-500 group-hover:text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+        
+        {/* Transaction List */}
+        <div className="flex-1 overflow-y-auto p-6">
+          {transactions.length > 0 ? (
+            <div className="space-y-3">
+              {transactions.map((transaction, index) => (
+                <div 
+                  key={index}
+                  className="flex justify-between items-center py-3 px-4 bg-gradient-to-r from-emerald-50 to-green-50 rounded-lg border border-emerald-200 hover:shadow-md transition-all duration-200"
+                >
+                  <div className="flex-1 min-w-0">
+                    <div 
+                      className="text-sm font-medium text-emerald-900 whitespace-normal leading-relaxed mb-1" 
+                      title={transaction.label || 'Revenu'}
+                      style={{
+                        wordWrap: 'break-word',
+                        overflowWrap: 'break-word'
+                      }}
+                    >
+                      {transaction.label || 'Revenu'}
+                    </div>
+                    <div className="flex items-center space-x-3 text-xs text-emerald-600">
+                      <span>
+                        {transaction.date_op ? new Date(transaction.date_op).toLocaleDateString('fr-FR') : ''}
+                      </span>
+                      {transaction.category && (
+                        <span className="bg-emerald-100 px-2 py-1 rounded-full">
+                          {transaction.category}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="text-right flex-shrink-0 min-w-[120px]">
+                    <div className={`text-lg font-bold font-mono tabular-nums ${getAmountColorClass('revenue')}`}>
+                      {formatAmount(transaction.amount || 0, 'revenue')}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center text-emerald-600 py-8">
+              <p>Aucune transaction trouvée</p>
+            </div>
+          )}
+        </div>
+        
+        {/* Footer with Total */}
+        <div className="border-t border-gray-200 p-6 flex-shrink-0">
+          <div className="flex justify-between items-center">
+            <span className="text-lg font-semibold text-emerald-900">
+              Total ({transactions.length} transaction{transactions.length !== 1 ? 's' : ''})
+            </span>
+            <span className={`text-2xl font-bold font-mono tabular-nums ${getAmountColorClass('revenue')}`}>
+              {formatAmount(transactions.reduce((sum, tx) => sum + (tx.amount || 0), 0), 'revenue')}
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+});
+
+RevenueDetailModal.displayName = 'RevenueDetailModal';
 
 export default EnhancedDashboard;
