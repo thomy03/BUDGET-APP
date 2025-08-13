@@ -4,7 +4,7 @@ Shared data models for API requests/responses
 """
 import datetime as dt
 from typing import List, Optional, Dict, Union, Any
-from pydantic import BaseModel, validator, Field
+from pydantic import BaseModel, field_validator, model_validator, Field
 from email_validator import validate_email, EmailNotValidError
 
 # Configuration Schemas
@@ -21,12 +21,11 @@ class ConfigIn(BaseModel):
     max_var: float = Field(default=0.0, ge=0, description="Maximum variable")
     min_fixed: float = Field(default=0.0, ge=0, description="Minimum fixe")
 
-    @validator('split1', 'split2')
-    def validate_split(cls, v, values):
-        if 'split1' in values and 'split2' in values:
-            if abs(values.get('split1', 0) + v - 1.0) > 0.01:  # Allow small float errors
-                raise ValueError('Les répartitions split1 et split2 doivent totaliser 1.0')
-        return v
+    @model_validator(mode='after')
+    def validate_split(self):
+        if abs(self.split1 + self.split2 - 1.0) > 0.01:  # Allow small float errors
+            raise ValueError('Les répartitions split1 et split2 doivent totaliser 1.0')
+        return self
 
 class ConfigOut(ConfigIn):
     id: int
@@ -63,7 +62,8 @@ class TagsIn(BaseModel):
         example="urgent,personnel,impôts"
     )
     
-    @validator('tags', pre=True)
+    @field_validator('tags', mode='before')
+    @classmethod
     def normalize_tags(cls, v):
         """Normalize tags input to string format"""
         if isinstance(v, list):
@@ -95,7 +95,8 @@ class TransactionUpdate(BaseModel):
         description="Type de dépense - FIXED pour charges fixes, VARIABLE pour dépenses variables, PROVISION pour épargne"
     )
     
-    @validator('tags', pre=True)
+    @field_validator('tags', mode='before')
+    @classmethod
     def normalize_tags(cls, v):
         """Normalize tags input to string format"""
         if v is None:
@@ -144,12 +145,11 @@ class FixedLineIn(BaseModel):
     category: str = Field(default="autres", pattern="^(logement|transport|services|loisirs|santé|autres)$", description="Catégorie")
     active: bool = Field(default=True, description="Ligne active")
 
-    @validator('split1', 'split2')
-    def validate_split_percentages(cls, v, values):
-        if 'split1' in values and 'split2' in values:
-            if abs(values.get('split1', 0) + v - 100) > 0.1:  # Allow small float errors
-                raise ValueError('Les répartitions split1 et split2 doivent totaliser 100%')
-        return v
+    @model_validator(mode='after')
+    def validate_split_percentages(self):
+        if abs(self.split1 + self.split2 - 100) > 0.1:  # Allow small float errors
+            raise ValueError('Les répartitions split1 et split2 doivent totaliser 100%')
+        return self
 
 class FixedLineOut(FixedLineIn):
     id: int
@@ -177,26 +177,23 @@ class CustomProvisionBase(BaseModel):
     target_amount: Optional[float] = Field(None, ge=0, description="Montant cible à atteindre")
     category: str = Field(default="épargne", max_length=50, description="Catégorie de la provision")
 
-    @validator('split_member1', 'split_member2')
-    def validate_split_percentages_provision(cls, v, values):
-        if 'split_member1' in values and 'split_member2' in values:
-            if abs(values.get('split_member1', 0) + v - 100) > 0.1:
-                raise ValueError('Les répartitions split_member1 et split_member2 doivent totaliser 100%')
-        return v
+    @model_validator(mode='after')
+    def validate_split_percentages_provision(self):
+        if abs(self.split_member1 + self.split_member2 - 100) > 0.1:
+            raise ValueError('Les répartitions split_member1 et split_member2 doivent totaliser 100%')
+        return self
 
-    @validator('end_date')
-    def validate_end_date_after_start(cls, v, values):
-        start_date = values.get('start_date')
-        if start_date and v and v <= start_date:
+    @model_validator(mode='after')
+    def validate_end_date_after_start(self):
+        if self.start_date and self.end_date and self.end_date <= self.start_date:
             raise ValueError('La date de fin doit être postérieure à la date de début')
-        return v
+        return self
 
-    @validator('fixed_amount')
-    def validate_fixed_amount(cls, v, values):
-        base_calc = values.get('base_calculation')
-        if base_calc == 'fixed' and not v:
+    @model_validator(mode='after')
+    def validate_fixed_amount(self):
+        if self.base_calculation == 'fixed' and not self.fixed_amount:
             raise ValueError('fixed_amount est requis quand base_calculation = "fixed"')
-        return v
+        return self
 
 class CustomProvisionCreate(BaseModel):
     """Schema for creating custom provisions - very permissive for frontend compatibility"""
@@ -218,18 +215,18 @@ class CustomProvisionCreate(BaseModel):
     target_amount: Optional[float] = Field(default=None, description="Montant cible")
     category: Optional[str] = Field(default="épargne", max_length=50, description="Catégorie")
     
-    @validator('color', pre=True, always=True)
+    @field_validator('color', mode='before')
+    @classmethod
     def validate_color(cls, v):
         if v and not str(v).startswith('#'):
             return f"#{v}"
         return v or "#3B82F6"
     
-    @validator('fixed_amount', always=True)
-    def validate_fixed_amount_create(cls, v, values):
-        base_calc = values.get('base_calculation')
-        if base_calc == 'fixed' and (v is None or v <= 0):
+    @model_validator(mode='after')
+    def validate_fixed_amount_create(self):
+        if self.base_calculation == 'fixed' and (self.fixed_amount is None or self.fixed_amount <= 0):
             raise ValueError('fixed_amount doit être > 0 quand base_calculation = "fixed"')
-        return v
+        return self
 
 class CustomProvisionUpdate(BaseModel):
     name: Optional[str] = Field(min_length=1, max_length=100)
@@ -573,7 +570,8 @@ class TagPatterns(BaseModel):
     """Schema for adding tag patterns"""
     patterns: List[str] = Field(description="Liste des patterns à ajouter pour reconnaissance automatique")
     
-    @validator('patterns')
+    @field_validator('patterns')
+    @classmethod
     def validate_patterns(cls, v):
         if not v or len(v) == 0:
             raise ValueError('Au moins un pattern est requis')
@@ -930,7 +928,8 @@ class TransactionTagUpdate(BaseModel):
     """Schema for updating transaction tags"""
     tags: str = Field(description="Tags séparés par des virgules")
     
-    @validator('tags', pre=True)
+    @field_validator('tags', mode='before')
+    @classmethod
     def clean_tags(cls, v):
         if isinstance(v, str):
             # Clean and normalize tags
@@ -1055,5 +1054,120 @@ class MLLearningPattern(BaseModel):
                 "success_rate": 0.875,
                 "last_used": "2025-08-12T14:30:00Z",
                 "created_from_feedback": "2025-08-01T10:15:00Z"
+            }
+        }
+
+
+# Account Balance Schemas
+
+class AccountBalanceUpdate(BaseModel):
+    """Schema for updating account balance for a specific month"""
+    account_balance: float = Field(description="Current account balance", example=2543.75)
+    notes: Optional[str] = Field(None, max_length=1000, description="Optional notes about the balance")
+    
+    class Config:
+        schema_extra = {
+            "example": {
+                "account_balance": 2543.75,
+                "notes": "Compte courant au 31/08 après salaires"
+            }
+        }
+
+
+class AccountBalanceResponse(BaseModel):
+    """Schema for account balance response"""
+    id: int
+    month: str = Field(description="Month in YYYY-MM format")
+    account_balance: float = Field(description="Current account balance")
+    created_at: dt.datetime
+    updated_at: Optional[dt.datetime]
+    created_by: Optional[str]
+    notes: Optional[str]
+    budget_target: Optional[float] = Field(None, description="Monthly budget target")
+    savings_goal: Optional[float] = Field(None, description="Monthly savings goal")
+    is_closed: bool = Field(default=False, description="Whether month is closed for modifications")
+    
+    class Config:
+        from_attributes = True
+        schema_extra = {
+            "example": {
+                "id": 1,
+                "month": "2025-08",
+                "account_balance": 2543.75,
+                "created_at": "2025-08-01T00:00:00",
+                "updated_at": "2025-08-13T10:30:00",
+                "created_by": "admin",
+                "notes": "Compte courant au 31/08 après salaires",
+                "budget_target": 3000.0,
+                "savings_goal": 500.0,
+                "is_closed": False
+            }
+        }
+
+
+class GlobalMonthCreate(BaseModel):
+    """Schema for creating a new global month entry"""
+    month: str = Field(pattern=r"^\d{4}-\d{2}$", description="Month in YYYY-MM format")
+    account_balance: float = Field(default=0.0, description="Initial account balance")
+    budget_target: Optional[float] = Field(None, ge=0, description="Monthly budget target")
+    savings_goal: Optional[float] = Field(None, ge=0, description="Monthly savings goal")
+    notes: Optional[str] = Field(None, max_length=1000, description="Month notes")
+    
+    class Config:
+        schema_extra = {
+            "example": {
+                "month": "2025-09",
+                "account_balance": 2000.0,
+                "budget_target": 3000.0,
+                "savings_goal": 500.0,
+                "notes": "Nouveau mois avec objectifs définis"
+            }
+        }
+
+
+class GlobalMonthUpdate(BaseModel):
+    """Schema for updating global month settings"""
+    account_balance: Optional[float] = Field(None, description="Updated account balance")
+    budget_target: Optional[float] = Field(None, ge=0, description="Updated budget target")
+    savings_goal: Optional[float] = Field(None, ge=0, description="Updated savings goal")
+    notes: Optional[str] = Field(None, max_length=1000, description="Updated notes")
+    is_closed: Optional[bool] = Field(None, description="Whether to close/open the month")
+    
+    class Config:
+        schema_extra = {
+            "example": {
+                "account_balance": 2543.75,
+                "budget_target": 3200.0,
+                "savings_goal": 600.0,
+                "notes": "Solde mis à jour après virements",
+                "is_closed": False
+            }
+        }
+
+
+class BalanceTransferCalculation(BaseModel):
+    """Schema for transfer calculation including account balance"""
+    month: str = Field(description="Month for calculation")
+    total_expenses: float = Field(description="Total monthly expenses (fixed + variable + provisions)")
+    total_member1: float = Field(description="Member 1's total share")
+    total_member2: float = Field(description="Member 2's total share")
+    current_balance: float = Field(description="Current account balance")
+    suggested_transfer_member1: float = Field(description="Suggested transfer from member 1")
+    suggested_transfer_member2: float = Field(description="Suggested transfer from member 2")
+    final_balance_after_transfers: float = Field(description="Projected balance after transfers")
+    balance_status: str = Field(description="Balance status: 'sufficient', 'deficit', 'surplus'")
+    
+    class Config:
+        schema_extra = {
+            "example": {
+                "month": "2025-08",
+                "total_expenses": 2800.0,
+                "total_member1": 1680.0,
+                "total_member2": 1120.0,
+                "current_balance": 1200.0,
+                "suggested_transfer_member1": 1680.0,
+                "suggested_transfer_member2": 1120.0,
+                "final_balance_after_transfers": 4000.0,
+                "balance_status": "sufficient"
             }
         }

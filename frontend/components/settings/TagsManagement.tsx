@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useTagsManagement, TagInfo } from '../../hooks/useTagsManagement';
 import { Card, Button, Alert } from '../ui';
 import { ExpenseTypeBadge } from '../transactions/ExpenseTypeBadge';
@@ -12,6 +13,7 @@ import { TagsImportExport } from './TagsImportExport';
 import { TagMergeDialog } from './TagMergeDialog';
 
 export function TagsManagement() {
+  const router = useRouter();
   const {
     tags,
     isLoading,
@@ -67,6 +69,16 @@ export function TagsManagement() {
       </div>
     );
   }
+
+  // Calculate tag statistics
+  const tagStats = {
+    total: tags.length,
+    fixed: tags.filter(t => t.expense_type === 'fixed').length,
+    variable: tags.filter(t => t.expense_type === 'variable').length,
+    totalTransactions: tags.reduce((sum, tag) => sum + tag.transaction_count, 0),
+    totalAmount: tags.reduce((sum, tag) => sum + Math.abs(tag.total_amount), 0),
+    averageTransactionsPerTag: tags.length > 0 ? Math.round(tags.reduce((sum, tag) => sum + tag.transaction_count, 0) / tags.length) : 0
+  };
 
   // Filter and sort tags
   const filteredTags = tags
@@ -124,6 +136,13 @@ export function TagsManagement() {
       console.error('Failed to merge tags:', error);
       return false;
     }
+  };
+
+  const handleViewTransactions = (tagName: string) => {
+    // Navigate to transactions page with tag filter
+    const searchParams = new URLSearchParams();
+    searchParams.set('tag', tagName);
+    router.push(`/transactions?${searchParams.toString()}`);
   };
 
   const tabsConfig = [
@@ -187,28 +206,89 @@ export function TagsManagement() {
           <div className="space-y-6">
             {/* Tags Management Header */}
             <Card className="p-6 bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between mb-4">
                 <div>
                   <h2 className="text-2xl font-bold text-gray-900 mb-2">Gestion des Tags</h2>
-                  <div className="flex items-center gap-6 text-sm text-gray-600">
-                    <div className="flex items-center gap-2">
-                      <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
-                      <span>{tags.length} tags au total</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="w-2 h-2 bg-green-500 rounded-full"></span>
-                      <span>{tags.reduce((sum, tag) => sum + tag.transaction_count, 0)} transactions</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="w-2 h-2 bg-orange-500 rounded-full"></span>
-                      <span>{tags.filter(t => t.expense_type === 'fixed').length} fixes</span>
-                    </div>
-                  </div>
+                  <p className="text-gray-600">Organisez et suivez vos catégories de transactions</p>
                 </div>
                 <Button onClick={handleCreateTag} className="bg-blue-600 hover:bg-blue-700">
                   <span className="mr-2">+</span>
                   Nouveau tag
                 </Button>
+              </div>
+              
+              {/* Enhanced Statistics Grid */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+                <div className="bg-white rounded-lg p-4 border border-blue-200">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="w-3 h-3 bg-blue-500 rounded-full"></span>
+                    <span className="text-sm font-medium text-gray-700">Total Tags</span>
+                  </div>
+                  <div className="text-2xl font-bold text-blue-600">{tagStats.total}</div>
+                </div>
+                
+                <div className="bg-white rounded-lg p-4 border border-orange-200">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="w-3 h-3 bg-orange-500 rounded-full"></span>
+                    <span className="text-sm font-medium text-gray-700">Dépenses Fixes</span>
+                  </div>
+                  <div className="text-2xl font-bold text-orange-600">{tagStats.fixed}</div>
+                  {tagStats.total > 0 && (
+                    <div className="text-xs text-gray-500 mt-1">
+                      {Math.round((tagStats.fixed / tagStats.total) * 100)}%
+                    </div>
+                  )}
+                </div>
+                
+                <div className="bg-white rounded-lg p-4 border border-green-200">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="w-3 h-3 bg-green-500 rounded-full"></span>
+                    <span className="text-sm font-medium text-gray-700">Dépenses Variables</span>
+                  </div>
+                  <div className="text-2xl font-bold text-green-600">{tagStats.variable}</div>
+                  {tagStats.total > 0 && (
+                    <div className="text-xs text-gray-500 mt-1">
+                      {Math.round((tagStats.variable / tagStats.total) * 100)}%
+                    </div>
+                  )}
+                </div>
+                
+                <div className="bg-white rounded-lg p-4 border border-purple-200">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="w-3 h-3 bg-purple-500 rounded-full"></span>
+                    <span className="text-sm font-medium text-gray-700">Transactions</span>
+                  </div>
+                  <div className="text-2xl font-bold text-purple-600">{tagStats.totalTransactions.toLocaleString()}</div>
+                  <div className="text-xs text-gray-500 mt-1">
+                    {tagStats.averageTransactionsPerTag} par tag
+                  </div>
+                </div>
+                
+                <div className="bg-white rounded-lg p-4 border border-emerald-200">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="w-3 h-3 bg-emerald-500 rounded-full"></span>
+                    <span className="text-sm font-medium text-gray-700">Montant Total</span>
+                  </div>
+                  <div className="text-xl font-bold text-emerald-600">
+                    {tagStats.totalAmount.toLocaleString('fr-FR', {
+                      minimumFractionDigits: 0,
+                      maximumFractionDigits: 0
+                    })}€
+                  </div>
+                </div>
+                
+                <div className="bg-white rounded-lg p-4 border border-indigo-200">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="w-3 h-3 bg-indigo-500 rounded-full"></span>
+                    <span className="text-sm font-medium text-gray-700">Filtres Actifs</span>
+                  </div>
+                  <div className="text-2xl font-bold text-indigo-600">{filteredTags.length}</div>
+                  {filteredTags.length !== tagStats.total && (
+                    <div className="text-xs text-gray-500 mt-1">
+                      sur {tagStats.total}
+                    </div>
+                  )}
+                </div>
               </div>
             </Card>
 
@@ -244,51 +324,71 @@ export function TagsManagement() {
             <Card className="p-4">
               <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
                 {/* Search */}
-                <div className="flex-1">
+                <div className="flex-1 w-full sm:w-auto">
+                  <label htmlFor="tag-search" className="sr-only">
+                    Rechercher dans les tags
+                  </label>
                   <div className="relative">
                     <input
+                      id="tag-search"
                       type="text"
                       placeholder="Rechercher un tag..."
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
                       className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      aria-label="Rechercher dans les tags"
                     />
-                    <span className="absolute left-3 top-2.5 text-gray-400">🔍</span>
+                    <span className="absolute left-3 top-2.5 text-gray-400" aria-hidden="true">🔍</span>
                   </div>
                 </div>
 
                 {/* Filters */}
-                <div className="flex items-center gap-3">
-                  <select
-                    value={filterType}
-                    onChange={(e) => setFilterType(e.target.value as any)}
-                    className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="all">Tous les types</option>
-                    <option value="fixed">Dépenses fixes</option>
-                    <option value="variable">Dépenses variables</option>
-                  </select>
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
+                  <div>
+                    <label htmlFor="filter-type" className="sr-only">
+                      Filtrer par type de dépense
+                    </label>
+                    <select
+                      id="filter-type"
+                      value={filterType}
+                      onChange={(e) => setFilterType(e.target.value as any)}
+                      className="w-full sm:w-auto px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
+                      aria-label="Filtrer par type de dépense"
+                    >
+                      <option value="all">Tous les types</option>
+                      <option value="fixed">Dépenses fixes</option>
+                      <option value="variable">Dépenses variables</option>
+                    </select>
+                  </div>
 
-                  <select
-                    value={sortBy}
-                    onChange={(e) => setSortBy(e.target.value as any)}
-                    className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="usage">Par utilisation</option>
-                    <option value="name">Par nom</option>
-                    <option value="amount">Par montant</option>
-                  </select>
+                  <div>
+                    <label htmlFor="sort-by" className="sr-only">
+                      Trier les tags par
+                    </label>
+                    <select
+                      id="sort-by"
+                      value={sortBy}
+                      onChange={(e) => setSortBy(e.target.value as any)}
+                      className="w-full sm:w-auto px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
+                      aria-label="Trier les tags par"
+                    >
+                      <option value="usage">Par utilisation</option>
+                      <option value="name">Par nom</option>
+                      <option value="amount">Par montant</option>
+                    </select>
+                  </div>
                 </div>
 
                 {/* Bulk Actions */}
                 {selectedTags.length > 0 && (
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
                     <Button 
                       onClick={() => setShowMergeDialog(true)}
                       variant="outline"
                       size="sm"
                       className="text-blue-600 border-blue-300 hover:bg-blue-50"
                       disabled={selectedTags.length < 2}
+                      aria-label={`Fusionner ${selectedTags.length} tags sélectionnés`}
                     >
                       🔗 Fusionner ({selectedTags.length})
                     </Button>
@@ -297,6 +397,7 @@ export function TagsManagement() {
                       variant="outline"
                       size="sm"
                       className="text-red-600 border-red-300 hover:bg-red-50"
+                      aria-label={`Supprimer ${selectedTags.length} tags sélectionnés`}
                     >
                       🗑️ Supprimer ({selectedTags.length})
                     </Button>
@@ -304,6 +405,7 @@ export function TagsManagement() {
                       onClick={() => setSelectedTags([])}
                       variant="outline"
                       size="sm"
+                      aria-label="Annuler la sélection"
                     >
                       Annuler
                     </Button>
@@ -350,17 +452,18 @@ export function TagsManagement() {
                 )
               ) : (
                 <div className="space-y-4">
-                  <div className="flex items-center justify-between">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <h3 className="text-lg font-semibold text-gray-900">
                       Mes Tags ({filteredTags.length}{filteredTags.length !== tags.length ? ` sur ${tags.length}` : ''})
                     </h3>
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                       {tags.length > 0 && (
                         <Button 
                           onClick={() => setSelectedTags(filteredTags.map(t => t.name))}
                           variant="outline" 
                           size="sm"
                           className="text-sm"
+                          aria-label={`Sélectionner tous les ${filteredTags.length} tags affichés`}
                         >
                           Tout sélectionner
                         </Button>
@@ -370,8 +473,9 @@ export function TagsManagement() {
                         size="sm"
                         onClick={loadTags}
                         className="text-sm"
+                        aria-label="Actualiser la liste des tags"
                       >
-                        <span className="mr-1">🔄</span>
+                        <span className="mr-1" aria-hidden="true">🔄</span>
                         Actualiser
                       </Button>
                     </div>
@@ -379,13 +483,13 @@ export function TagsManagement() {
 
 
                   {/* Tags Grid */}
-                  <div className="space-y-3">
+                  <div className="space-y-3" role="list" aria-label="Liste des tags">
                     {filteredTags.map((tag) => (
                       <div
                         key={tag.name}
                         className={`
-                          flex items-center justify-between p-4 border border-gray-200 rounded-lg bg-white 
-                          hover:shadow-sm transition-all cursor-pointer
+                          flex flex-col sm:flex-row sm:items-center justify-between p-4 border border-gray-200 rounded-lg bg-white 
+                          hover:shadow-sm transition-all cursor-pointer focus-within:ring-2 focus-within:ring-blue-500
                           ${
                             selectedTags.includes(tag.name)
                               ? 'ring-2 ring-blue-500 border-blue-300 bg-blue-50'
@@ -393,66 +497,77 @@ export function TagsManagement() {
                           }
                         `}
                         onClick={() => toggleTagSelection(tag.name)}
+                        role="listitem"
+                        aria-label={`Tag ${tag.name}, ${tag.transaction_count} transactions, type ${tag.expense_type}`}
                       >
-                        <div className="flex items-center gap-4 flex-1">
-                          {/* Checkbox */}
-                          <input
-                            type="checkbox"
-                            checked={selectedTags.includes(tag.name)}
-                            onChange={() => toggleTagSelection(tag.name)}
-                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                            onClick={(e) => e.stopPropagation()}
-                          />
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-4 flex-1">
+                          {/* Mobile: First row - Checkbox, Name and Badges */}
+                          <div className="flex items-center gap-3 flex-1 min-w-0">
+                            {/* Checkbox */}
+                            <input
+                              type="checkbox"
+                              checked={selectedTags.includes(tag.name)}
+                              onChange={() => toggleTagSelection(tag.name)}
+                              className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 flex-shrink-0"
+                              onClick={(e) => e.stopPropagation()}
+                              aria-label={`Sélectionner le tag ${tag.name}`}
+                            />
 
-                          {/* Tag Name & Badges */}
-                          <div className="flex items-center gap-3 min-w-0 flex-1">
-                            <span className="font-medium text-gray-900 truncate">
-                              {tag.name}
-                            </span>
-                            <ExpenseTypeBadge
-                              type={tag.expense_type}
-                              size="sm"
-                            />
-                            {/* Mock AI source badge - replace with actual data */}
-                            <TagSourceBadge 
-                              source={tag.transaction_count > 50 ? 'ai_pattern' : 'manual'} 
-                              size="xs" 
-                              showLabel={false}
-                            />
+                            {/* Tag Name & Badges */}
+                            <div className="flex items-center gap-3 min-w-0 flex-1">
+                              <span className="font-medium text-gray-900 truncate">
+                                {tag.name}
+                              </span>
+                              <div className="flex items-center gap-2 flex-shrink-0">
+                                <ExpenseTypeBadge
+                                  type={tag.expense_type}
+                                  size="sm"
+                                />
+                                {/* Mock AI source badge - replace with actual data */}
+                                <TagSourceBadge 
+                                  source={tag.transaction_count > 50 ? 'ai_pattern' : 'manual'} 
+                                  size="xs" 
+                                  showLabel={false}
+                                />
+                              </div>
+                            </div>
                           </div>
 
-                          {/* Stats */}
-                          <div className="flex items-center gap-4 text-sm text-gray-600">
-                            <div className="flex items-center gap-1">
-                              <span>📊</span>
-                              <span className="font-medium">{tag.transaction_count}</span>
-                              <span className="text-xs">uses</span>
+                          {/* Mobile: Second row / Desktop: Same row - Stats */}
+                          <div className="flex items-center justify-between sm:justify-end gap-4 text-sm text-gray-600 pl-7 sm:pl-0">
+                            <div className="flex items-center gap-4">
+                              <div className="flex items-center gap-1">
+                                <span aria-hidden="true">📊</span>
+                                <span className="font-medium">{tag.transaction_count}</span>
+                                <span className="text-xs hidden sm:inline">uses</span>
+                                <span className="text-xs sm:hidden">trans.</span>
+                              </div>
+                              {tag.total_amount !== 0 && (
+                                <div className="flex items-center gap-1">
+                                  <span aria-hidden="true">💰</span>
+                                  <span className="font-medium">
+                                    {Math.abs(tag.total_amount).toLocaleString('fr-FR', {
+                                      minimumFractionDigits: 0,
+                                      maximumFractionDigits: 0
+                                    })}€
+                                  </span>
+                                </div>
+                              )}
+                              {/* Mock confidence indicator for AI tags */}
+                              {tag.transaction_count > 50 && (
+                                <div className="flex items-center gap-1" title="Confiance IA">
+                                  <span className="text-xs text-green-600 font-medium">
+                                    {Math.floor(Math.random() * 15) + 85}%
+                                  </span>
+                                  <span className="w-2 h-2 bg-green-500 rounded-full" aria-hidden="true"></span>
+                                </div>
+                              )}
                             </div>
-                            {tag.total_amount !== 0 && (
-                              <div className="flex items-center gap-1">
-                                <span>💰</span>
-                                <span className="font-medium">
-                                  {Math.abs(tag.total_amount).toLocaleString('fr-FR', {
-                                    minimumFractionDigits: 0,
-                                    maximumFractionDigits: 0
-                                  })}€
-                                </span>
-                              </div>
-                            )}
-                            {/* Mock confidence indicator for AI tags */}
-                            {tag.transaction_count > 50 && (
-                              <div className="flex items-center gap-1">
-                                <span className="text-xs text-green-600 font-medium">
-                                  {Math.floor(Math.random() * 15) + 85}%
-                                </span>
-                                <span className="w-2 h-2 bg-green-500 rounded-full"></span>
-                              </div>
-                            )}
                           </div>
                         </div>
 
                         {/* Actions */}
-                        <div className="flex items-center gap-2 ml-4">
+                        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 mt-3 sm:mt-0 sm:ml-4 pt-3 sm:pt-0 border-t sm:border-t-0 border-gray-200">
                           {/* Quick Type Toggle */}
                           <button
                             onClick={(e) => {
@@ -461,7 +576,7 @@ export function TagsManagement() {
                             }}
                             disabled={isUpdating}
                             className={`
-                              px-3 py-1 text-xs rounded-full transition-colors border text-white font-medium
+                              px-3 py-2 text-xs rounded-lg transition-colors border text-white font-medium text-center
                               ${tag.expense_type === 'fixed' 
                                 ? 'bg-orange-500 border-orange-500 hover:bg-orange-600' 
                                 : 'bg-green-500 border-green-500 hover:bg-green-600'
@@ -469,48 +584,62 @@ export function TagsManagement() {
                               ${isUpdating ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
                             `}
                             title={`Changer vers ${tag.expense_type === 'fixed' ? 'Variable' : 'Fixe'}`}
+                            aria-label={`Changer le type de ${tag.name} vers ${tag.expense_type === 'fixed' ? 'Variable' : 'Fixe'}`}
                           >
-                            {tag.expense_type === 'fixed' ? 'Fixe → Var' : 'Var → Fixe'}
+                            <span className="hidden sm:inline">
+                              {tag.expense_type === 'fixed' ? 'Fixe → Var' : 'Var → Fixe'}
+                            </span>
+                            <span className="sm:hidden">
+                              Changer en {tag.expense_type === 'fixed' ? 'Variable' : 'Fixe'}
+                            </span>
                           </button>
 
-                          {/* View Transactions */}
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              // TODO: Navigate to transactions filtered by tag
-                              console.log('View transactions for', tag.name);
-                            }}
-                            className="p-2 text-gray-400 hover:text-blue-600 transition-colors"
-                            title="Voir les transactions"
-                          >
-                            👁️
-                          </button>
+                          <div className="flex items-center gap-2">
+                            {/* View Transactions */}
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleViewTransactions(tag.name);
+                              }}
+                              className="flex-1 sm:flex-none p-2 text-gray-400 hover:text-blue-600 transition-colors border border-gray-300 rounded-lg hover:border-blue-300 disabled:opacity-50"
+                              title="Voir les transactions"
+                              disabled={tag.transaction_count === 0}
+                              aria-label={`Voir les ${tag.transaction_count} transactions pour ${tag.name}`}
+                            >
+                              <span aria-hidden="true">👁️</span>
+                              <span className="ml-1 text-xs sm:hidden">Voir</span>
+                            </button>
 
-                          {/* Edit */}
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleEditTag(tag);
-                            }}
-                            disabled={isUpdating}
-                            className="p-2 text-gray-400 hover:text-blue-600 transition-colors disabled:opacity-50"
-                            title="Modifier"
-                          >
-                            ✏️
-                          </button>
+                            {/* Edit */}
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleEditTag(tag);
+                              }}
+                              disabled={isUpdating}
+                              className="flex-1 sm:flex-none p-2 text-gray-400 hover:text-blue-600 transition-colors border border-gray-300 rounded-lg hover:border-blue-300 disabled:opacity-50"
+                              title="Modifier"
+                              aria-label={`Modifier le tag ${tag.name}`}
+                            >
+                              <span aria-hidden="true">✏️</span>
+                              <span className="ml-1 text-xs sm:hidden">Éditer</span>
+                            </button>
 
-                          {/* Delete */}
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDeleteTag(tag.name, tag.transaction_count);
-                            }}
-                            disabled={isUpdating}
-                            className="p-2 text-gray-400 hover:text-red-600 transition-colors disabled:opacity-50"
-                            title="Supprimer"
-                          >
-                            🗑️
-                          </button>
+                            {/* Delete */}
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteTag(tag.name, tag.transaction_count);
+                              }}
+                              disabled={isUpdating}
+                              className="flex-1 sm:flex-none p-2 text-gray-400 hover:text-red-600 transition-colors border border-gray-300 rounded-lg hover:border-red-300 disabled:opacity-50"
+                              title="Supprimer"
+                              aria-label={`Supprimer le tag ${tag.name}`}
+                            >
+                              <span aria-hidden="true">🗑️</span>
+                              <span className="ml-1 text-xs sm:hidden">Suppr.</span>
+                            </button>
+                          </div>
                         </div>
                       </div>
                     ))}

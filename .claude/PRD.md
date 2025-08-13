@@ -335,9 +335,32 @@ La gestion budgétaire familiale repose aujourd’hui sur un Excel (onglet *Calc
 
 ---
 
-## 📋 STATUT D'AVANCEMENT - SESSION 2025-08-11
+## 📋 STATUT D'AVANCEMENT - SESSION 2025-08-13
 
-### ✅ RÉALISATIONS CRITIQUES
+### ✅ BUGS CRITIQUES CORRIGÉS
+
+#### Édition Transactions (100% Débloquée)
+- **Problème résolu**: Sélecteurs type/tags bloqués dans l'interface
+- **Solution**: Suppression `pointer-events: none` et `preventDefault()` excessifs
+- **Validation**: Modification libre des tags et types de dépense
+- **Fichiers**: `TagsInput.tsx`, `Select.tsx`, `TransactionRow.tsx`
+
+#### Validation API (Erreurs 422 Résolues)
+- **Problème résolu**: Incompatibilité Pydantic v2 avec syntaxe v1
+- **Solution**: Migration complète vers Pydantic v2 (`@field_validator`)
+- **Validation**: PUT /transactions/{id}/tag et PATCH /expense-type fonctionnels
+- **Performance**: Validation instantanée des schémas
+
+#### Dashboard Optimisé (Interface Améliorée)
+- **Problèmes résolus**: Texte tronqué, filtrage modal défaillant, revenus mélangés
+- **Solutions**: 
+  - Séparation revenus/dépenses (3 colonnes)
+  - Pagination revenus (10 par page)
+  - Tooltips sur textes longs
+  - Grille responsive `lg:grid-cols-2 xl:grid-cols-3`
+- **Validation**: Dashboard 100% lisible et fonctionnel
+
+### ✅ RÉALISATIONS SESSION 2025-08-11
 
 #### Import CSV (100% Fonctionnel)
 - **Problème résolu**: "aucun mois détecté" malgré traitement backend réussi

@@ -257,6 +257,10 @@ app = FastAPI(
         {
             "name": "Cache",
             "description": "Gestion du cache Redis pour optimisation des performances"
+        },
+        {
+            "name": "Account Balance",
+            "description": "Gestion des soldes de comptes mensuels et calculs de virements"
         }
     ],
     contact={
@@ -392,6 +396,7 @@ from routers.research import router as research_router
 from routers.ml_tagging import router as ml_tagging_router  # ML-based tagging with confidence scoring
 from routers.ml_feedback import router as ml_feedback_router  # ML feedback learning system
 from routers.ml_enhanced_classification import router as ml_enhanced_classification_router  # Enhanced ML classification
+from routers.balance import router as balance_router  # Account balance management
 
 # Include routers with their prefixes
 app.include_router(auth_router, tags=["authentication"])
@@ -412,6 +417,7 @@ app.include_router(research_router, tags=["web-research"])
 app.include_router(ml_tagging_router, tags=["ml-tagging"])  # ML-based tagging with confidence scoring
 app.include_router(ml_feedback_router, tags=["ml-feedback"])  # ML feedback learning system
 app.include_router(ml_enhanced_classification_router, tags=["ml-enhanced-classification"])  # Enhanced ML classification
+app.include_router(balance_router, tags=["account-balance"])  # Account balance management
 
 # Configure CORS middleware after all routes are defined
 # This ensures CORS preflight requests are handled correctly for all endpoints
@@ -916,6 +922,29 @@ def get_enhanced_summary(month: str, current_user = Depends(get_current_user), d
         
         variables_total = variables_p1_total + variables_p2_total
         
+        # === REVENUS (INCOME) ===
+        # Récupérer toutes les transactions de revenus (montants positifs, is_expense=False)
+        revenue_txs = db.query(Transaction).filter(
+            Transaction.month == month,
+            Transaction.is_expense == False,
+            Transaction.exclude == False,
+            Transaction.amount > 0  # Revenus = montants positifs
+        ).all()
+        
+        revenue_member1_total = 0.0
+        revenue_member2_total = 0.0
+        
+        for tx in revenue_txs:
+            amount = abs(tx.amount or 0)
+            member1_amount, member2_amount = split_amount(amount, "ratio", r1, r2, 0, 0)
+            revenue_member1_total += member1_amount
+            revenue_member2_total += member2_amount
+        
+        revenue_total = revenue_member1_total + revenue_member2_total
+        
+        # Calculer le montant recommandé à provisionner (charges fixes + épargne)
+        provision_needed = fixed_total + provisions_total
+        
         # === TOTAUX GÉNÉRAUX ===
         grand_total_p1 = provisions_p1_total + fixed_p1_total + variables_p1_total
         grand_total_p2 = provisions_p2_total + fixed_p2_total + variables_p2_total
@@ -927,6 +956,14 @@ def get_enhanced_summary(month: str, current_user = Depends(get_current_user), d
             "member1": cfg.member1,
             "member2": cfg.member2,
             "split_ratio": {"member1": round(r1, 4), "member2": round(r2, 4)},
+            
+            # REVENUS (INCOME)
+            "revenues": {
+                "member1_revenue": round(revenue_member1_total, 2),
+                "member2_revenue": round(revenue_member2_total, 2),
+                "total_revenue": round(revenue_total, 2),
+                "provision_needed": round(provision_needed, 2)
+            },
             
             # ÉPARGNE (PROVISIONS)
             "savings": {
@@ -959,7 +996,7 @@ def get_enhanced_summary(month: str, current_user = Depends(get_current_user), d
             
             # TOTAUX GÉNÉRAUX
             "totals": {
-                "total_expenses": round(variables_total, 2),
+                "total_expenses": round(fixed_total + variables_total, 2),  # Fixed: Fixed + Variables (not just variables)
                 "total_fixed": round(fixed_total, 2),
                 "total_variable": round(variables_total, 2),
                 "grand_total": round(grand_total, 2),

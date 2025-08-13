@@ -34,8 +34,6 @@ export type ConfigOut = {
   copro_montant: number;
   /** @deprecated Utiliser le système de dépenses fixes personnalisables */
   copro_freq: "mensuelle" | "trimestrielle";
-  /** @deprecated Utiliser le système de dépenses fixes personnalisables */
-  other_split_mode: "clé" | "50/50";
   /** @deprecated Utiliser le système de provisions personnalisables */
   vac_percent: number;
   /** @deprecated Utiliser le système de provisions personnalisables */
@@ -243,6 +241,37 @@ export type ExpenseClassificationResult = {
     matched_keywords: string[];
   }[];
   reasoning: string; // Explication textuelle du choix
+};
+
+// Types pour la gestion du solde de compte
+export type AccountBalance = {
+  id: number;
+  month: string;
+  account_balance: number;
+  budget_target?: number;
+  savings_goal?: number;
+  notes?: string;
+  is_closed?: boolean;
+  created_at: string;
+  updated_at?: string;
+  created_by: string;
+};
+
+export type AccountBalanceUpdate = {
+  account_balance: number;
+  notes?: string;
+};
+
+export type BalanceTransferCalculation = {
+  month: string;
+  total_expenses: number;
+  total_member1: number;
+  total_member2: number;
+  current_balance: number;
+  suggested_transfer_member1: number;
+  suggested_transfer_member2: number;
+  final_balance_after_transfers: number;
+  balance_status: 'sufficient' | 'tight' | 'deficit' | 'surplus';
 };
 
 // Types pour les erreurs API
@@ -726,8 +755,7 @@ export const expenseClassificationApi = {
   // Mettre à jour le type de dépense d'une transaction
   async updateTransactionType(transactionId: number, expenseType: 'fixed' | 'variable', manualOverride: boolean = true): Promise<Tx> {
     const response = await api.patch<Tx>(`/transactions/${transactionId}/expense-type`, {
-      expense_type: expenseType,
-      expense_type_manual_override: manualOverride
+      expense_type: expenseType.toUpperCase()
     });
     return response.data;
   }
@@ -788,5 +816,37 @@ export const mlFeedbackApi = {
       console.warn('Failed to send ML feedback for classification:', error);
       // Non-blocking error - don't throw
     }
+  }
+};
+
+// =============================================================================
+// FONCTIONS API POUR LA GESTION DU SOLDE DE COMPTE
+// =============================================================================
+
+export const balanceApi = {
+  // Récupérer le solde d'un mois
+  async get(month: string): Promise<AccountBalance> {
+    const response = await api.get<AccountBalance>(`/api/balance/${month}`);
+    return response.data;
+  },
+
+  // Mettre à jour le solde d'un mois
+  async update(month: string, balanceData: AccountBalanceUpdate): Promise<AccountBalance> {
+    const response = await api.put<AccountBalance>(`/api/balance/${month}`, balanceData);
+    return response.data;
+  },
+
+  // Récupérer le calcul des virements avec le solde
+  async getTransferCalculation(month: string): Promise<BalanceTransferCalculation> {
+    const response = await api.get<BalanceTransferCalculation>(`/api/balance/${month}/transfer-calculation`);
+    return response.data;
+  },
+
+  // Lister tous les mois avec leurs soldes
+  async list(limit: number = 12, offset: number = 0): Promise<AccountBalance[]> {
+    const response = await api.get<AccountBalance[]>('/api/balance', {
+      params: { limit, offset }
+    });
+    return response.data || [];
   }
 };

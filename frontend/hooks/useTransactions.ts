@@ -162,7 +162,7 @@ export function useTransactions(): UseTransactionsReturn {
       
       console.log('🏷️ Saving tags for transaction', id, ':', tags);
       
-      const response = await api.put(`/transactions/${id}/tag`, { tag: tagsCSV });
+      const response = await api.put(`/transactions/${id}/tag`, { tags: tagsCSV });
       
       console.log('✅ Tags saved successfully:', response.data);
       
@@ -209,8 +209,7 @@ export function useTransactions(): UseTransactionsReturn {
   const updateExpenseType = async (id: number, expenseType: 'fixed' | 'variable') => {
     try {
       const response = await api.patch(`/transactions/${id}/expense-type`, {
-        expense_type: expenseType,
-        expense_type_manual_override: true
+        expense_type: expenseType.toUpperCase()
       });
       
       setRows(prev => prev.map(x => x.id === id ? response.data : x));

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect } from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import { useGlobalMonthWithUrl } from "../../lib/month";
 import { useAuth } from "../../lib/auth";
 import { LoadingSpinner, Card, Alert } from "../../components/ui";
@@ -12,6 +12,7 @@ import { TransactionsSummary, TransactionsTable, AutoTaggingButton, AutoTaggingP
 
 export default function TransactionsPage() {
   const { isAuthenticated, loading: authLoading } = useAuth();
+  const router = useRouter();
   const searchParams = useSearchParams();
   const [month, setMonth] = useGlobalMonthWithUrl();
   const {
@@ -44,6 +45,7 @@ export default function TransactionsPage() {
 
   // Paramètres d'URL
   const importId = searchParams.get('importId');
+  const tagFilter = searchParams.get('tag');
   
   console.log('📊 Transactions page - Current month:', month, 'ImportId:', importId);
 
@@ -114,9 +116,24 @@ export default function TransactionsPage() {
   return (
     <div className="max-w-7xl mx-auto p-4 space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">
-          📈 Transactions - {month || 'Mois non sélectionné'}
-        </h1>
+        <div className="flex flex-col gap-2">
+          <h1 className="text-2xl font-bold text-gray-900">
+            📈 Transactions - {month || 'Mois non sélectionné'}
+          </h1>
+          {tagFilter && (
+            <div className="flex items-center gap-2">
+              <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">
+                🏷️ Filtre: {tagFilter}
+              </span>
+              <button 
+                onClick={() => router.push('/transactions')}
+                className="text-sm text-blue-600 hover:text-blue-800 underline"
+              >
+                Supprimer le filtre
+              </button>
+            </div>
+          )}
+        </div>
         <button 
           onClick={() => refresh(isAuthenticated, month)}
           className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"

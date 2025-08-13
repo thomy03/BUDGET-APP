@@ -4,7 +4,7 @@ Handles transaction operations and management
 """
 import logging
 from typing import List, Optional
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
 
 from auth import get_current_user
@@ -50,13 +50,47 @@ def tx_to_response(tx: Transaction) -> TxOut:
     )
 
 @router.get("", response_model=List[TxOut])
-def list_transactions(month: str, db: Session = Depends(get_db)):
+def list_transactions(
+    month: str, 
+    tag: Optional[str] = Query(None, description="Filter by specific tag (supports multiple tags separated by comma)"),
+    expense_type: Optional[str] = Query(None, description="Filter by expense type: FIXED, VARIABLE, or PROVISION"),
+    db: Session = Depends(get_db)
+):
     """
-    List all transactions for a specific month
+    List all transactions for a specific month with optional tag and expense type filtering
     
     Returns all transactions for the specified month in YYYY-MM format.
+    If tag parameter is provided, filters transactions containing any of the specified tags.
+    Multiple tags can be specified separated by commas (e.g., tag=restaurant,courses).
+    If expense_type is provided, filters transactions by their expense type.
     """
-    txs = db.query(Transaction).filter(Transaction.month == month).order_by(Transaction.date_op.desc()).all()
+    query = db.query(Transaction).filter(Transaction.month == month)
+    
+    # Add expense_type filtering if specified
+    if expense_type and expense_type.strip():
+        normalized_type = expense_type.strip().upper()
+        if normalized_type in ['FIXED', 'VARIABLE', 'PROVISION']:
+            query = query.filter(Transaction.expense_type == normalized_type)
+        else:
+            # If invalid expense_type provided, return empty results
+            query = query.filter(Transaction.id == -1)  # Filter that matches nothing
+    
+    txs = query.order_by(Transaction.date_op.desc()).all()
+    
+    # Add tag filtering if specified (applied after database query for complex matching)
+    if tag:
+        # Parse requested tags
+        requested_tags = [t.strip().lower() for t in tag.split(',') if t.strip()]
+        
+        filtered_txs = []
+        for tx in txs:
+            if tx.tags:
+                tx_tags = [t.strip().lower() for t in tx.tags.split(',') if t.strip()]
+                # Check if any requested tag is in this transaction's tags
+                if any(req_tag in tx_tags for req_tag in requested_tags):
+                    filtered_txs.append(tx)
+        txs = filtered_txs
+    
     return [tx_to_response(tx) for tx in txs]
 
 @router.patch("/{tx_id}", response_model=TxOut)
@@ -153,6 +187,91 @@ def convert_expense_type(tx_id: int, payload: ExpenseTypeConversion, current_use
     db.refresh(tx)
     
     logger.info(f"✅ Transaction {tx_id} expense type converted: {old_type} → {new_type} (User: {current_user.username})")
+    
+    # Send ML feedback for expense type change
+    try:
+        from routers.ml_feedback import MLFeedbackService
+        from models.schemas import MLFeedbackCreate
+        
+        feedback_service = MLFeedbackService(db)
+        feedback_data = MLFeedbackCreate(
+            transaction_id=tx_id,
+            original_expense_type=old_type,
+            corrected_expense_type=new_type,
+            feedback_type="correction",
+            confidence_before=0.5  # Default confidence for manual corrections
+        )
+        feedback_service.save_feedback(feedback_data, current_user.username)
+        logger.info(f"📊 ML feedback sent for expense type change on transaction {tx_id}")
+    except Exception as e:
+        logger.warning(f"Failed to send ML feedback for transaction {tx_id}: {e}")
+    
+    return tx_to_response(tx)
+
+@router.put("/{tx_id}/tag", response_model=TxOut)
+def put_transaction_tag(tx_id: int, payload: TagsIn, current_user = Depends(get_current_user), db: Session = Depends(get_db)):
+    """
+    Set tags for a transaction (PUT method for tag replacement)
+    
+    Replaces all tags for a specific transaction and automatically creates 
+    corresponding fixed lines for new tags. This endpoint provides ML feedback data.
+    """
+    tx = db.query(Transaction).filter(Transaction.id == tx_id).first()
+    if not tx:
+        raise HTTPException(status_code=404, detail="Transaction introuvable")
+    
+    # Store old tags for ML feedback
+    old_tags = parse_tags_to_array(tx.tags or "")
+    new_tags = parse_tags_to_array(payload.tags)
+    
+    # Update transaction tags
+    tx.tags = payload.tags
+    db.add(tx)
+    db.commit()
+    db.refresh(tx)
+    
+    # Find newly added tags for automation
+    added_tags = [tag for tag in new_tags if tag not in old_tags]
+    
+    # Process new tags for automatic fixed line creation
+    if added_tags:
+        try:
+            from services.tag_automation import get_tag_automation_service
+            automation_service = get_tag_automation_service(db)
+            
+            for tag in added_tags:
+                if tag.strip():  # Only process non-empty tags
+                    mapping = automation_service.process_tag_creation(
+                        tag_name=tag.strip(),
+                        transaction=tx,
+                        username=current_user.username
+                    )
+                    if mapping:
+                        logger.info(f"✅ Auto-created fixed line for tag '{tag}' on transaction {tx_id}")
+                    else:
+                        logger.warning(f"⚠️ Could not auto-create fixed line for tag '{tag}'")
+        except Exception as e:
+            # Don't fail the tag update if automation fails
+            logger.error(f"Tag automation error for transaction {tx_id}: {e}")
+    
+    # Send ML feedback if tags changed significantly
+    if old_tags != new_tags:
+        try:
+            from routers.ml_feedback import MLFeedbackService
+            from models.schemas import MLFeedbackCreate
+            
+            feedback_service = MLFeedbackService(db)
+            feedback_data = MLFeedbackCreate(
+                transaction_id=tx_id,
+                original_tag=','.join(old_tags) if old_tags else None,
+                corrected_tag=','.join(new_tags) if new_tags else None,
+                feedback_type="correction" if old_tags else "manual",
+                confidence_before=0.5  # Default confidence for manual corrections
+            )
+            feedback_service.save_feedback(feedback_data, current_user.username)
+            logger.info(f"📊 ML feedback sent for tag change on transaction {tx_id}")
+        except Exception as e:
+            logger.warning(f"Failed to send ML feedback for transaction {tx_id}: {e}")
     
     return tx_to_response(tx)
 

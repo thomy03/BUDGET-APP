@@ -402,6 +402,34 @@ class TagFixedLineMapping(Base):
     )
 
 
+class GlobalMonth(Base):
+    """Global month settings and account balance"""
+    __tablename__ = "global_months"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    month = Column(String(7), nullable=False, unique=True, index=True)  # "YYYY-MM" format
+    account_balance = Column(Float, nullable=True, default=0.0)  # Current account balance for this month
+    
+    # Metadata
+    created_at = Column(DateTime, server_default=func.now())
+    updated_at = Column(DateTime, onupdate=func.now())
+    created_by = Column(String(50), nullable=True)  # Username who created/updated
+    
+    # Additional month-specific settings (for future use)
+    budget_target = Column(Float, nullable=True)  # Monthly budget target
+    savings_goal = Column(Float, nullable=True)   # Monthly savings goal
+    notes = Column(Text, nullable=True)           # Month notes
+    is_closed = Column(Boolean, default=False)    # Whether month is closed for modifications
+    
+    # Performance indexes
+    __table_args__ = (
+        Index('idx_global_months_month', 'month'),
+        Index('idx_global_months_created_by', 'created_by'),
+        Index('idx_global_months_updated_at', 'updated_at'),
+        Index('idx_global_months_is_closed', 'is_closed'),
+    )
+
+
 # Add relationship to FixedLine
 FixedLine.tag_mappings = relationship("TagFixedLineMapping", back_populates="fixed_line")
 
@@ -956,6 +984,40 @@ def migrate_schema():
                     conn.exec_driver_sql(index_sql)
                 
                 logger.info("✅ Table merchant_knowledge_base created with performance indexes")
+            
+            # Migration for global_months table (account balance and month settings)
+            try:
+                conn.exec_driver_sql("SELECT 1 FROM global_months LIMIT 1")
+                logger.info("Table global_months already exists")
+            except Exception:
+                logger.info("Creating global_months table for account balance and month settings")
+                conn.exec_driver_sql("""
+                    CREATE TABLE IF NOT EXISTS global_months (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        month VARCHAR(7) UNIQUE NOT NULL,
+                        account_balance FLOAT DEFAULT 0.0,
+                        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                        updated_at DATETIME,
+                        created_by VARCHAR(50),
+                        budget_target FLOAT,
+                        savings_goal FLOAT,
+                        notes TEXT,
+                        is_closed BOOLEAN DEFAULT FALSE
+                    )
+                """)
+                
+                # Create performance indexes for global_months
+                global_months_indexes = [
+                    "CREATE INDEX IF NOT EXISTS idx_global_months_month ON global_months(month)",
+                    "CREATE INDEX IF NOT EXISTS idx_global_months_created_by ON global_months(created_by)",
+                    "CREATE INDEX IF NOT EXISTS idx_global_months_updated_at ON global_months(updated_at)",
+                    "CREATE INDEX IF NOT EXISTS idx_global_months_is_closed ON global_months(is_closed)",
+                ]
+                
+                for index_sql in global_months_indexes:
+                    conn.exec_driver_sql(index_sql)
+                
+                logger.info("✅ Table global_months created with performance indexes")
             
             # Migration for research_cache table (web research caching)
             try:

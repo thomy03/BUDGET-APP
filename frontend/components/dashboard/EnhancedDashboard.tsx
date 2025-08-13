@@ -1,11 +1,13 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useEnhancedDashboard, EnhancedSummaryData, SavingsDetail, FixedExpenseDetail, VariableDetail } from '../../hooks/useEnhancedDashboard';
 import { Card, LoadingSpinner } from '../ui';
 import { ErrorBoundary } from './ErrorBoundary';
 import { TransactionDetailModal } from './TransactionDetailModal';
+import { AccountBalanceComponent } from './AccountBalance';
 import { useRouter } from 'next/navigation';
+import { api } from '../../lib/api';
 
 interface EnhancedDashboardProps {
   month: string;
@@ -99,15 +101,28 @@ const EnhancedDashboard = React.memo<EnhancedDashboardProps>(({ month, isAuthent
   }
 
   const openModal = (category: 'provision' | 'fixed' | 'variable', categoryName?: string, tagFilter?: string) => {
+    console.log('🖱️ Dashboard modal opened:', { category, categoryName, tagFilter });
+    
     const titles = {
       provision: `Détail des Provisions${categoryName ? ` - ${categoryName}` : ''}`,
       fixed: `Détail des Charges Fixes${categoryName ? ` - ${categoryName}` : ''}`,
       variable: `Détail des Dépenses Variables${categoryName ? ` - ${categoryName}` : ''}`
     };
     
+    // Add tag filter to title if present
+    let finalTitle = titles[category];
+    if (tagFilter) {
+      if (tagFilter.includes(',')) {
+        const tagList = tagFilter.split(',').map(t => t.trim()).join(', ');
+        finalTitle += ` - Tags: ${tagList} (auto-généré)`;
+      } else {
+        finalTitle += ` - ${tagFilter} (auto-généré)`;
+      }
+    }
+    
     setModalState({
       isOpen: true,
-      title: titles[category],
+      title: finalTitle,
       category,
       categoryName,
       tagFilter
@@ -124,6 +139,9 @@ const EnhancedDashboard = React.memo<EnhancedDashboardProps>(({ month, isAuthent
       {/* Revenue Details Section */}
       <RevenueSection data={data} />
       
+      {/* Account Balance Section */}
+      <AccountBalanceComponent month={month} onBalanceUpdate={reload} />
+      
       {/* Key Metrics Overview */}
       <MetricsOverview data={data} onCategoryClick={openModal} />
       
@@ -132,31 +150,38 @@ const EnhancedDashboard = React.memo<EnhancedDashboardProps>(({ month, isAuthent
         <div className="flex items-start space-x-3">
           <span className="text-blue-500 text-xl flex-shrink-0">✅</span>
           <div className="flex-1">
-            <h3 className="text-sm font-semibold text-blue-900 mb-2">Logique Exclusive - Fini le Double Comptage !</h3>
-            <div className="grid md:grid-cols-3 gap-3 text-xs text-blue-700">
+            <h3 className="text-sm font-semibold text-blue-900 mb-2">Séparation Stricte Revenus/Dépenses</h3>
+            <div className="grid md:grid-cols-4 gap-3 text-xs text-blue-700">
+              <div className="bg-emerald-50 p-2 rounded-lg border border-emerald-100">
+                <div className="font-medium text-emerald-800 mb-1">💰 REVENUS</div>
+                <div>Montants positifs uniquement (salaires, primes...)</div>
+              </div>
               <div className="bg-green-50 p-2 rounded-lg border border-green-100">
                 <div className="font-medium text-green-800 mb-1">🎯 ÉPARGNE</div>
-                <div>Provisions pour objectifs futurs (vacances, travaux...)</div>
+                <div>Provisions pour objectifs futurs</div>
               </div>
               <div className="bg-blue-50 p-2 rounded-lg border border-blue-100">
                 <div className="font-medium text-blue-800 mb-1">💳 CHARGES FIXES</div>
-                <div>⚙️ Manuelles + 🤖 Auto-détectées par l'IA</div>
+                <div>⚙️ Manuelles + 🤖 Auto-détectées</div>
               </div>
               <div className="bg-orange-50 p-2 rounded-lg border border-orange-100">
                 <div className="font-medium text-orange-800 mb-1">📊 VARIABLES</div>
-                <div>Dépenses ponctuelles par tags + non-taggées</div>
+                <div>Dépenses variables par tags</div>
               </div>
             </div>
             <p className="text-xs text-blue-600 mt-2 font-medium">
-              💡 Chaque transaction appartient à UNE seule catégorie. Utilisez les boutons de conversion pour changer.
+              💡 Revenus (positifs) séparés des dépenses (négatives). Conversion possible entre types de dépenses.
             </p>
           </div>
         </div>
       </div>
       
       {/* Main Content - Split Layout */}
-      <div className="grid lg:grid-cols-2 gap-8">
-        {/* LEFT: ÉPARGNE (PROVISIONS) */}
+      <div className="grid lg:grid-cols-2 xl:grid-cols-3 gap-8">
+        {/* LEFT: REVENUS (INCOME) */}
+        <RevenueTransactionsSection data={data} month={month} />
+        
+        {/* CENTER: ÉPARGNE (PROVISIONS) */}
         <SavingsSection data={data} onCategoryClick={openModal} />
         
         {/* RIGHT: DÉPENSES (FIXED + VARIABLES) */}
@@ -199,7 +224,9 @@ const RevenueSection = React.memo<{ data: EnhancedSummaryData }>(({ data }) => {
     savings: { total: 0 },
     totals: { total_expenses: 0 }
   };
-  if (!data?.revenues) return null;
+  
+  // Always show the revenue section, even with zero values
+  const revenues = data?.revenues ?? safeData.revenues;
   
   // Calculate recommended provision amount: Total Fixed Expenses + Suggested Provisions
   const recommendedProvision = (
@@ -220,17 +247,17 @@ const RevenueSection = React.memo<{ data: EnhancedSummaryData }>(({ data }) => {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-white rounded-lg p-4 border border-emerald-100">
           <div className="text-sm font-medium text-emerald-700 mb-1">{safeData.member1 ?? 'Membre 1'}</div>
-          <div className="text-xl font-bold text-emerald-900">{(data?.revenues?.member1_revenue || 0).toFixed(2)} €</div>
+          <div className="text-xl font-bold text-emerald-900">{(revenues?.member1_revenue || 0).toFixed(2)} €</div>
           <div className="text-xs text-emerald-600 mt-1">Revenus individuels</div>
         </div>
         <div className="bg-white rounded-lg p-4 border border-emerald-100">
-          <div className="text-sm font-medium text-emerald-700 mb-1">{data.member2}</div>
-          <div className="text-xl font-bold text-emerald-900">{(data?.revenues?.member2_revenue || 0).toFixed(2)} €</div>
+          <div className="text-sm font-medium text-emerald-700 mb-1">{safeData.member2 ?? 'Membre 2'}</div>
+          <div className="text-xl font-bold text-emerald-900">{(revenues?.member2_revenue || 0).toFixed(2)} €</div>
           <div className="text-xs text-emerald-600 mt-1">Revenus individuels</div>
         </div>
         <div className="bg-white rounded-lg p-4 border border-emerald-100 ring-2 ring-emerald-200">
           <div className="text-sm font-medium text-emerald-700 mb-1">Total Revenus</div>
-          <div className="text-xl font-bold text-emerald-900">{(data?.revenues?.total_revenue || 0).toFixed(2)} €</div>
+          <div className="text-xl font-bold text-emerald-900">{(revenues?.total_revenue || 0).toFixed(2)} €</div>
           <div className="text-xs text-emerald-600 mt-1">Revenus combinés</div>
         </div>
         <div className="bg-gradient-to-r from-yellow-50 to-orange-50 rounded-lg p-4 border border-orange-200">
@@ -245,11 +272,11 @@ const RevenueSection = React.memo<{ data: EnhancedSummaryData }>(({ data }) => {
         <div className="text-sm font-medium text-emerald-700 mb-2">Calcul du montant à provisionner:</div>
         <div className="grid grid-cols-3 gap-4 text-xs">
           <div className="text-center">
-            <div className="text-blue-600 font-semibold">{(data?.fixed_expenses?.total || 0).toFixed(2)} €</div>
+            <div className="text-blue-600 font-semibold">{(safeData?.fixed_expenses?.total || 0).toFixed(2)} €</div>
             <div className="text-gray-600">Charges fixes</div>
           </div>
           <div className="text-center">
-            <div className="text-green-600 font-semibold">+ {(data?.savings?.total || 0).toFixed(2)} €</div>
+            <div className="text-green-600 font-semibold">+ {(safeData?.savings?.total || 0).toFixed(2)} €</div>
             <div className="text-gray-600">Provisions épargne</div>
           </div>
           <div className="text-center">
@@ -263,13 +290,13 @@ const RevenueSection = React.memo<{ data: EnhancedSummaryData }>(({ data }) => {
       <div className="mt-4">
         <div className="flex justify-between text-sm text-emerald-700 mb-2">
           <span>Couverture Budget Total</span>
-          <span>{(data?.totals?.total_expenses && data?.revenues?.total_revenue ? ((data.revenues.total_revenue / data.totals.total_expenses) * 100).toFixed(1) : '0.0')}%</span>
+          <span>{(safeData?.totals?.total_expenses && revenues?.total_revenue ? ((revenues.total_revenue / safeData.totals.total_expenses) * 100).toFixed(1) : '0.0')}%</span>
         </div>
         <div className="w-full bg-gray-200 rounded-full h-3">
           <div 
             className="bg-gradient-to-r from-emerald-400 to-green-500 h-3 rounded-full transition-all duration-300"
             style={{ 
-              width: `${data?.totals?.total_expenses && data?.revenues?.total_revenue ? Math.min(100, (data.revenues.total_revenue / data.totals.total_expenses) * 100) : 0}%` 
+              width: `${safeData?.totals?.total_expenses && revenues?.total_revenue ? Math.min(100, (revenues.total_revenue / safeData.totals.total_expenses) * 100) : 0}%` 
             }}
           ></div>
         </div>
@@ -456,7 +483,7 @@ const ExpensesSection = React.memo<{
                   expense={expense} 
                   member1={data.member1} 
                   member2={data.member2}
-                  onClick={() => onCategoryClick('fixed', expense.name)}
+                  onClick={() => onCategoryClick('fixed', expense.name, expense.tag)}
                 />
               ))}
             </div>
@@ -539,7 +566,7 @@ const SavingRow = React.memo<{
           <div className="w-2 h-2 rounded-full mt-1" style={{ backgroundColor: saving.color }}></div>
         </div>
       </div>
-      <div className="flex space-x-6 text-sm font-mono">
+      <div className="flex space-x-6 text-sm font-mono tabular-nums flex-shrink-0 min-w-[160px]">
         <span className="text-green-800">{(saving?.member1_amount || 0).toFixed(2)} €</span>
         <span className="text-green-800">{(saving?.member2_amount || 0).toFixed(2)} €</span>
       </div>
@@ -569,26 +596,30 @@ const FixedExpenseRow = React.memo<{
       }`}
       onClick={onClick}
     >
-      <div className="flex items-center space-x-2 min-w-0 flex-1">
-        <span className="text-lg flex-shrink-0">{expense.icon}</span>
-        <div className="min-w-0 flex-1">
-          <span className="text-sm font-medium text-blue-900 truncate block">{expense.name}</span>
-          <div className="flex items-center space-x-1 mt-0.5">
-            <span className="text-xs text-blue-600 bg-blue-100 px-2 py-0.5 rounded">{expense.category}</span>
+      <div className="flex items-start space-x-3 min-w-0 flex-1">
+        <span className="text-lg flex-shrink-0 mt-0.5">{expense.icon}</span>
+        <div className="min-w-0 flex-1 space-y-1">
+          <div className="text-sm font-medium text-blue-900 truncate" title={expense.name}>
+            {expense.name}
+          </div>
+          <div className="flex flex-wrap items-center gap-1.5">
+            <span className="text-xs text-blue-600 bg-blue-100 px-2 py-0.5 rounded flex-shrink-0">
+              {expense.category}
+            </span>
             {isAIGenerated && (
-              <span className="text-xs bg-gradient-to-r from-purple-100 to-blue-100 text-purple-700 px-2 py-0.5 rounded-full font-medium">
+              <span className="text-xs bg-gradient-to-r from-purple-100 to-blue-100 text-purple-700 px-2 py-0.5 rounded-full font-medium flex-shrink-0">
                 IA
               </span>
             )}
             {expense.tag && (
-              <span className="text-xs bg-blue-200 text-blue-800 px-2 py-0.5 rounded-full">
-                {expense.tag}
+              <span className="text-xs bg-blue-200 text-blue-800 px-2 py-0.5 rounded-full flex-shrink-0" title={expense.tag}>
+                {expense.tag.length > 15 ? expense.tag.substring(0, 15) + '...' : expense.tag}
               </span>
             )}
           </div>
         </div>
       </div>
-      <div className="flex space-x-6 text-sm font-mono flex-shrink-0">
+      <div className="flex space-x-6 text-sm font-mono tabular-nums flex-shrink-0 min-w-[160px]">
         <span className="text-blue-800">{(expense?.member1_amount || 0).toFixed(2)} €</span>
         <span className="text-blue-800">{(expense?.member2_amount || 0).toFixed(2)} €</span>
       </div>
@@ -638,7 +669,7 @@ const VariableRow = React.memo<{
           />
         )}
       </div>
-      <div className="flex space-x-6 text-sm font-mono">
+      <div className="flex space-x-6 text-sm font-mono tabular-nums flex-shrink-0 min-w-[160px]">
         <span className="text-orange-800">{(variable?.member1_amount || 0).toFixed(2)} €</span>
         <span className="text-orange-800">{(variable?.member2_amount || 0).toFixed(2)} €</span>
       </div>
@@ -800,5 +831,162 @@ const TypeToggleButton = React.memo<{
 });
 
 TypeToggleButton.displayName = 'TypeToggleButton';
+
+// Revenue Transactions Section Component - Shows all positive transactions
+const RevenueTransactionsSection = React.memo<{ 
+  data: EnhancedSummaryData;
+  month: string;
+}>(({ data, month }) => {
+  const [revenueTransactions, setRevenueTransactions] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [currentPage, setCurrentPage] = useState(0);
+  
+  // Pagination variables
+  const itemsPerPage = 10;
+  const totalPages = Math.ceil(revenueTransactions.length / itemsPerPage);
+  const startIndex = currentPage * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const currentPageTransactions = revenueTransactions.slice(startIndex, endIndex);
+  
+  // Load revenue transactions from the API
+  useEffect(() => {
+    const loadRevenueTransactions = async () => {
+      if (!month) return;
+      
+      setLoading(true);
+      try {
+        // Query transactions with positive amounts (revenues)
+        const response = await api.get('/transactions', {
+          params: { 
+            month: month,
+            is_expense: false,
+            exclude: false
+          }
+        });
+        
+        // Filter to only positive amounts on the client side for safety
+        const positiveTransactions = response.data.filter((tx: any) => tx.amount > 0);
+        setRevenueTransactions(positiveTransactions);
+        // Reset to first page when new data loads
+        setCurrentPage(0);
+      } catch (error) {
+        console.error('Error loading revenue transactions:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    loadRevenueTransactions();
+  }, [month]);
+  
+  return (
+    <Card className="p-6 border-l-4 border-l-emerald-500 bg-gradient-to-r from-emerald-50 to-green-50">
+      <div className="flex items-center mb-6">
+        <span className="text-2xl mr-3">💰</span>
+        <div>
+          <h2 className="text-xl font-bold text-emerald-900">REVENUS</h2>
+          <p className="text-sm text-emerald-700">Transactions positives (montants &gt; 0)</p>
+        </div>
+      </div>
+
+      {loading ? (
+        <div className="text-center py-8 text-emerald-600">
+          <p>Chargement des revenus...</p>
+        </div>
+      ) : revenueTransactions.length > 0 ? (
+        <div className="space-y-3">
+          {currentPageTransactions.map((transaction, index) => (
+            <div 
+              key={startIndex + index} 
+              className="flex justify-between items-center py-2 px-3 bg-white rounded-lg border border-emerald-100 hover:bg-emerald-50 transition-colors duration-200"
+            >
+              <div className="flex-1 min-w-0">
+                <div 
+                  className="text-sm font-medium text-emerald-900" 
+                  title={transaction.label || 'Revenu'}
+                  style={{
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis'
+                  }}
+                >
+                  {transaction.label || 'Revenu'}
+                </div>
+                <div className="text-xs text-emerald-600">
+                  {transaction.date_op ? new Date(transaction.date_op).toLocaleDateString('fr-FR') : ''}
+                </div>
+              </div>
+              <div className="text-right flex-shrink-0 min-w-[100px]">
+                <div className="text-sm font-bold text-emerald-800 tabular-nums">
+                  +{(transaction.amount || 0).toFixed(2)} €
+                </div>
+                {transaction.category && (
+                  <div className="text-xs text-emerald-600">
+                    {transaction.category}
+                  </div>
+                )}
+              </div>
+            </div>
+          ))}
+          
+          {/* Pagination Controls */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between pt-4 mt-4 border-t border-emerald-200">
+              <div className="flex items-center space-x-2">
+                <button
+                  onClick={() => setCurrentPage(prev => Math.max(0, prev - 1))}
+                  disabled={currentPage === 0}
+                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                    currentPage === 0
+                      ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                      : 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200 hover:shadow-md'
+                  }`}
+                >
+                  ← Précédent
+                </button>
+                <button
+                  onClick={() => setCurrentPage(prev => Math.min(totalPages - 1, prev + 1))}
+                  disabled={currentPage === totalPages - 1}
+                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                    currentPage === totalPages - 1
+                      ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                      : 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200 hover:shadow-md'
+                  }`}
+                >
+                  Suivant →
+                </button>
+              </div>
+              
+              <div className="flex items-center space-x-4">
+                <span className="text-xs text-emerald-600">
+                  Page {currentPage + 1} sur {totalPages}
+                </span>
+                <span className="text-xs text-emerald-600">
+                  Affichage de {startIndex + 1}-{Math.min(endIndex, revenueTransactions.length)} sur {revenueTransactions.length} revenus
+                </span>
+              </div>
+            </div>
+          )}
+          
+          <div className="border-t-2 border-emerald-200 pt-3 mt-4">
+            <div className="flex justify-between items-center font-bold text-emerald-900">
+              <span>Total Revenus</span>
+              <span>
+                {revenueTransactions.reduce((sum, tx) => sum + (tx.amount || 0), 0).toFixed(2)} €
+              </span>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div className="text-center py-8 text-emerald-600">
+          <p>Aucun revenu trouvé pour ce mois</p>
+          <p className="text-sm mt-2">Les revenus sont des transactions avec des montants positifs</p>
+        </div>
+      )}
+    </Card>
+  );
+});
+
+RevenueTransactionsSection.displayName = 'RevenueTransactionsSection';
 
 export default EnhancedDashboard;

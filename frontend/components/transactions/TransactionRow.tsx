@@ -42,7 +42,7 @@ export function TransactionRow({ row, importId, onToggle, onSaveTags, onExpenseT
   
   const isHighlighted = importId && row.import_id === importId;
   const isExpense = row.amount < 0; // Les dépenses sont négatives
-  const currentExpenseType = row.expense_type || (isExpense ? 'variable' : null);
+  const currentExpenseType = (row.expense_type || (isExpense ? 'VARIABLE' : null))?.toLowerCase();
   
   // Nouveau workflow : classification intelligente immédiate au focus
   const handleTagsFocus = async () => {
@@ -147,7 +147,9 @@ export function TransactionRow({ row, importId, onToggle, onSaveTags, onExpenseT
     setIsUpdatingExpenseType(true);
     
     try {
-      await expenseClassificationApi.updateTransactionType(row.id, newType, true);
+      // Convert to uppercase for backend API
+      const backendType = newType.toUpperCase();
+      await expenseClassificationApi.updateTransactionType(row.id, backendType, true);
       
       // Envoyer feedback ML pour le changement de type
       await mlFeedbackApi.sendExpenseTypeFeedback(row.id, oldType, newType);
@@ -347,7 +349,7 @@ export function TransactionRow({ row, importId, onToggle, onSaveTags, onExpenseT
                   { value: 'variable', label: 'VARIABLE' },
                   { value: 'fixed', label: 'FIXE' }
                 ]}
-                value={currentExpenseType}
+                value={currentExpenseType?.toLowerCase() || 'variable'}
                 onChange={(value) => handleExpenseTypeToggle(value as 'fixed' | 'variable')}
                 variant="compact"
                 size="sm"
@@ -392,7 +394,7 @@ export function TransactionRow({ row, importId, onToggle, onSaveTags, onExpenseT
                       { value: 'variable', label: 'VARIABLE' },
                       { value: 'fixed', label: 'FIXE' }
                     ]}
-                    value="variable"
+                    value={currentExpenseType?.toLowerCase() || 'variable'}
                     onChange={(value) => handleExpenseTypeToggle(value as 'fixed' | 'variable')}
                     variant="compact"
                     size="sm"

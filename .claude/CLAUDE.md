@@ -49,6 +49,100 @@ When you finish the task with your agents, the final test will be to the Key use
 - **Conversion automatique** : Tags → Dépenses fixes avec intelligence ML
 - **Dashboard restructuré** : Séparation logique Épargne/Fixes/Variables (sans doublons)
 
+## 🚀 SESSION 2025-08-13 - AMÉLIORATIONS MAJEURES DU DASHBOARD
+
+### 🎨 NOUVELLES FONCTIONNALITÉS IMPLÉMENTÉES (SESSION 2)
+
+#### 1. **Gestion du Solde de Compte** 
+- **Besoin** : Calculer les virements globaux en tenant compte du solde réel
+- **Solution** : Nouveau composant AccountBalance avec API dédiée
+- **Fonctionnalités** :
+  - Saisie et sauvegarde du solde mensuel
+  - Calcul automatique des virements suggérés par membre
+  - Indicateurs de statut (surplus/suffisant/serré/déficit)
+  - Notes optionnelles pour contexte
+- **Fichiers créés** : `frontend/components/dashboard/AccountBalance.tsx`
+- **API** : PUT/GET `/api/balance/{month}` avec calculs de transferts
+
+#### 2. **Correction des Chevauchements UI**
+- **Problème** : Tags et descriptions se chevauchant, rendant le dashboard illisible
+- **Solution** : Refonte du layout avec flex-wrap et truncation intelligente
+- **Améliorations** :
+  - Tooltips pour textes tronqués (max 15 chars avec ellipsis)
+  - Espacement responsive avec `gap-1.5` et `flex-wrap`
+  - Alignement vertical `items-start` pour éviter les débordements
+- **Impact** : Dashboard 100% lisible sur tous les écrans
+
+#### 3. **Refonte Complète Modal Transactions**
+- **Problème** : Design désuet et peu intuitif pour visualiser les détails
+- **Solution** : Design moderne avec glassmorphism et animations
+- **Nouveautés** :
+  - Cards avec effets `backdrop-blur` et gradients
+  - Indicateurs "NEW" pour transactions < 7 jours
+  - Distribution tags avec barres de progression animées
+  - Boutons d'action avec transforms scale et shadows
+- **Résultat** : UX professionnelle alignée avec standards 2025
+
+### ✅ PROBLÈMES CRITIQUES RÉSOLUS (SESSION 1)
+
+#### 1. **Édition des transactions débloquée** 
+- **Problème** : Les sélecteurs de type et tags étaient bloqués dans l'interface
+- **Solution** : Suppression des `pointer-events: none` et `preventDefault()` excessifs
+- **Fichiers modifiés** : `TagsInput.tsx`, `Select.tsx`, `TransactionRow.tsx`
+- **Résultat** : Les utilisateurs peuvent maintenant modifier librement tags et types
+
+#### 2. **Validation API corrigée (erreurs 422)**
+- **Problème** : Incompatibilité Pydantic v2 avec syntaxe v1
+- **Solution** : Migration complète vers Pydantic v2 (`@field_validator`, `@model_validator`)
+- **Fichiers modifiés** : `backend/models/schemas.py`
+- **Résultat** : PUT /transactions/{id}/tag et PATCH /transactions/{id}/expense-type fonctionnels
+
+#### 3. **Filtrage dashboard corrigé**
+- **Problème** : Le filtrage par tag dans les modals ne fonctionnait pas
+- **Solution** : Ajout du paramètre `expense.tag` manquant dans `onCategoryClick`
+- **Fichiers modifiés** : `EnhancedDashboard.tsx` ligne 459
+- **Résultat** : Cliquer sur un tag affiche uniquement ses transactions
+
+#### 4. **Séparation revenus/dépenses**
+- **Problème** : Montants positifs (revenus) apparaissaient dans les dépenses
+- **Solution** : Création section dédiée aux revenus avec filtrage `amount > 0`
+- **Layout** : Nouvelle organisation 3 colonnes (Revenus | Épargne | Dépenses)
+- **Résultat** : Séparation claire entre revenus et dépenses
+
+#### 5. **Sélecteur de type amélioré**
+- **Problème** : Le type ne s'affichait pas correctement après changement
+- **Solution** : Normalisation de la casse FIXED→fixed, remplacement de `value="variable"` codé en dur
+- **Fichiers modifiés** : `TransactionRow.tsx` lignes 45, 350, 395
+- **Résultat** : Changement bidirectionnel FIXE ↔ VARIABLE fonctionnel
+
+#### 6. **Layout dashboard optimisé**
+- **Problème** : Texte tronqué ("petite-depense" coupé)
+- **Solution** : 
+  - Grille responsive `lg:grid-cols-2 xl:grid-cols-3`
+  - Ajout de tooltips sur textes longs
+  - `tabular-nums` pour alignement des nombres
+  - `min-w-[160px]` pour colonnes de montants
+- **Résultat** : Dashboard lisible sans troncature
+
+### 🎯 FONCTIONNALITÉS ML FEEDBACK INTÉGRÉES
+- **Apprentissage continu** : Le système apprend de chaque modification manuelle
+- **API ML Feedback** : `/api/ml-feedback` traite les corrections utilisateur
+- **N-gram patterns** : Génération automatique de patterns pour améliorer la classification
+- **Cache de performance** : Index inversé pour recherches O(1)
+
+### 📊 AMÉLIORATIONS TECHNIQUES
+- **Compatibilité Pydantic v2** : Migration complète des schémas
+- **Support multi-tags** : Filtrage par tags multiples (tag1,tag2,tag3)
+- **Pagination revenus** : Navigation page par page (10 transactions)
+- **API expense_type** : Support du filtrage par type dans GET /transactions
+
+### 🔧 OUTILS DE DÉVELOPPEMENT
+- **RUN_MULTI_AGENTS** : Lancement parallèle d'agents spécialisés
+- **Agents utilisés** :
+  - backend-api-architect : Corrections API et validation
+  - frontend-excellence-lead : UI/UX et corrections interface
+  - quality-assurance-lead : Tests et vérifications
+
 ## 🚀 SESSION 2025-08-13 - AUTO-TAGGING INTELLIGENT COMPLET
 
 ### ✅ SYSTÈME D'AUTO-TAGGING BATCH IMPLÉMENTÉ

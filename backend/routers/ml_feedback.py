@@ -25,6 +25,7 @@ from models.schemas import (
     MLFeedbackCreate, MLFeedbackResponse, MLFeedbackStats, 
     MLLearningPattern, BatchResultsSummary
 )
+from auth import get_current_user
 
 logger = logging.getLogger(__name__)
 
@@ -327,7 +328,7 @@ class MLFeedbackService:
 async def save_ml_feedback(
     feedback: MLFeedbackCreate,
     db: Session = Depends(get_db),
-    user_id: str = "system"  # TODO: Get from authentication
+    current_user = Depends(get_current_user)
 ):
     """
     Save user feedback for ML model improvement
@@ -337,7 +338,7 @@ async def save_ml_feedback(
     """
     try:
         service = MLFeedbackService(db)
-        saved_feedback = service.save_feedback(feedback, user_id)
+        saved_feedback = service.save_feedback(feedback, current_user.username)
         
         return MLFeedbackResponse.from_orm(saved_feedback)
         

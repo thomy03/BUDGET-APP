@@ -209,7 +209,7 @@ export function useEnhancedDashboard(month: string, isAuthenticated: boolean = f
       console.log(`🔄 Converting transaction ${transactionId} to type: ${newType}`);
       
       await api.patch(`/transactions/${transactionId}/expense-type`, {
-        expense_type: newType
+        expense_type: newType.toUpperCase()
       });
       
       console.log(`✅ Transaction ${transactionId} converted to ${newType}`);
@@ -257,7 +257,7 @@ export function useEnhancedDashboard(month: string, isAuthenticated: boolean = f
       
       // Conversion en parallèle pour de meilleures performances
       const promises = safeTransactionIds.map(id => 
-        api.patch(`/transactions/${id}/expense-type`, { expense_type: newType })
+        api.patch(`/transactions/${id}/expense-type`, { expense_type: newType.toUpperCase() })
       );
       
       await Promise.all(promises);
