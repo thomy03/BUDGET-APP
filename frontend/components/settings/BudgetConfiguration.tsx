@@ -20,8 +20,8 @@ export function BudgetConfiguration({ cfg, saving, onSave, onNavigateToExpenses 
   const [error, setError] = useState('');
   
   // États pour la gestion des revenus annuels/mensuels
-  const [member1Mode, setMember1Mode] = useState<'monthly' | 'annual'>('monthly');
-  const [member2Mode, setMember2Mode] = useState<'monthly' | 'annual'>('monthly');
+  const [member1Mode, setMember1Mode] = useState<'monthly' | 'annual'>('annual');
+  const [member2Mode, setMember2Mode] = useState<'monthly' | 'annual'>('annual');
   const [member1Value, setMember1Value] = useState<string>('');
   const [member2Value, setMember2Value] = useState<string>('');
   const [taxRate1, setTaxRate1] = useState<string>('0');
@@ -34,8 +34,11 @@ export function BudgetConfiguration({ cfg, saving, onSave, onNavigateToExpenses 
   useEffect(() => {
     // Initialiser les valeurs des revenus et taux d'imposition
     if (cfg) {
-      setMember1Value(cfg.rev1?.toString() || '');
-      setMember2Value(cfg.rev2?.toString() || '');
+      // Les valeurs en base sont mensuelles, on les convertit en annuel pour l'affichage par défaut
+      const monthly1 = cfg.rev1 || 0;
+      const monthly2 = cfg.rev2 || 0;
+      setMember1Value((monthly1 * 12).toString());
+      setMember2Value((monthly2 * 12).toString());
       setTaxRate1(cfg.tax_rate1?.toString() || '0');
       setTaxRate2(cfg.tax_rate2?.toString() || '0');
     }

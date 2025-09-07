@@ -8,13 +8,22 @@ interface ProvisionCalculationSettingsProps {
   formData: CustomProvisionCreate;
   config?: ConfigOut;
   onChange: (field: keyof CustomProvisionCreate, value: any) => void;
+  amountMode?: 'monthly' | 'annual';
+  onAmountModeChange?: (mode: 'monthly' | 'annual') => void;
 }
 
 const ProvisionCalculationSettings = React.memo<ProvisionCalculationSettingsProps>(({
   formData,
   config,
-  onChange
+  onChange,
+  amountMode = 'annual',
+  onAmountModeChange
 }) => {
+  const [localAmountMode, setLocalAmountMode] = React.useState<'monthly' | 'annual'>(amountMode);
+  
+  // Utiliser les props si disponibles, sinon utiliser l'état local
+  const currentAmountMode = onAmountModeChange ? amountMode : localAmountMode;
+  const setAmountMode = onAmountModeChange || setLocalAmountMode;
   const calculatePreviewAmount = (): number => {
     if (!config) return 0;
 
@@ -30,7 +39,11 @@ const ProvisionCalculationSettings = React.memo<ProvisionCalculationSettingsProp
         base = config.rev2 || 0;
         break;
       case 'fixed':
-        return formData.fixed_amount || 0;
+        // Si on est en mode annuel, diviser par 12 pour obtenir le montant mensuel
+        // Si on est en mode mensuel, utiliser directement la valeur
+        return currentAmountMode === 'annual' 
+          ? (formData.fixed_amount || 0) / 12 
+          : (formData.fixed_amount || 0);
     }
 
     // Les revenus dans config sont déjà mensuels
@@ -94,14 +107,36 @@ const ProvisionCalculationSettings = React.memo<ProvisionCalculationSettingsProp
 
       {/* Percentage or Fixed Amount */}
       {formData.base_calculation === 'fixed' ? (
-        <Input
-          label="Montant fixe mensuel (€)"
-          type="number"
-          value={formData.fixed_amount || 0}
-          onChange={(e) => onChange('fixed_amount', Number(e.target.value))}
-          min="0"
-          step="0.01"
-        />
+        <div className="space-y-3">
+          <div className="flex items-center gap-2">
+            <label className="block text-sm font-medium">Montant fixe</label>
+            <select
+              value={currentAmountMode}
+              onChange={(e) => {
+                const newMode = e.target.value as 'monthly' | 'annual';
+                setAmountMode(newMode);
+              }}
+              className="px-3 py-1 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="annual">Annuel</option>
+              <option value="monthly">Mensuel</option>
+            </select>
+          </div>
+          <Input
+            label={`Montant ${currentAmountMode === 'annual' ? 'annuel' : 'mensuel'} (€)`}
+            type="number"
+            value={formData.fixed_amount || 0}
+            onChange={(e) => onChange('fixed_amount', Number(e.target.value))}
+            min="0"
+            step="0.01"
+            placeholder={currentAmountMode === 'annual' ? 'ex: 1404 (taxe foncière annuelle)' : 'ex: 117 (mensuel)'}
+          />
+          {currentAmountMode === 'annual' && (
+            <p className="text-sm text-gray-600">
+              💡 Provision mensuelle : <strong>{(formData.fixed_amount / 12).toFixed(2)}€</strong> par mois
+            </p>
+          )}
+        </div>
       ) : (
         <Input
           label="Pourcentage du revenu mensuel (%)"
