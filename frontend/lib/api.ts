@@ -825,6 +825,52 @@ export const mlFeedbackApi = {
 // FONCTIONS API POUR LA GESTION DU SOLDE DE COMPTE
 // =============================================================================
 
+// =============================================================================
+// FONCTIONS API POUR AUTO-TAGGING INTELLIGENT
+// =============================================================================
+
+export type AutoTagSuggestion = {
+  transaction_id: number;
+  label: string;
+  suggested_tag: string;
+  confidence: number;
+  match_type: 'exact' | 'pattern' | 'merchant' | 'similar';
+  source_label?: string;
+};
+
+export type AutoTagResult = {
+  month: string;
+  total_untagged: number;
+  suggestions: AutoTagSuggestion[];
+  applied_count?: number;
+  skipped_count?: number;
+};
+
+export const autoTagApi = {
+  // Prévisualiser les suggestions d'auto-tagging pour un mois
+  async preview(month: string, minConfidence: number = 0.5): Promise<AutoTagResult> {
+    const response = await api.get<AutoTagResult>('/transactions/auto-tag-preview', {
+      params: { month, min_confidence: minConfidence }
+    });
+    return response.data;
+  },
+
+  // Appliquer l'auto-tagging sur un mois
+  async apply(month: string, minConfidence: number = 0.7, dryRun: boolean = false): Promise<AutoTagResult> {
+    const response = await api.post<AutoTagResult>('/transactions/auto-tag-month', {
+      month,
+      min_confidence: minConfidence,
+      dry_run: dryRun
+    });
+    return response.data;
+  },
+
+  // Appliquer un tag suggéré à une transaction spécifique
+  async applyTag(transactionId: number, tag: string): Promise<void> {
+    await api.patch(`/transactions/${transactionId}`, { tags: tag });
+  }
+};
+
 export const balanceApi = {
   // Récupérer le solde d'un mois
   async get(month: string): Promise<AccountBalance> {

@@ -1,18 +1,22 @@
 'use client';
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useGlobalMonthWithUrl } from "../../lib/month";
 import { useAuth } from "../../lib/auth";
 import { useTransactions } from "../../hooks/useTransactions";
 import { ModernTransactionsTable } from "../../components/transactions/ModernTransactionsTableWithAI";
-import { 
-  MagnifyingGlassIcon, 
+import { autoTagApi, AutoTagSuggestion, AutoTagResult } from "../../lib/api";
+import {
+  MagnifyingGlassIcon,
   FunnelIcon,
   ArrowPathIcon,
   CalendarIcon,
   CurrencyEuroIcon,
-  TagIcon
+  TagIcon,
+  SparklesIcon,
+  XMarkIcon,
+  CheckIcon
 } from '@heroicons/react/24/outline';
 
 export default function ModernTransactionsPage() {
@@ -36,6 +40,78 @@ export default function ModernTransactionsPage() {
   const [showFilters, setShowFilters] = useState(false);
   const [filterType, setFilterType] = useState<'all' | 'income' | 'expense'>('all');
   const [filterExclude, setFilterExclude] = useState<'all' | 'included' | 'excluded'>('all');
+
+  // États pour l'auto-tagging
+  const [showAutoTagModal, setShowAutoTagModal] = useState(false);
+  const [autoTagLoading, setAutoTagLoading] = useState(false);
+  const [autoTagResult, setAutoTagResult] = useState<AutoTagResult | null>(null);
+  const [autoTagError, setAutoTagError] = useState<string | null>(null);
+  const [selectedSuggestions, setSelectedSuggestions] = useState<Set<number>>(new Set());
+  const [applyingTags, setApplyingTags] = useState(false);
+
+  // Prévisualiser les suggestions d'auto-tagging
+  const handlePreviewAutoTag = useCallback(async () => {
+    if (!month) return;
+    setAutoTagLoading(true);
+    setAutoTagError(null);
+    try {
+      const result = await autoTagApi.preview(month, 0.5);
+      setAutoTagResult(result);
+      // Sélectionner toutes les suggestions par défaut
+      const allIds = new Set(result.suggestions.map(s => s.transaction_id));
+      setSelectedSuggestions(allIds);
+    } catch (err: any) {
+      setAutoTagError(err.message || 'Erreur lors de la prévisualisation');
+    } finally {
+      setAutoTagLoading(false);
+    }
+  }, [month]);
+
+  // Appliquer les tags sélectionnés
+  const handleApplySelectedTags = useCallback(async () => {
+    if (!autoTagResult || selectedSuggestions.size === 0) return;
+    setApplyingTags(true);
+    try {
+      const selectedItems = autoTagResult.suggestions.filter(s => selectedSuggestions.has(s.transaction_id));
+      for (const suggestion of selectedItems) {
+        await saveTags(suggestion.transaction_id, [suggestion.suggested_tag]);
+      }
+      // Rafraîchir les transactions
+      refresh(isAuthenticated, month);
+      setShowAutoTagModal(false);
+      setAutoTagResult(null);
+    } catch (err: any) {
+      setAutoTagError(err.message || 'Erreur lors de l\'application des tags');
+    } finally {
+      setApplyingTags(false);
+    }
+  }, [autoTagResult, selectedSuggestions, saveTags, refresh, isAuthenticated, month]);
+
+  // Toggle sélection d'une suggestion
+  const toggleSuggestion = (id: number) => {
+    const newSet = new Set(selectedSuggestions);
+    if (newSet.has(id)) {
+      newSet.delete(id);
+    } else {
+      newSet.add(id);
+    }
+    setSelectedSuggestions(newSet);
+  };
+
+  // Sélectionner/désélectionner tout
+  const toggleAllSuggestions = () => {
+    if (!autoTagResult) return;
+    if (selectedSuggestions.size === autoTagResult.suggestions.length) {
+      setSelectedSuggestions(new Set());
+    } else {
+      setSelectedSuggestions(new Set(autoTagResult.suggestions.map(s => s.transaction_id)));
+    }
+  };
+
+  // Nombre de transactions sans tags
+  const untaggedCount = useMemo(() => {
+    return rows.filter(r => !r.tags || r.tags.length === 0 || r.tags.every(t => !t)).length;
+  }, [rows]);
   
   // Appliquer les filtres
   const filteredRows = useMemo(() => {
@@ -120,14 +196,35 @@ export default function ModernTransactionsPage() {
                 </div>
               </div>
               
-              <button 
-                onClick={() => refresh(isAuthenticated, month)}
-                disabled={loading}
-                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <ArrowPathIcon className={`h-5 w-5 ${loading ? 'animate-spin' : ''}`} />
-                Actualiser
-              </button>
+              <div className="flex items-center gap-2">
+                {/* Bouton Auto-Tag */}
+                {untaggedCount > 0 && (
+                  <button
+                    onClick={() => {
+                      setShowAutoTagModal(true);
+                      handlePreviewAutoTag();
+                    }}
+                    disabled={loading || autoTagLoading}
+                    className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    title={`${untaggedCount} transactions sans tag`}
+                  >
+                    <SparklesIcon className="h-5 w-5" />
+                    Auto-Tag
+                    <span className="bg-purple-400 text-xs rounded-full px-2 py-0.5">
+                      {untaggedCount}
+                    </span>
+                  </button>
+                )}
+
+                <button
+                  onClick={() => refresh(isAuthenticated, month)}
+                  disabled={loading}
+                  className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <ArrowPathIcon className={`h-5 w-5 ${loading ? 'animate-spin' : ''}`} />
+                  Actualiser
+                </button>
+              </div>
             </div>
 
             {/* Barre de recherche et filtres */}
@@ -281,6 +378,175 @@ export default function ModernTransactionsPage() {
           </>
         )}
       </div>
+
+      {/* Modal Auto-Tagging */}
+      {showAutoTagModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-xl max-w-2xl w-full max-h-[80vh] overflow-hidden flex flex-col">
+            {/* Header */}
+            <div className="p-4 border-b border-gray-200 flex items-center justify-between bg-gradient-to-r from-purple-600 to-blue-600">
+              <div className="flex items-center gap-3">
+                <SparklesIcon className="h-6 w-6 text-white" />
+                <div>
+                  <h2 className="text-lg font-semibold text-white">Auto-Tagging Intelligent</h2>
+                  <p className="text-sm text-purple-100">
+                    Suggestions basees sur les transactions similaires
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  setShowAutoTagModal(false);
+                  setAutoTagResult(null);
+                  setAutoTagError(null);
+                }}
+                className="p-2 hover:bg-white/20 rounded-lg transition-colors"
+              >
+                <XMarkIcon className="h-5 w-5 text-white" />
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="flex-1 overflow-y-auto p-4">
+              {autoTagLoading ? (
+                <div className="flex flex-col items-center justify-center py-12">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mb-4"></div>
+                  <p className="text-gray-600">Analyse des patterns en cours...</p>
+                </div>
+              ) : autoTagError ? (
+                <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-800">
+                  {autoTagError}
+                </div>
+              ) : autoTagResult ? (
+                <>
+                  {/* Stats */}
+                  <div className="bg-gray-50 rounded-lg p-4 mb-4">
+                    <div className="grid grid-cols-3 gap-4 text-center">
+                      <div>
+                        <p className="text-2xl font-bold text-gray-900">{autoTagResult.total_untagged}</p>
+                        <p className="text-xs text-gray-500">Sans tag</p>
+                      </div>
+                      <div>
+                        <p className="text-2xl font-bold text-purple-600">{autoTagResult.suggestions.length}</p>
+                        <p className="text-xs text-gray-500">Suggestions</p>
+                      </div>
+                      <div>
+                        <p className="text-2xl font-bold text-green-600">{selectedSuggestions.size}</p>
+                        <p className="text-xs text-gray-500">Selectionnees</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {autoTagResult.suggestions.length === 0 ? (
+                    <div className="text-center py-8 text-gray-500">
+                      <TagIcon className="h-12 w-12 mx-auto mb-3 text-gray-300" />
+                      <p>Aucune suggestion disponible.</p>
+                      <p className="text-sm">Taguez d'abord quelques transactions pour entrainer l'IA.</p>
+                    </div>
+                  ) : (
+                    <>
+                      {/* Select All */}
+                      <div className="flex items-center justify-between mb-3">
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={selectedSuggestions.size === autoTagResult.suggestions.length}
+                            onChange={toggleAllSuggestions}
+                            className="w-4 h-4 text-purple-600 rounded border-gray-300 focus:ring-purple-500"
+                          />
+                          <span className="text-sm text-gray-700">Tout selectionner</span>
+                        </label>
+                        <span className="text-xs text-gray-500">
+                          {selectedSuggestions.size}/{autoTagResult.suggestions.length} selectionnees
+                        </span>
+                      </div>
+
+                      {/* Suggestions List */}
+                      <div className="space-y-2">
+                        {autoTagResult.suggestions.map((suggestion) => (
+                          <div
+                            key={suggestion.transaction_id}
+                            className={`border rounded-lg p-3 transition-colors ${
+                              selectedSuggestions.has(suggestion.transaction_id)
+                                ? 'border-purple-300 bg-purple-50'
+                                : 'border-gray-200 hover:border-gray-300'
+                            }`}
+                          >
+                            <label className="flex items-start gap-3 cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={selectedSuggestions.has(suggestion.transaction_id)}
+                                onChange={() => toggleSuggestion(suggestion.transaction_id)}
+                                className="w-4 h-4 mt-1 text-purple-600 rounded border-gray-300 focus:ring-purple-500"
+                              />
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium text-gray-900 truncate">
+                                  {suggestion.label}
+                                </p>
+                                <div className="flex items-center gap-2 mt-1">
+                                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                                    {suggestion.suggested_tag}
+                                  </span>
+                                  <span className={`text-xs ${
+                                    suggestion.confidence >= 0.8 ? 'text-green-600' :
+                                    suggestion.confidence >= 0.6 ? 'text-yellow-600' : 'text-gray-500'
+                                  }`}>
+                                    {Math.round(suggestion.confidence * 100)}% confiance
+                                  </span>
+                                  <span className="text-xs text-gray-400">
+                                    ({suggestion.match_type})
+                                  </span>
+                                </div>
+                                {suggestion.source_label && (
+                                  <p className="text-xs text-gray-400 mt-1 truncate">
+                                    Similaire a: {suggestion.source_label}
+                                  </p>
+                                )}
+                              </div>
+                            </label>
+                          </div>
+                        ))}
+                      </div>
+                    </>
+                  )}
+                </>
+              ) : null}
+            </div>
+
+            {/* Footer */}
+            {autoTagResult && autoTagResult.suggestions.length > 0 && (
+              <div className="p-4 border-t border-gray-200 bg-gray-50 flex items-center justify-between">
+                <button
+                  onClick={() => {
+                    setShowAutoTagModal(false);
+                    setAutoTagResult(null);
+                  }}
+                  className="px-4 py-2 text-gray-700 hover:bg-gray-200 rounded-lg transition-colors"
+                >
+                  Annuler
+                </button>
+                <button
+                  onClick={handleApplySelectedTags}
+                  disabled={applyingTags || selectedSuggestions.size === 0}
+                  className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {applyingTags ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                      Application...
+                    </>
+                  ) : (
+                    <>
+                      <CheckIcon className="h-5 w-5" />
+                      Appliquer {selectedSuggestions.size} tag{selectedSuggestions.size > 1 ? 's' : ''}
+                    </>
+                  )}
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

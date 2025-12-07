@@ -1,33 +1,300 @@
-# CLAUDE.md - Budget Famille v2.3
+# CLAUDE.md - Budget Famille v3.2
 
 Ce fichier fournit les instructions et le contexte pour Claude Code lors du travail sur ce projet.
 
 ## Vue d'ensemble du projet
 
-Budget Famille v2.3 est une application web moderne de gestion budgétaire familiale avec :
-- **Backend** : FastAPI + SQLite avec système ML avancé d'auto-tagging
-- **Frontend** : Next.js 14 + TypeScript + Tailwind CSS
-- **Fonctionnalités** : Import CSV, provisions personnalisées, dépenses fixes, analytics IA
+Budget Famille v3.2 est une application web moderne de gestion budgetaire familiale avec :
+- **Backend** : FastAPI + SQLite avec systeme ML avance d'auto-tagging
+- **Frontend** : Next.js 14 + TypeScript + Tailwind CSS + Recharts
+- **Design** : Glassmorphism UI avec Dark Mode complet
+- **Fonctionnalites** : Import CSV, provisions personnalisees, depenses fixes, analytics IA avancee
 
-## 🚀 DÉMARRAGE RAPIDE (Session 07/09/2025)
+## SESSION 07/12/2025 - AUTO-TAGGING FRONTEND + DRILL-DOWN AMELIORE
 
-### ✅ APPLICATION 100% FONCTIONNELLE AVEC VRAIES DONNÉES !
+### Auto-Tagging Frontend (Page Transactions)
+
+#### Nouvelles fonctionnalites implementees
+1. **Bouton Auto-Tag** : Bouton violet dans l'en-tete de la page Transactions
+   - Badge affichant le nombre de transactions non taguees
+   - Ouvre un modal de preview des suggestions
+
+2. **Modal de Preview Auto-Tag** :
+   - Statistiques : total non tague, suggestions trouvees
+   - Liste des suggestions avec checkbox pour selection
+   - Affichage du type de match (exact, pattern, merchant, similar)
+   - Score de confiance en pourcentage
+   - Selection/Deselection de toutes les suggestions
+   - Bouton "Appliquer" pour valider les tags selectionnes
+
+3. **Types de suggestions** :
+   - `exact` : Correspondance exacte du libelle
+   - `pattern` : Correspondance par pattern ML
+   - `merchant` : Correspondance par nom de marchand
+   - `similar` : Correspondance par similarite
+
+#### Implementation technique
+```typescript
+// Types API auto-tagging
+export type AutoTagSuggestion = {
+  transaction_id: number;
+  label: string;
+  suggested_tag: string;
+  confidence: number;
+  match_type: 'exact' | 'pattern' | 'merchant' | 'similar';
+  source_label?: string;
+};
+
+// Preview des suggestions
+const response = await autoTagApi.preview(month, 0.5);
+
+// Application des tags selectionnes
+for (const suggestionId of selectedSuggestions) {
+  const suggestion = autoTagResult.suggestions.find(s => s.transaction_id === suggestionId);
+  await autoTagApi.applyTag(suggestionId, suggestion.suggested_tag);
+}
+```
+
+#### Fichiers modifies
+- `frontend/lib/api.ts` : Ajout types et fonctions autoTagApi
+- `frontend/app/transactions/page.tsx` : Bouton, modal et logique auto-tag
+
+### Drill-Down Analytics Ameliore
+
+#### Probleme resolu
+- **Symptome** : Clic sur le graphique mensuel d'un tag ne filtrait pas les transactions par mois
+- **Cause** : Le handler `handleCategoryMonthClick` existait mais le graphique dans la vue TAGS n'etait pas connecte
+
+#### Solution implementee
+1. **Nouvelle vue `category-month-transactions`** :
+   - Affiche les transactions d'un tag pour un mois specifique
+   - Breadcrumb complet : Categories > Categorie > Tag - Mois
+   - Stats : Total du mois, nombre de transactions, moyenne/transaction
+   - Liste des transactions filtrees par mois
+
+2. **Graphiques mensuels par tag** :
+   - Chaque tag dans la vue Categorie affiche maintenant un mini-graphique
+   - Barres cliquables pour drill-down vers le mois specifique
+   - Tooltip indiquant "Cliquez pour voir [mois]"
+
+3. **Navigation amelioree** :
+   - Flux : Categories → Tags (avec graphiques) → Clic sur barre → Transactions du mois
+   - Bouton retour fonctionnel a chaque niveau
+   - Breadcrumb interactif
+
+#### Implementation technique
+```typescript
+// Nouveau type pour drill-down categorie-mois
+type CategoryMonthData = {
+  month: string;
+  monthLabel: string;
+  category: CategoryData;
+  tag: TagData;
+  transactions: Transaction[];
+  total: number;
+  count: number;
+};
+
+// Handler pour clic sur graphique mensuel d'un tag
+const handleCategoryMonthClick = useCallback((data: any, tag: TagData) => {
+  const monthStr = data.activePayload[0].payload.month;
+  const monthTransactions = (tag.transactions || []).filter(tx => {
+    const txMonth = tx.month || tx.date_op?.substring(0, 7);
+    return txMonth === monthStr;
+  });
+  setSelectedCategoryMonth({ month: monthStr, monthLabel, category, tag, transactions: monthTransactions, ... });
+  setDrillLevel('category-month-transactions');
+}, [selectedCategory]);
+```
+
+#### Fichiers modifies
+- `frontend/app/analytics/page.tsx` : Vue category-month-transactions, graphiques par tag
+
+### Prochaine etape : Migration Mobile (Android/iOS)
+
+#### Options identifiees
+1. **React Native** : Reutilisation maximale du code TypeScript existant
+2. **Expo** : Framework React Native avec tooling simplifie
+3. **Capacitor** : Wrapper de l'app Next.js existante en app native
+4. **PWA** : Progressive Web App (deja partiellement supporte)
+
+## SESSION 06/12/2025 - DASHBOARD AMELIORE + GESTION CATEGORIES
+
+### Gestion des Categories/Tags Interactive (06/12/2025)
+
+#### Nouvelles fonctionnalites implementees
+1. **Filtrage transactions exclues** : Le dashboard n'affiche plus les transactions marquees `exclude: true`
+2. **Renommage/Fusion de tags** :
+   - Bouton crayon sur chaque categorie pour renommer
+   - Si le nouveau nom existe deja, les transactions sont fusionnees automatiquement
+   - Modal avec confirmation et indication de fusion
+3. **Drag & Drop transactions** :
+   - Glisser une transaction vers une autre categorie pour la reaffecter
+   - Indicateur visuel lors du survol d'une categorie cible
+   - Mise a jour instantanee apres deplacement
+4. **Suppression de categories vides** :
+   - Bouton poubelle visible uniquement si la categorie est vide (0 transactions)
+   - Les categories avec transactions sont protegees
+
+#### Implementation technique
+```typescript
+// Filtrage des transactions non exclues
+const expenseTransactions = transactions.filter((t: any) => t.amount < 0 && !t.exclude);
+
+// Drag & drop avec API
+await api.patch(`/transactions/${txId}/tags`, { tags: [toTag] });
+
+// Renommage via API backend
+await api.put(`/tags/${tagIndex + 1}`, { name: newTagName.trim().toLowerCase() });
+```
+
+#### Fichiers modifies
+- `frontend/hooks/useCleanDashboard.ts` : Ajout filtre `!t.exclude`
+- `frontend/components/dashboard/CleanDashboard.tsx` : Gestion tags, drag & drop, modals
+
+### Dashboard Transactions Reelles (06/12/2025)
+
+#### Probleme resolu
+- **Symptome** : Dashboard affichait 55€ de depenses au lieu de ~5 400€
+- **Cause** : Le hook `useCleanDashboard.ts` utilisait `summary.fixed_lines_total` et `summary.var_total` qui viennent de la table de configuration `fixed_lines`, PAS des vraies transactions importees
+
+#### Solution implementee
+1. **Chargement des transactions reelles** :
+   ```typescript
+   // Ajout de l'appel /transactions dans useCleanDashboard.ts
+   const transactionsResponse = await api.get(`/transactions?month=${month}`)
+   ```
+
+2. **Calcul des depenses depuis les transactions** :
+   ```typescript
+   const expenseTransactions = transactions.filter((t: any) => t.amount < 0);
+   const realExpensesTotal = expenseTransactions.reduce((sum, t) => sum + Math.abs(t.amount), 0);
+   ```
+
+3. **Nouvelles fonctionnalites ajoutees** :
+   - **Graphique PieChart** : Repartition des depenses par categorie/tag
+   - **Top Categories** : Liste triee des tags avec totaux et pourcentages
+   - **Top 10 Marchands** : Extraction et classement automatique des marchands
+
+#### Fichiers modifies
+- `frontend/hooks/useCleanDashboard.ts` : Chargement transactions + calculs reels
+- `frontend/components/dashboard/CleanDashboard.tsx` : Affichage graphique + listes
+
+#### Import CSV - Colonne dateOp (05-06/12/2025)
+- **Probleme** : Scripts precedents utilisaient la date du libelle au lieu de la colonne `dateOp`
+- **Solution** : Toujours utiliser la colonne `dateOp` du CSV pour les dates
+- **Format CSV** : La colonne `dateOp` contient les dates au format YYYY-MM-DD
+- **Resultat** : 87 transactions novembre 2025 correctement importees
+
+### Systeme ML d'Auto-Tagging Ameliore
+
+#### Fonctionnalites implementees
+1. **Import des tags existants** : Script `backend/scripts/import_existing_tags.py`
+   - Importe automatiquement les transactions tagguees dans le systeme ML
+   - Cree des patterns normalises pour chaque marchand
+   - 45 patterns crees a partir de 71 transactions tagguees
+
+2. **Pattern Matching Intelligent** :
+   - **Exact match** : Correspondance exacte du nom marchand normalise
+   - **First word match** : Correspondance sur le premier mot (ex: "franprix paris" -> "franprix")
+   - **Substring match** : Correspondance partielle pour variantes
+
+3. **Normalisation des noms de marchands** :
+   - Suppression des prefixes bancaires (CARTE, CB, VIR, PRLV)
+   - Suppression des dates (DD/MM/YY, DD/MM/YYYY)
+   - Suppression des numeros de carte (CB*1234)
+   - Extraction des 2 premiers mots significatifs
+
+4. **Confiance adaptative** :
+   - 100% pour match exact
+   - 85% pour first word match
+   - 70% pour substring match
+
+#### Fichiers modifies
+- `backend/services/ml_feedback_learning.py` : Ajout chargement patterns JSON
+- `backend/scripts/import_existing_tags.py` : Script d'import des tags existants
+- `backend/data/learned_patterns.json` : Stockage des patterns appris
+
+#### Utilisation
+```bash
+# Importer les tags existants dans le systeme ML
+cd backend && python scripts/import_existing_tags.py
+
+# Redemarrer le backend pour charger les nouveaux patterns
+python app.py
+```
+
+#### Test de l'API ML
+```bash
+curl -X POST http://localhost:8000/api/ml-classification/classify \
+  -H "Content-Type: application/json" \
+  -d '{"transaction_label": "CARTE FRANPRIX PARIS", "amount": 25.50}'
+
+# Reponse attendue:
+# {"suggested_tag": "courses", "confidence": 0.85, "source": "feedback", ...}
+```
+
+## SESSION 05/12/2025 - NOUVELLES FONCTIONNALITES
+
+### Phase 3 - Dashboard Ameliore
+- **Graphique AreaChart** : Evolution revenus/depenses sur 6 mois
+- **API Trends** : Appel `/analytics/trends?months=last6`
+- **Moyennes affichees** : Revenus, depenses et solde moyens
+- **Gradients visuels** : Vert (revenus) et rouge (depenses)
+
+### Phase 4 - ML Tagging Batch
+- **Mode Batch** : Selection multiple avec checkboxes (touche B)
+- **Shift+Click** : Selection de plage de transactions
+- **Ctrl+A** : Selectionner toutes les transactions (en mode batch)
+- **Modal Batch** : Appliquer tags a plusieurs transactions (touche T)
+- **Tags Recents** : Quick access aux 5 derniers tags utilises
+- **Raccourcis Clavier** :
+  - `B` : Toggle mode batch
+  - `T` : Ouvrir modal tagging (si selection)
+  - `Escape` : Annuler/Fermer
+  - `Enter` : Sauver tags
+  - `?` : Afficher aide raccourcis
+
+### Phase 5 - Analytics Avances
+- **SpendingHeatMap** : Carte de chaleur des depenses par jour/heure
+- **AnomaliesDetection** : Detection automatique des anomalies
+- **Integration** : Composants ajoutes a l'onglet "Tendances"
+
+### Phase 6 - Nettoyage
+- **Pages supprimees** : dashboard-sota, dashboard-real, analytics-sota, settings-sota, upload-sota
+- **Structure clarifiee** : Uniquement les pages principales conservees
+
+## DEMARRAGE RAPIDE
+
+### Application 100% Fonctionnelle avec Design Moderne
 
 #### URLs de Production
 - **Frontend (Vercel)** : https://budget-app-v2-bice.vercel.app
-- **Backend (Render)** : https://budget-app-p8p9.onrender.com ⚠️ (Erreur 502 - utiliser local)
+- **Backend (Render)** : https://budget-app-p8p9.onrender.com (utiliser local pour dev)
 - **Documentation API** : http://localhost:8000/docs (local)
 
-#### Développement Local
-```bash
-# Backend
-cd backend
-python3 app.py
+#### Developpement Local (PowerShell - Recommande)
+```powershell
+# Methode recommandee - Script unifie PowerShell
+.\scripts\Start-BudgetApp.ps1
 
-# Frontend
+# Ou avec options
+.\scripts\Start-BudgetApp.ps1 -Backend       # Backend uniquement
+.\scripts\Start-BudgetApp.ps1 -Frontend      # Frontend uniquement
+.\scripts\Start-BudgetApp.ps1 -NoBrowser     # Sans ouvrir le navigateur
+```
+
+#### Developpement Local (Methode manuelle)
+```bash
+# Backend (Terminal 1)
+cd backend
+python app.py
+# API: http://localhost:8000
+
+# Frontend (Terminal 2)
 cd frontend
 npm run dev
-# Accès: http://localhost:3000
+# App: http://localhost:3000
 ```
 
 ### Identifiants
@@ -35,265 +302,158 @@ npm run dev
 - **Mot de passe** : secret
 - **Hash bcrypt** : $2b$12$N1BHKdi0fjTPgk3/aYYOCuBCjYY3hpq/7cmPnoMLXJ5wYafUpZP/u
 
-## ✅ PROBLÈMES RÉSOLUS (07/09/2025)
+## Architecture technique
 
-### 1. ✅ Performance Next.js (WSL2) - RÉSOLU
-- **Problème initial** : Compilation extrêmement lente (12+ minutes)
-- **Solution appliquée** : Déploiement sur Vercel (01/09/2025)
-- **Résultat** : Application rapide et accessible en production
-- **URLs** : 
-  - Frontend : https://budget-app-v2-bice.vercel.app
-  - Backend : https://budget-app-p8p9.onrender.com
-
-### 2. Configuration API
-- **API Base URL** : Changé de `host.docker.internal:8000` à `localhost:8000`
-- **CORS** : Configuré pour ports 3000, 4000, 45678
-
-### 3. Authentification ✅
-- **Base de données** : Utilisateur admin créé en BDD
-- **Token JWT** : Expire après 7 jours
-- **Backend** : Authentification complètement fonctionnelle
-
-### 4. Import CSV ✅ (MODE ANNULE ET REMPLACE - 07/09/2025)
-- **Problème initial** : Doublons créés à chaque import (458 au lieu de 127 transactions)
-- **Solution** : Mode ANNULE ET REMPLACE dans `routers/import_export.py`
-- **Comportement** : Suppression automatique des transactions du mois avant import
-- **Format date français** : DD/MM/YY correctement interprété
-- **Résultat** : 127 transactions exactes, solde -816.10€ comme attendu
-
-### 5. Transactions Fictives ✅ (NETTOYÉES 07/09/2025)
-- **Problème** : 693 transactions dont beaucoup fictives (démo)
-- **Solution** : Scripts de nettoyage `clean_fake_transactions.py`
-- **Résultat** : 459 vraies transactions conservées
-
-### 6. Dashboard ✅ (REFAIT 07/09/2025)
-- **Problème initial** : Dashboard affichait données fictives codées en dur
-- **Solution** : Refonte complète avec vraies données depuis API
-- **Fonctionnalités** :
-  - Sélecteur de mois pour navigation temporelle
-  - Solde du compte éditable avec persistance localStorage
-  - Calculs basés sur revenus nets après impôts
-  - Vue détaillée des flux financiers mensuels
-  - Affichage clair de la répartition des charges
-  - Liste des transactions récentes du mois sélectionné
-
-## Architecture actuelle
-
-### Structure technique
-- **Port Frontend HTML** : 4000 (Python http.server)
-- **Port Frontend Next.js** : 3000 (npm run dev - lent)
+### Structure
+- **Port Frontend Next.js** : 3000 (npm run dev)
 - **Port Backend** : 8000 (FastAPI)
-- **Base de données** : SQLite (budget.db)
-- **Authentification** : JWT avec fake_users_db
+- **Base de donnees** : SQLite (budget.db)
+- **Authentification** : JWT avec utilisateurs en base
 
-### Fonctionnalités clés implémentées et testées
-1. **CleanDashboard Provision-First** avec design moderne et 4 métriques clés
-2. **Drill-down dépenses hiérarchique** : Dépenses → Variables/Fixes → Tags → Transactions
-3. **Système de tags simplifié** : Édition directe sans modal IA
-4. **Import CSV/XLSX** multi-mois avec détection automatique
-5. **Provisions personnalisées** avec barre de progression et calculs automatiques
-6. **Système fiscal complet** avec taux d'imposition et revenus nets
+### Fonctionnalites cles implementees v3.1
+1. **Dashboard Glassmorphism** avec design moderne, Dark Mode et graphiques Recharts
+2. **Analytics avancee** : Vue d'ensemble, Details, Tendances avec graphiques interactifs
+3. **Systeme Smart Tag ML** :
+   - Mode batch avec raccourcis clavier
+   - Auto-apply haute confiance
+   - Import des tags existants
+   - Pattern matching intelligent (first word, substring)
+4. **Drill-down depenses hierarchique** : Depenses -> Variables/Fixes -> Tags -> Transactions
+5. **Import CSV/XLSX** multi-mois avec detection automatique
+6. **Provisions personnalisees** avec barre de progression et calculs automatiques
+7. **Systeme fiscal complet** avec taux d'imposition et revenus nets
 
-## Standards de développement
+### Scripts PowerShell disponibles
+- **Start-BudgetApp.ps1** : Lancement unifie backend + frontend
+- **Backup-Database.ps1** : Backup automatique SQLite (daily/weekly/manual)
+- **Restore-Database.ps1** : Restauration interactive avec rollback
+- **Dev-Tools.ps1** : Utilitaires (clear-cache, check-ports, health, test-api)
+
+## Standards de developpement
 
 ### Frontend
 - **Framework** : Next.js 14 avec App Router
-- **Styling** : Tailwind CSS avec composants UI réutilisables
-- **TypeScript** strict activé
-- **Docker** obligatoire pour WSL2 (problème Next.js natif)
+- **Styling** : Tailwind CSS avec Dark Mode (`darkMode: 'class'`)
+- **Design System** : Glassmorphism avec GlassCard, ModernCard
+- **Graphiques** : Recharts (PieChart, AreaChart, BarChart, LineChart)
+- **TypeScript** strict active
 
 ### Backend
 - **Framework** : FastAPI avec Pydantic v1 (important: ne pas utiliser v2 syntax)
-- **Base de données** : SQLAlchemy ORM + SQLite
-- **ML/IA** : Système de classification avancé intégré
-- **API** : Endpoints RESTful documentés avec Swagger
+- **Base de donnees** : SQLAlchemy ORM + SQLite
+- **ML/IA** : Systeme de classification avance integre
+- **API** : Endpoints RESTful documentes avec Swagger
 
-### Outils de qualité
+### Outils de qualite
 - **Tests** : Jest (frontend), pytest (backend)
 - **Linting** : ESLint (frontend), ruff (backend)
 - **Formatage** : Prettier (frontend), black (backend)
 
-## Dernières améliorations et corrections
+## Endpoints API ML
 
-### Session 2025-09-07 - Import Corrigé et Mode Annule/Remplace
-- **Import CSV avec ANNULE ET REMPLACE** : Suppression automatique des transactions existantes avant import
-- **127 transactions correctes** : Import exact du CSV sans doublons (-816.10€ total)
-- **Date française fixée** : Format DD/MM/YY correctement interprété  
-- **Dashboard fonctionnel** : Sélecteur de mois et solde éditable
-- **Revenus annuels** : Configuration par défaut en mode annuel
-- **Provisions annuelles/mensuelles** : Toggle pour montants annuels (ex: taxe foncière 1404€/an)
+### Classification intelligente
+```
+POST /api/ml-classification/classify
+{
+  "transaction_label": "CARTE 05/12/25 FRANPRIX PARIS",
+  "amount": 25.50,
+  "include_alternatives": true
+}
 
-### Session précédente - Nettoyage et Dashboard Réel
-- **Nettoyage transactions fictives** : 361 transactions fictives supprimées
-- **459 vraies transactions** : Uniquement les données importées conservées
-- **Dashboard refait** : Affichage des vraies données avec provisions
-- **Répartition des charges** : Calcul au prorata des revenus nets
-- **Organisation du projet** : Structure nettoyée et documentée
-- **Documentation complète** : Mise à jour de tous les fichiers `.claude/`
+Response:
+{
+  "suggested_tag": "courses",
+  "expense_type": "VARIABLE",
+  "confidence": 0.85,
+  "source": "feedback",
+  "feedback_pattern_used": true,
+  "merchant_name_clean": "franprix paris"
+}
+```
 
-### Session 2025-09-06 - Application 100% Fonctionnelle
-- **Import CSV corrigé** : Détection automatique des colonnes et sauvegarde en BDD
-- **Base de données recréée** : Tables propres avec indexes optimisés
-- **297 transactions de démo** : Données réalistes sur 3 mois
-- **Authentification fixée** : Utilisateur admin en base de données
-- **Frontend opérationnel** : Toutes les pages accessibles et fonctionnelles
-- **Backend local stable** : API complète disponible sur port 8000
+### Feedback ML
+```
+POST /api/ml-feedback/
+{
+  "transaction_id": 123,
+  "original_tag": "divers",
+  "corrected_tag": "courses",
+  "feedback_type": "correction",
+  "confidence_before": 0.5
+}
+```
 
-### Session 2025-08-13 - CleanDashboard et Workflow Tags
-- **CleanDashboard implémenté** : Design "Provision-First" avec 4 métriques clés
-- **Barre progression provisions** : Affichage temporel (7/12 pour juillet) avec animation verte
-- **Calcul familial avancé** : (Provisions + Dépenses - Solde compte) / revenus nets
-- **Drill-down dépenses fonctionnel** : Navigation Dépenses → Variables/Fixes → Tags → Transactions
-- **Filtrage strict** : Montants débiteurs uniquement, exclusion transactions marquées
-- **Workflow tags simplifié** : Édition directe sans modal IA, création automatique
-- **Cohérence totaux garantie** : drill-down = somme détails
-- **Quick Actions opérationnels** : Navigation rapide vers fonctionnalités principales
+## Structure des donnees
 
-### Session précédente - Système fiscal
-- **Taux d'imposition** : Ajout tax_rate1 et tax_rate2 pour calcul revenus nets
-- **Calcul provisions corrigé** : Suppression double division /12 (revenus déjà mensuels)
-- **Répartition équitable** : Provisions sur revenus bruts, distribution sur revenus nets
-- **Persistance données** : Correction sauvegarde taux d'imposition avec champs contrôlés
-- **Compatibilité Pydantic v1** : Migration validators pour éviter ImportError
+### Tables principales
+- **transactions** : Donnees bancaires importees
+- **custom_provisions** : Provisions personnalisees
+- **fixed_lines** : Depenses fixes recurrentes
+- **users** : Authentification utilisateurs
+- **tag_mappings** : Systeme de tags IA
+- **ml_feedback** : Historique des corrections ML
+- **config** : Configuration utilisateur avec tax_rate1/tax_rate2
 
-### Workflow de Tags Simplifié
-- **Édition directe** : Modification immédiate sans interruption
-- **Détection automatique** : Nouveaux tags créés via TagAutomationService
-- **Cohérence** : Endpoint dédié pour mise à jour des tags
-- **Performance** : Aucune latence modal IA
+### Fichiers de patterns ML
+- `backend/data/learned_patterns.json` : Patterns appris depuis les transactions tagguees
 
-## Problèmes connus et solutions
+## Corrections et ameliorations recentes
 
-### WSL2 + Next.js
-- **Problème** : Next.js 14.2.31 incompatible avec WSL2
-- **Solution** : Docker obligatoire via `dev-docker.sh`
-- **Status** : ✅ Résolu et documenté
+### Session 2025-12-06 - Systeme ML Intelligent
+- **Import tags existants** : Script pour importer 71 transactions tagguees -> 45 patterns
+- **Chargement patterns JSON** : Service ML charge automatiquement les patterns au demarrage
+- **Pattern matching ameliore** : First word match pour variantes de marchands
+- **Normalisation corrigee** : Suppression dates, prefixes bancaires, numeros de carte
 
-### Performance
-- **Frontend** : Hot reload fonctionnel
-- **Backend** : <2s temps de réponse
-- **Database** : 34 index optimisés pour performance
+### Session 2025-12-05 - Corrections Import CSV et Dashboard
+- **Import CSV** : Parsing dates corrige, synchronisation champ `month`
+- **Dashboard** : Nouveau calcul "Repartition Famille" avec deficit compte
+- **Scripts PowerShell** : Clean-Cache, Full-Reset, Fix-Venv, Kill-Ports
+- **Compatibilite Python 3.13** : bcrypt 4.x, pydantic v2 validators
 
-### Authentification
-- **Utilisateur** : admin / secret
-- **JWT** : Token automatiquement géré
-- **Sécurité** : Headers CORS configurés
+### Session 2025-12-04 - Refonte Design Moderne v3.0
+- **Scripts PowerShell complets** : Start-BudgetApp.ps1, Backup-Database.ps1
+- **Dark Mode active** : ThemeProvider dans layout.tsx avec toggle anime
+- **Dashboard refait** : Design Glassmorphism avec GlassCard, graphiques Recharts
+- **Analytics modernisee** : 3 vues (Overview, Details, Tendances)
+- **Smart Tag ameliore** : Mode batch, raccourcis clavier, tags recents
 
-## Commandes de test
+## Commandes utiles
 
 ```bash
 # Tests backend
 cd backend && python -m pytest
 
-# Tests frontend  
+# Tests frontend
 cd frontend && npm test
 
-# Tests end-to-end
-python test_e2e_navigation.py
+# Import tags existants dans ML
+cd backend && python scripts/import_existing_tags.py
 
-# Validation complète
-./run_all_tests.sh
+# Verification API ML
+curl -s http://localhost:8000/api/ml-classification/classify \
+  -X POST -H "Content-Type: application/json" \
+  -d '{"transaction_label": "AMAZON MARKETPLACE", "amount": 50}'
 ```
 
-## Structure des données
+## Notes pour futures developpements
 
-### Tables principales
-- **transactions** : Données bancaires importées
-- **custom_provisions** : Provisions personnalisées
-- **fixed_lines** : Dépenses fixes récurrentes
-- **users** : Authentification utilisateurs
-- **tag_mappings** : Système de tags IA
-- **config** : Configuration utilisateur avec tax_rate1/tax_rate2
-
-### Endpoints API essentiels
-- `GET /custom-provisions` : Liste des provisions
-- `POST /custom-provisions` : Créer provision
-- `PUT /custom-provisions/{id}` : Modifier provision
-- `DELETE /custom-provisions/{id}` : Supprimer provision (à vérifier)
-- `GET /fixed-lines` : Dépenses fixes
-- `POST /import` : Import CSV/XLSX
-
-## Notes pour futures développements
-
-### Priorités identifiées
-1. **Performance optimisation** : Réduire appels API redondants en cache
-2. **Interface provisions** : Améliorer UX dans drill-down catégories
-3. **Mobile responsive** : Adapter CleanDashboard pour smartphones
-4. **Tests E2E complets** : Valider drill-down et calculs provisions automatisés
-5. **Nettoyage composants** : Supprimer références EnhancedDashboard legacy
+### Priorites identifiees
+1. **Amelioration ML** : Ajouter plus de sources de patterns (regex, categories)
+2. **Performance** : Cache Redis pour patterns ML frequents
+3. **Mobile responsive** : Adapter interface pour smartphones
+4. **Export** : PDF automatise des syntheses
+5. **Integrations** : APIs bancaires PSD2
 
 ### Architecture future
 - **Multi-tenant** : Support plusieurs utilisateurs
 - **Real-time** : WebSocket pour updates live
-- **Export** : PDF automatisé des synthèses
-- **Intégrations** : APIs bancaires PSD2
-
-## Contact et support
-
-Pour questions techniques ou améliorations :
-- Utiliser les scripts de développement fournis
-- Vérifier les logs avec `./dev-docker.sh logs`
-- Consulter la documentation API sur http://localhost:8000/docs
-- Tester l'interface sur http://localhost:45678
+- **ML avance** : Modele de classification transformer
 
 ---
 
-## 📝 PROCHAINES ÉTAPES
-
-### ✅ COMPLÉTÉ (01/09/2025)
-- ✅ Déploiement Frontend sur Vercel
-- ✅ Déploiement Backend sur Render
-- ✅ Configuration CORS et variables d'environnement
-- ✅ Application accessible en production
-
-### À FAIRE
-1. **Optimisations** :
-   - Migration base de données SQLite → PostgreSQL
-   - Amélioration des performances de démarrage (plan gratuit Render)
-   
-2. **Fonctionnalités** :
-   - Correction des erreurs TypeScript restantes
-   - Implémentation complète du système de tags IA
-   - Export PDF des rapports
-   
-3. **Sécurité** :
-   - Migration vers de vrais utilisateurs (pas fake_users_db)
-   - Ajout de l'authentification 2FA
-   - Chiffrement des données sensibles
-
-## 🔧 CORRECTIONS APPLIQUÉES
-
-### Session 06/09/2025 - Corrections Majeures
-1. **Import CSV fonctionnel** : Ajout de la sauvegarde des transactions en BDD
-2. **Détection intelligente** : Auto-détection des colonnes CSV (date, libellé, montant)
-3. **Base de données** : Migration complète avec création des tables correctes
-4. **Authentification** : Utilisateur admin créé avec hash bcrypt
-5. **Données de démonstration** : Script de création de 297 transactions réalistes
-
-### Session 01/09/2025 - Déploiement Production
-1. **Frontend déployé** : Vercel avec build optimisé (sans type-check)
-2. **Backend déployé** : Render.com avec configuration CORS
-3. **Variables d'environnement** : Configurées sur les deux plateformes
-4. **URLs de production** : Fonctionnelles et accessibles
-5. **Documentation** : Mise à jour complète dans `.claude/`
-
-### Session 31/08/2025
-1. **API Base URL** : `lib/api.ts` - Changé vers localhost:8000
-2. **Icônes Heroicons** : Remplacé TrendingUpIcon → ArrowTrendingUpIcon
-3. **Authentification** : Hash mot de passe "secret" dans fake_users_db
-4. **CORS Backend** : Ajouté port 4000 pour interface HTML
-5. **Dashboard simple** : Créé `/dashboard` fonctionnel
-6. **Interface HTML** : Créé `app-simple.html` complètement fonctionnelle
-
-## 📚 FICHIERS IMPORTANTS
-
-- `frontend/app-simple.html` : Interface HTML fonctionnelle
-- `backend/auth.py` : Configuration authentification (fake_users_db)
-- `frontend/lib/api.ts` : Configuration API frontend
-- `frontend/next.config.mjs` : Optimisations Next.js
-- `backend/fix_admin.py` : Script pour réinitialiser utilisateur admin
-
-**Version** : 2.3.10  
-**Dernière mise à jour** : 2025-09-07  
-**Statut** : ✅ Application 100% fonctionnelle avec import ANNULE ET REMPLACE
-**Note** : Backend Render en erreur 502, utiliser le déploiement local
+**Version** : 3.2.0
+**Derniere mise a jour** : 2025-12-07
+**Statut** : Application 100% fonctionnelle - Auto-tagging frontend + Drill-down analytics ameliore
+**Note** : Backend Render disponible, developpement local recommande pour tests
+**Prochaine etape** : Migration mobile Android/iOS
