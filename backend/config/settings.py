@@ -118,6 +118,8 @@ class CORSSettings(BaseSettings):
             self.allowed_origins = [
                 "http://localhost:3000",
                 "http://127.0.0.1:3000",
+                "http://localhost:8000",
+                "http://127.0.0.1:8000",
                 "http://localhost:45678",
                 "http://127.0.0.1:45678",
                 "http://localhost:45679",

@@ -1,14 +1,228 @@
-# CLAUDE.md - Budget Famille v3.2
+# CLAUDE.md - Budget Famille v4.0
 
 Ce fichier fournit les instructions et le contexte pour Claude Code lors du travail sur ce projet.
 
 ## Vue d'ensemble du projet
 
-Budget Famille v3.2 est une application web moderne de gestion budgetaire familiale avec :
-- **Backend** : FastAPI + SQLite avec systeme ML avance d'auto-tagging
+Budget Famille v4.0 est une application web moderne de gestion budgetaire familiale avec :
+- **Backend** : FastAPI + SQLite avec systeme ML avance d'auto-tagging et predictions
 - **Frontend** : Next.js 14 + TypeScript + Tailwind CSS + Recharts
 - **Design** : Glassmorphism UI avec Dark Mode complet
-- **Fonctionnalites** : Import CSV, provisions personnalisees, depenses fixes, analytics IA avancee
+- **IA/ML** : OpenRouter (DeepSeek V3.2) + Predictions budgetaires + Detection anomalies
+- **Fonctionnalites** : Import CSV, provisions, depenses fixes, analytics IA, alertes intelligentes
+
+## SESSION 08/12/2025 (Suite) - INTEGRATION TABS ANALYTICS + CORRECTIONS
+
+### Integration Budget Analysis dans Analytics
+
+#### Probleme resolu
+- **Symptome** : La page `/budget-analysis` etait separee et non accessible depuis le menu
+- **Cause** : L'utilisateur souhaitait avoir tout integre dans la page Analytics existante
+
+#### Solution implementee
+1. **Ajout d'onglets dans Analytics** :
+   - `drilldown` : Drill-down depenses (existant)
+   - `budget` : Analyse Budget vs Reel avec suggestions IA
+   - `ai` : Chat IA et analyses contextuelles
+
+2. **Navigation par tabs** :
+   ```tsx
+   const [activeTab, setActiveTab] = useState<'drilldown' | 'budget' | 'ai'>('drilldown');
+   ```
+
+3. **Integration BudgetVarianceAnalysis** :
+   - Comparaison visuelle des ecarts
+   - Bouton "Expliquer avec IA" integre
+   - Suggestions automatiques par categorie
+
+#### Fichiers modifies
+- `frontend/app/analytics/page.tsx` : Ajout tabs et integration composants budget
+
+### Corrections CORS et Authentification
+
+#### Probleme CORS resolu
+- **Symptome** : `Access to XMLHttpRequest blocked by CORS policy` entre localhost:45678 et 127.0.0.1:8000
+- **Cause** : Melange de `localhost` et `127.0.0.1` consideres comme origines differentes
+
+#### Solution implementee
+1. **Uniformisation des URLs** :
+   ```env
+   # frontend/.env.local
+   NEXT_PUBLIC_API_BASE=http://localhost:8000  # PAS 127.0.0.1
+   ```
+
+2. **Extension des origines CORS** :
+   ```python
+   # backend/config/settings.py
+   self.allowed_origins = [
+       "http://localhost:3000",
+       "http://127.0.0.1:3000",
+       "http://localhost:8000",
+       "http://127.0.0.1:8000",
+       "http://localhost:45678",
+       "http://127.0.0.1:45678",
+       "http://localhost:45679",
+       "http://127.0.0.1:45679"
+   ]
+   ```
+
+#### Probleme async/await resolu
+- **Symptome** : `AttributeError: 'coroutine' object has no attribute 'username'`
+- **Cause** : `get_current_user` dans `dependencies/auth.py` etait synchrone mais appelait une fonction async
+
+#### Solution implementee
+```python
+# backend/dependencies/auth.py
+async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)) -> Dict[str, Any]:
+    """
+    Get current authenticated user
+    Wrapper around the existing auth module function
+    """
+    return await _get_current_user(credentials)  # Ajout de await
+```
+
+### Correction API categoryBudgetsApi
+
+#### Probleme resolu
+- **Symptome** : `categoryBudgetsApi.getAll is not a function`
+- **Cause** : La methode `getAll()` n'existait pas, seule `list()` etait definie
+
+#### Solution implementee
+```typescript
+// frontend/lib/api.ts
+async getAll(month?: string, activeOnly: boolean = true): Promise<CategoryBudget[]> {
+  return this.list(month, activeOnly);
+},
+```
+
+### Fichiers modifies cette session
+- `frontend/.env.local` : URL API corrigee
+- `backend/config/settings.py` : Origins CORS etendues
+- `backend/dependencies/auth.py` : Fix async/await
+- `frontend/lib/api.ts` : Ajout getAll() alias
+- `frontend/app/analytics/page.tsx` : Integration tabs budget/IA
+
+---
+
+## SESSION 08/12/2025 - BUDGET INTELLIGENCE SYSTEM v4.0
+
+### Systeme d'Intelligence Budgetaire Complet
+
+#### Nouvelles fonctionnalites implementees
+
+1. **Configuration des Objectifs Budget (CategoryBudgetsConfig)**
+   - Interface CRUD pour definir des budgets par categorie/tag
+   - Suggestions automatiques basees sur l'historique des depenses
+   - Integration dans Settings > "Objectifs Budget"
+   - Support multi-mois avec selecteur de periode
+
+2. **Analyse des Ecarts Budget vs Reel (BudgetVarianceAnalysis)**
+   - Comparaison visuelle Budget vs Depenses reelles
+   - Calcul automatique des ecarts (montant et pourcentage)
+   - Code couleur : vert (sous budget), rouge (depassement)
+   - Bouton "Expliquer avec IA" pour analyse detaillee
+
+3. **Page Analyse Budgetaire (/budget-analysis)**
+   - 4 onglets : Ecarts Budget, Resume Mensuel, Suggestions Economies, Chat IA
+   - Integration complete avec OpenRouter (DeepSeek V3.2)
+   - Analyse contextuelle basee sur les donnees du mois selectionne
+
+4. **Systeme de Predictions ML (predictions router)**
+   - Connexion des modules `ml_budget_predictor.py` et `ml_anomaly_detector.py`
+   - Predictions de fin de mois par categorie
+   - Detection automatique des anomalies et doublons
+   - Alertes intelligentes avec niveaux de severite
+
+5. **Banniere d'Alertes (AlertsBanner)**
+   - Affichage temps reel des alertes budgetaires
+   - Severites : high (rouge), medium (orange), low (jaune)
+   - Alertes dismissables avec persistance session
+   - Indicateur compact (AlertsIndicator) pour header
+
+#### Implementation technique
+
+```typescript
+// Types predictions API
+export type BudgetPrediction = {
+  category: string;
+  current_spent: number;
+  predicted_month_end: number;
+  monthly_average: number;
+  trend_direction: 'increasing' | 'decreasing' | 'stable';
+  confidence: number;
+};
+
+export type BudgetAlert = {
+  alert_type: 'overspend_risk' | 'unusual_spike' | 'category_trend';
+  category: string;
+  severity: 'low' | 'medium' | 'high';
+  message: string;
+  current_amount: number;
+  predicted_amount: number;
+  days_remaining: number;
+};
+
+// API predictions
+const overview = await predictionsApi.getOverview(month);
+// { predictions, alerts, recommendations, summary }
+
+const alerts = await predictionsApi.getAlerts(month, 'high');
+const anomalies = await predictionsApi.detectAnomalies(month);
+```
+
+```python
+# Backend predictions router
+@router.get("/overview", response_model=PredictionsOverviewResponse)
+def get_predictions_overview(month: str, db: Session, current_user):
+    budget_system = get_budget_system()
+    predictions = budget_system.predict_month_end(current_date, current_spending)
+    alerts = budget_system.generate_alerts(current_date, current_spending)
+    recommendations = budget_system.generate_smart_recommendations(current_spending)
+    return { predictions, alerts, recommendations, summary }
+```
+
+#### Nouveaux endpoints API
+
+| Endpoint | Methode | Description |
+|----------|---------|-------------|
+| `/predictions/overview` | GET | Vue complete predictions/alertes/recommandations |
+| `/predictions/alerts` | GET | Alertes filtrees par severite |
+| `/predictions/anomalies` | GET | Detection anomalies et doublons |
+| `/predictions/retrain` | POST | Forcer re-entrainement ML |
+| `/category-budgets/` | GET/POST | CRUD objectifs budget |
+| `/category-budgets/{id}` | PUT/DELETE | Modifier/supprimer objectif |
+| `/category-budgets/suggestions` | GET | Suggestions basees sur historique |
+| `/ai/budget-variance` | POST | Analyse IA des ecarts |
+
+#### Fichiers crees/modifies
+
+**Nouveaux fichiers :**
+- `frontend/components/settings/CategoryBudgetsConfig.tsx` : UI gestion budgets
+- `frontend/components/analytics/BudgetVarianceAnalysis.tsx` : Analyse ecarts
+- `frontend/app/budget-analysis/page.tsx` : Page complete analyse IA
+- `frontend/components/AlertsBanner.tsx` : Banniere alertes
+- `backend/routers/predictions.py` : Router predictions ML
+
+**Fichiers modifies :**
+- `frontend/lib/api.ts` : Types et fonctions predictions/alerts
+- `frontend/components/settings/index.ts` : Export CategoryBudgetsConfig
+- `frontend/app/settings/page.tsx` : Section "Objectifs Budget"
+- `backend/app.py` : Include predictions router
+
+### Configuration OpenRouter (IA)
+
+```env
+# .env.local (frontend) - deja configure
+NEXT_PUBLIC_OPENROUTER_API_KEY=sk-or-v1-xxx
+
+# .env (backend)
+OPENROUTER_API_KEY=sk-or-v1-xxx
+OPENROUTER_MODEL=deepseek/deepseek-chat-v3-0324
+```
+
+#### Modeles IA disponibles
+- **DeepSeek V3.2** : Modele principal (rapide, economique)
+- **Claude 3.5 Sonnet** : Alternative premium si necessaire
 
 ## SESSION 07/12/2025 - AUTO-TAGGING FRONTEND + DRILL-DOWN AMELIORE
 
@@ -310,7 +524,7 @@ npm run dev
 - **Base de donnees** : SQLite (budget.db)
 - **Authentification** : JWT avec utilisateurs en base
 
-### Fonctionnalites cles implementees v3.1
+### Fonctionnalites cles implementees v4.0
 1. **Dashboard Glassmorphism** avec design moderne, Dark Mode et graphiques Recharts
 2. **Analytics avancee** : Vue d'ensemble, Details, Tendances avec graphiques interactifs
 3. **Systeme Smart Tag ML** :
@@ -318,10 +532,21 @@ npm run dev
    - Auto-apply haute confiance
    - Import des tags existants
    - Pattern matching intelligent (first word, substring)
-4. **Drill-down depenses hierarchique** : Depenses -> Variables/Fixes -> Tags -> Transactions
+4. **Drill-down depenses hierarchique** : Depenses -> Variables/Fixes -> Tags -> Transactions -> Mois
 5. **Import CSV/XLSX** multi-mois avec detection automatique
 6. **Provisions personnalisees** avec barre de progression et calculs automatiques
 7. **Systeme fiscal complet** avec taux d'imposition et revenus nets
+8. **Budget Intelligence System v4.0** :
+   - Objectifs budget par categorie avec CRUD complet
+   - Predictions ML de fin de mois
+   - Alertes intelligentes (overspend_risk, unusual_spike, category_trend)
+   - Detection d'anomalies et doublons
+   - Analyse IA des ecarts (OpenRouter/DeepSeek)
+9. **Page Analyse Budgetaire (/budget-analysis)** :
+   - Ecarts Budget vs Reel avec graphiques
+   - Resume mensuel intelligent par IA
+   - Suggestions d'economies par categorie
+   - Chat IA contextuel sur les finances
 
 ### Scripts PowerShell disponibles
 - **Start-BudgetApp.ps1** : Lancement unifie backend + frontend
@@ -393,9 +618,14 @@ POST /api/ml-feedback/
 - **tag_mappings** : Systeme de tags IA
 - **ml_feedback** : Historique des corrections ML
 - **config** : Configuration utilisateur avec tax_rate1/tax_rate2
+- **category_budgets** : Objectifs budget par categorie (NEW v4.0)
 
 ### Fichiers de patterns ML
 - `backend/data/learned_patterns.json` : Patterns appris depuis les transactions tagguees
+
+### Modules ML avances (v4.0)
+- `backend/ml_budget_predictor.py` : Predictions de fin de mois, alertes, recommandations
+- `backend/ml_anomaly_detector.py` : Detection anomalies (Isolation Forest) et doublons (fuzzy matching)
 
 ## Corrections et ameliorations recentes
 
@@ -452,8 +682,9 @@ curl -s http://localhost:8000/api/ml-classification/classify \
 
 ---
 
-**Version** : 3.2.0
-**Derniere mise a jour** : 2025-12-07
-**Statut** : Application 100% fonctionnelle - Auto-tagging frontend + Drill-down analytics ameliore
+**Version** : 4.0.0
+**Derniere mise a jour** : 2025-12-08
+**Statut** : Application 100% fonctionnelle - Budget Intelligence System complet avec IA
 **Note** : Backend Render disponible, developpement local recommande pour tests
-**Prochaine etape** : Migration mobile Android/iOS
+**Nouvelles pages** : /budget-analysis (analyse IA), Settings > Objectifs Budget
+**Prochaine etape** : Migration mobile Android/iOS (React Native ou Capacitor)

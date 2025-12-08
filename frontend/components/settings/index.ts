@@ -1,5 +1,7 @@
 export { BudgetConfiguration } from './BudgetConfiguration';
+export { CategoryBudgetsConfig } from './CategoryBudgetsConfig';
 export { TagsManagement } from './TagsManagement';
+export { SimpleTagsManager, DEFAULT_CATEGORIES } from './SimpleTagsManager';
 export { TagEditModal } from './TagEditModal';
 export { TagsStatsDashboard } from './TagsStatsDashboard';
 export { TagRulesConfig } from './TagRulesConfig';

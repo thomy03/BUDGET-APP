@@ -4,3 +4,4 @@ export { CategoryChart } from './CategoryChart';
 export { AnomaliesDetection } from './AnomaliesDetection';
 export { SpendingPatterns } from './SpendingPatterns';
 export { ExportManager } from './ExportManager';
+export { BudgetVarianceAnalysis } from './BudgetVarianceAnalysis';
