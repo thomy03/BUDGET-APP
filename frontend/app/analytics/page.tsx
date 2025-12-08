@@ -2,11 +2,14 @@
 
 import { useEffect, useState, useMemo, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { api } from "../../lib/api";
+import { api, tagCategoryApi } from "../../lib/api";
 import { useGlobalMonth } from "../../lib/month";
 import { useAuth } from "../../lib/auth";
 import { LoadingSpinner, Card } from "../../components/ui";
 import { DEFAULT_CATEGORIES } from "../../components/settings/SimpleTagsManager";
+import { BudgetVarianceAnalysis } from "../../components/analytics";
+
+type AnalyticsTab = 'drilldown' | 'budget' | 'ai';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   LineChart, Line, PieChart, Pie, Cell, Legend, AreaChart, Area, ComposedChart
@@ -88,8 +91,11 @@ export default function Analytics() {
   const [selectedMonth, setSelectedMonth] = useState<MonthTagData | null>(null);
   const [selectedCategoryMonth, setSelectedCategoryMonth] = useState<CategoryMonthData | null>(null);
 
-  // Période pour analyse
-  const [periodMonths, setPeriodMonths] = useState(6);
+  // Période pour analyse (12 mois par défaut pour voir l'année glissante complète)
+  const [periodMonths, setPeriodMonths] = useState(12);
+
+  // Onglet actif pour la vue principale
+  const [activeTab, setActiveTab] = useState<AnalyticsTab>('drilldown');
 
   // Redirection si non authentifie
   useEffect(() => {
@@ -98,19 +104,41 @@ export default function Analytics() {
     }
   }, [isAuthenticated, authLoading, router]);
 
-  // Charger le mapping des categories
+  // Charger le mapping des categories depuis le backend (avec fallback localStorage)
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('budget_app_tag_category_map');
-      if (saved) {
-        try {
-          setTagCategoryMap(JSON.parse(saved));
-        } catch {
-          setTagCategoryMap({});
+    const loadMappings = async () => {
+      try {
+        // Essayer de charger depuis le backend
+        const backendMappings = await tagCategoryApi.getAll();
+        if (Object.keys(backendMappings).length > 0) {
+          setTagCategoryMap(backendMappings);
+          // Synchroniser avec localStorage pour compatibilité
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('budget_app_tag_category_map', JSON.stringify(backendMappings));
+          }
+          return;
+        }
+      } catch (error) {
+        console.error('[Analytics] Error loading mappings from backend:', error);
+      }
+
+      // Fallback sur localStorage
+      if (typeof window !== 'undefined') {
+        const saved = localStorage.getItem('budget_app_tag_category_map');
+        if (saved) {
+          try {
+            setTagCategoryMap(JSON.parse(saved));
+          } catch {
+            setTagCategoryMap({});
+          }
         }
       }
+    };
+
+    if (isAuthenticated) {
+      loadMappings();
     }
-  }, []);
+  }, [isAuthenticated]);
 
   // Generer la liste des mois pour la periode
   const getMonthsInPeriod = useCallback((numMonths: number): string[] => {
@@ -165,7 +193,7 @@ export default function Analytics() {
   }, [isAuthenticated, periodMonths, loadData]);
 
   // Calculer les statistiques par categorie
-  // NOTE: On exclut les transactions sans tags et la categorie "autres" (non categorisees)
+  // NOTE: Inclut tous les tags, meme non categorises (dans "autres")
   const categoryStats = useMemo((): CategoryData[] => {
     if (!transactions.length) return [];
 
@@ -183,6 +211,9 @@ export default function Analytics() {
       if (txTags.length === 0) return;
 
       txTags.forEach(tag => {
+        // Ignorer les tags "Non classe" ou vides
+        if (!tag || tag.toLowerCase() === 'non classe' || tag.toLowerCase() === 'non classé') return;
+
         if (!tagMap.has(tag)) {
           tagMap.set(tag, { total: 0, count: 0, monthly: new Map(), transactions: [] });
         }
@@ -197,7 +228,7 @@ export default function Analytics() {
       });
     });
 
-    // Grouper par categorie (exclure 'autres' = non categorisees)
+    // Grouper par categorie (inclure 'autres' pour les tags non mappes)
     const categoryMap = new Map<string, {
       total: number;
       count: number;
@@ -205,18 +236,13 @@ export default function Analytics() {
       monthly: Map<string, number>;
     }>();
 
-    // Initialiser les categories (sauf 'autres')
+    // Initialiser toutes les categories
     DEFAULT_CATEGORIES.forEach(cat => {
-      if (cat.id !== 'autres') {
-        categoryMap.set(cat.id, { total: 0, count: 0, tags: [], monthly: new Map() });
-      }
+      categoryMap.set(cat.id, { total: 0, count: 0, tags: [], monthly: new Map() });
     });
 
     tagMap.forEach((data, tagName) => {
       const categoryId = tagCategoryMap[tagName] || 'autres';
-
-      // Exclure les tags non categorises (categorie 'autres')
-      if (categoryId === 'autres') return;
 
       if (!categoryMap.has(categoryId)) {
         categoryMap.set(categoryId, { total: 0, count: 0, tags: [], monthly: new Map() });
@@ -243,9 +269,6 @@ export default function Analytics() {
     const result: CategoryData[] = [];
 
     DEFAULT_CATEGORIES.forEach(cat => {
-      // Exclure la categorie 'autres'
-      if (cat.id === 'autres') return;
-
       const data = categoryMap.get(cat.id);
       if (!data || data.total === 0) return;
 
@@ -397,9 +420,14 @@ export default function Analytics() {
 
   // Handler pour clic sur le graphique mensuel dans la vue categorie
   const handleCategoryMonthClick = useCallback((data: any, tag: TagData) => {
-    if (!selectedCategory || !data || !data.activePayload || !data.activePayload[0]) return;
+    console.log('[Analytics] handleCategoryMonthClick called', { data, tag, selectedCategory });
+    if (!selectedCategory || !data || !data.activePayload || !data.activePayload[0]) {
+      console.log('[Analytics] Early return - missing data:', { selectedCategory: !!selectedCategory, data: !!data, activePayload: data?.activePayload });
+      return;
+    }
 
     const monthStr = data.activePayload[0].payload.month;
+    console.log('[Analytics] Drill-down to month:', monthStr, 'for tag:', tag.name);
     const monthNames = ['Janvier', 'Fevrier', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Aout', 'Septembre', 'Octobre', 'Novembre', 'Decembre'];
     const monthNum = parseInt(monthStr.split('-')[1]) - 1;
     const year = monthStr.split('-')[0];
@@ -902,11 +930,12 @@ export default function Analytics() {
           </Card>
         </div>
 
-        {/* Graphique evolution mensuelle */}
+        {/* Graphique evolution mensuelle - cliquable pour voir les transactions du mois */}
         {selectedCategory.monthlyData.length > 0 && (
           <Card className="p-6">
             <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">
               Evolution mensuelle
+              <span className="text-sm font-normal text-gray-500 ml-2">(cliquez sur un mois pour voir le detail)</span>
             </h3>
             <div className="h-[250px]">
               <ResponsiveContainer width="100%" height="100%">
@@ -923,8 +952,54 @@ export default function Analytics() {
                   <YAxis tickFormatter={(v) => `${v}€`} />
                   <Tooltip
                     formatter={(value: number) => value.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
+                    labelFormatter={(m) => `Cliquez pour voir ${m}`}
                   />
-                  <Bar dataKey="amount" fill={selectedCategory.color} radius={[4, 4, 0, 0]} name="Montant" />
+                  <Bar
+                    dataKey="amount"
+                    fill={selectedCategory.color}
+                    radius={[4, 4, 0, 0]}
+                    name="Montant"
+                    cursor="pointer"
+                    onClick={(data) => {
+                      console.log('[Analytics] Category month bar clicked:', data);
+                      if (data && data.month) {
+                        const monthStr = data.month;
+                        const monthNames = ['Janvier', 'Fevrier', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Aout', 'Septembre', 'Octobre', 'Novembre', 'Decembre'];
+                        const monthNum = parseInt(monthStr.split('-')[1]) - 1;
+                        const year = monthStr.split('-')[0];
+                        const monthLabel = `${monthNames[monthNum]} ${year}`;
+
+                        // Collecter toutes les transactions de tous les tags pour ce mois
+                        const allMonthTransactions: Transaction[] = [];
+                        selectedCategory.tags.forEach(tag => {
+                          const tagMonthTxs = (tag.transactions || []).filter((tx: any) => {
+                            const txMonth = tx.month || tx.date_op?.substring(0, 7);
+                            return txMonth === monthStr;
+                          });
+                          allMonthTransactions.push(...tagMonthTxs);
+                        });
+
+                        const total = allMonthTransactions.reduce((sum, tx) => sum + Math.abs(tx.amount), 0);
+
+                        // Creer un tag "virtuel" pour representer toute la categorie
+                        setSelectedCategoryMonth({
+                          month: monthStr,
+                          monthLabel,
+                          category: selectedCategory,
+                          tag: {
+                            name: `Tous les tags (${selectedCategory.name})`,
+                            total,
+                            count: allMonthTransactions.length,
+                            transactions: allMonthTransactions
+                          },
+                          transactions: allMonthTransactions,
+                          total,
+                          count: allMonthTransactions.length
+                        });
+                        setDrillLevel('category-month-transactions');
+                      }
+                    }}
+                  />
                   <Line
                     type="monotone"
                     dataKey={() => selectedCategory.avgMonthly}
@@ -995,15 +1070,11 @@ export default function Analytics() {
                     </div>
                   </div>
 
-                  {/* Mini graphique mensuel cliquable */}
-                  {tagMonthlyData.length > 1 && (
+                  {/* Mini graphique mensuel cliquable - afficher même avec 1 seul mois */}
+                  {tagMonthlyData.length >= 1 && (
                     <div className="h-[120px] mt-2">
                       <ResponsiveContainer width="100%" height="100%">
-                        <BarChart
-                          data={tagMonthlyData}
-                          onClick={(data) => handleCategoryMonthClick(data, tag)}
-                          style={{ cursor: 'pointer' }}
-                        >
+                        <BarChart data={tagMonthlyData}>
                           <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                           <XAxis dataKey="monthLabel" tick={{ fontSize: 11 }} />
                           <YAxis tickFormatter={(v) => `${v}€`} tick={{ fontSize: 11 }} width={50} />
@@ -1016,6 +1087,40 @@ export default function Analytics() {
                             fill={selectedCategory.color}
                             radius={[2, 2, 0, 0]}
                             name="Montant"
+                            cursor="pointer"
+                            onClick={(data) => {
+                              console.log('[Analytics] Bar clicked:', data);
+                              if (data && data.month) {
+                                const monthStr = data.month;
+                                const monthNames = ['Janvier', 'Fevrier', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Aout', 'Septembre', 'Octobre', 'Novembre', 'Decembre'];
+                                const monthNum = parseInt(monthStr.split('-')[1]) - 1;
+                                const year = monthStr.split('-')[0];
+                                const monthLabel = `${monthNames[monthNum]} ${year}`;
+
+                                const monthTransactions = (tag.transactions || []).filter((tx: any) => {
+                                  const txMonth = tx.month || tx.date_op?.substring(0, 7);
+                                  return txMonth === monthStr;
+                                });
+
+                                const total = monthTransactions.reduce((sum: number, tx: any) => sum + Math.abs(tx.amount), 0);
+
+                                setSelectedCategoryMonth({
+                                  month: monthStr,
+                                  monthLabel,
+                                  category: selectedCategory,
+                                  tag: {
+                                    ...tag,
+                                    transactions: monthTransactions,
+                                    total,
+                                    count: monthTransactions.length
+                                  },
+                                  transactions: monthTransactions,
+                                  total,
+                                  count: monthTransactions.length
+                                });
+                                setDrillLevel('category-month-transactions');
+                              }
+                            }}
                           />
                         </BarChart>
                       </ResponsiveContainer>
@@ -1042,21 +1147,59 @@ export default function Analytics() {
             Analyse des depenses
           </h1>
           <p className="text-gray-500 dark:text-gray-400">
-            Vue hierarchique: Categories &rarr; Tags &rarr; Transactions
+            {activeTab === 'drilldown' && 'Vue hierarchique: Categories → Tags → Transactions'}
+            {activeTab === 'budget' && 'Comparez vos depenses reelles avec vos objectifs budgetaires'}
+            {activeTab === 'ai' && 'Insights et predictions intelligentes'}
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-gray-500">Periode:</span>
-          <select
-            value={periodMonths}
-            onChange={(e) => setPeriodMonths(parseInt(e.target.value))}
-            className="px-3 py-2 border border-gray-300 rounded-lg bg-white dark:bg-gray-700 dark:border-gray-600"
-          >
-            <option value={3}>3 mois</option>
-            <option value={6}>6 mois</option>
-            <option value={12}>12 mois</option>
-          </select>
-        </div>
+        {activeTab === 'drilldown' && (
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-gray-500">Periode:</span>
+            <select
+              value={periodMonths}
+              onChange={(e) => setPeriodMonths(parseInt(e.target.value))}
+              className="px-3 py-2 border border-gray-300 rounded-lg bg-white dark:bg-gray-700 dark:border-gray-600"
+            >
+              <option value={3}>3 mois</option>
+              <option value={6}>6 mois</option>
+              <option value={12}>12 mois</option>
+            </select>
+          </div>
+        )}
+      </div>
+
+      {/* Onglets de navigation */}
+      <div className="flex gap-1 p-1 bg-gray-100 dark:bg-gray-800 rounded-lg w-fit">
+        <button
+          onClick={() => setActiveTab('drilldown')}
+          className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
+            activeTab === 'drilldown'
+              ? 'bg-white dark:bg-gray-700 text-blue-600 dark:text-blue-400 shadow-sm'
+              : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+          }`}
+        >
+          📊 Drill-down Depenses
+        </button>
+        <button
+          onClick={() => setActiveTab('budget')}
+          className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
+            activeTab === 'budget'
+              ? 'bg-white dark:bg-gray-700 text-blue-600 dark:text-blue-400 shadow-sm'
+              : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+          }`}
+        >
+          📈 Budget vs Reel
+        </button>
+        <button
+          onClick={() => setActiveTab('ai')}
+          className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
+            activeTab === 'ai'
+              ? 'bg-white dark:bg-gray-700 text-purple-600 dark:text-purple-400 shadow-sm'
+              : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+          }`}
+        >
+          🤖 IA Insights
+        </button>
       </div>
 
       {error && (
@@ -1065,9 +1208,34 @@ export default function Analytics() {
         </div>
       )}
 
-      {loading ? (
+      {/* Contenu de l'onglet Budget vs Reel */}
+      {activeTab === 'budget' && (
+        <BudgetVarianceAnalysis month={month} />
+      )}
+
+      {/* Contenu de l'onglet IA Insights */}
+      {activeTab === 'ai' && (
+        <Card className="p-6">
+          <div className="text-center py-8">
+            <div className="text-6xl mb-4">🤖</div>
+            <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+              IA Insights - Bientot disponible
+            </h3>
+            <p className="text-gray-500 dark:text-gray-400 max-w-md mx-auto">
+              Cette section inclura des predictions ML sur vos depenses,
+              des alertes intelligentes et des recommandations personnalisees.
+            </p>
+            <p className="text-sm text-gray-400 mt-4">
+              En attendant, utilisez l'onglet "Budget vs Reel" pour obtenir des analyses IA de vos ecarts budgetaires.
+            </p>
+          </div>
+        </Card>
+      )}
+
+      {/* Contenu de l'onglet Drill-down (existant) */}
+      {activeTab === 'drilldown' && loading ? (
         <LoadingSpinner />
-      ) : (
+      ) : activeTab === 'drilldown' && (
         <>
           {/* Resume global */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -1136,7 +1304,7 @@ export default function Analytics() {
               </h3>
               <div className="h-[300px]">
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={monthlyChartData} onClick={handleMonthClick} style={{ cursor: 'pointer' }}>
+                  <BarChart data={monthlyChartData}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="monthLabel" />
                     <YAxis tickFormatter={(v) => `${(v / 1000).toFixed(0)}k€`} />
@@ -1149,7 +1317,17 @@ export default function Analytics() {
                       fill="#EF4444"
                       radius={[4, 4, 0, 0]}
                       name="Depenses"
-                      className="cursor-pointer"
+                      cursor="pointer"
+                      onClick={(data) => {
+                        console.log('[Analytics] Global month bar clicked:', data);
+                        if (data && data.month) {
+                          const monthData = getMonthTagsData(data.month);
+                          setSelectedMonth(monthData);
+                          setSelectedCategory(null);
+                          setSelectedTag(null);
+                          setDrillLevel('month-tags');
+                        }
+                      }}
                     />
                   </BarChart>
                 </ResponsiveContainer>

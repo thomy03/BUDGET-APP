@@ -4,13 +4,14 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "../../lib/auth";
 import { LoadingSpinner, Alert, Button } from "../../components/ui";
-import { 
-  BudgetConfiguration, 
-  SettingsLayout, 
-  ExpenseManagement, 
-  TagsManagement,
-  AdvancedConfiguration, 
-  AdministrationPanel 
+import {
+  BudgetConfiguration,
+  CategoryBudgetsConfig,
+  SettingsLayout,
+  ExpenseManagement,
+  SimpleTagsManager,
+  AdvancedConfiguration,
+  AdministrationPanel
 } from "../../components/settings";
 import { useSettings } from "../../hooks/useSettings";
 
@@ -64,13 +65,21 @@ export default function Settings() {
       id: 'tags',
       title: 'Tags & Catégories',
       icon: '🏷️',
-      description: 'Organisez et gérez vos catégories de transactions avec IA',
-      component: <TagsManagement />,
+      description: 'Organisez vos dépenses par catégorie',
+      component: <SimpleTagsManager />,
+      priority: true
+    },
+    {
+      id: 'budgets',
+      title: 'Objectifs Budget',
+      icon: '🎯',
+      description: 'Définissez des objectifs de dépenses par catégorie',
+      component: <CategoryBudgetsConfig />,
       priority: true
     },
     {
       id: 'budget',
-      title: 'Budget & Provisions',
+      title: 'Revenus & Provisions',
       icon: '📊',
       description: 'Configuration des revenus et gestion complète de vos provisions',
       component: (
@@ -87,9 +96,9 @@ export default function Settings() {
       icon: '💳',
       description: 'Dépenses fixes récurrentes et classification par type/IA',
       component: (
-        <ExpenseManagement 
-          config={cfg} 
-          onDataChange={load} 
+        <ExpenseManagement
+          config={cfg}
+          onDataChange={load}
         />
       )
     },

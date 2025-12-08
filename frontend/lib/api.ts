@@ -898,3 +898,408 @@ export const balanceApi = {
     return response.data || [];
   }
 };
+
+// ============================================================================
+// TAG-CATEGORY MAPPINGS API
+// ============================================================================
+
+export type TagCategoryMappingBulkOut = {
+  created: number;
+  updated: number;
+  total: number;
+  mappings: Record<string, string>;
+};
+
+export const tagCategoryApi = {
+  // Récupérer tous les mappings tag->catégorie
+  async getAll(): Promise<Record<string, string>> {
+    try {
+      const response = await api.get<Record<string, string>>('/tag-categories/');
+      return response.data || {};
+    } catch (error) {
+      console.error('Error fetching tag-category mappings:', error);
+      return {};
+    }
+  },
+
+  // Créer ou mettre à jour un mapping unique
+  async setMapping(tagName: string, categoryId: string): Promise<void> {
+    await api.post('/tag-categories/', { tag_name: tagName, category_id: categoryId });
+  },
+
+  // Synchroniser tous les mappings (bulk)
+  async syncAll(mappings: Record<string, string>): Promise<TagCategoryMappingBulkOut> {
+    const response = await api.post<TagCategoryMappingBulkOut>('/tag-categories/bulk', { mappings });
+    return response.data;
+  },
+
+  // Supprimer un mapping
+  async deleteMapping(tagName: string): Promise<void> {
+    await api.delete(`/tag-categories/${encodeURIComponent(tagName)}`);
+  },
+
+  // Récupérer les statistiques
+  async getStats(): Promise<{ total_mappings: number; categories_breakdown: Record<string, number> }> {
+    const response = await api.get('/tag-categories/stats');
+    return response.data;
+  }
+};
+
+// =============================================================================
+// CATEGORY BUDGETS API (v4.0)
+// =============================================================================
+
+export type CategoryBudget = {
+  id: number;
+  category: string;
+  tag_name?: string;
+  month?: string;  // YYYY-MM or null for default
+  budget_amount: number;
+  alert_threshold: number;
+  is_active: boolean;
+  notes?: string;
+  created_at: string;
+  updated_at?: string;
+  created_by?: string;
+};
+
+export type CategoryBudgetCreate = {
+  category: string;
+  tag_name?: string;
+  month?: string;
+  budget_amount: number;
+  alert_threshold?: number;
+  notes?: string;
+};
+
+export type CategoryBudgetUpdate = Partial<CategoryBudgetCreate> & {
+  is_active?: boolean;
+};
+
+export type CategoryBudgetSuggestion = {
+  category: string;
+  suggested_amount: number;
+  average_3_months: number;
+  average_6_months: number;
+  min_amount: number;
+  max_amount: number;
+  months_with_data: number;
+  trend: 'increasing' | 'decreasing' | 'stable';
+};
+
+export type BudgetSuggestionsResponse = {
+  suggestions: CategoryBudgetSuggestion[];
+  total_suggested_budget: number;
+  analysis_period_start: string;
+  analysis_period_end: string;
+};
+
+export const categoryBudgetsApi = {
+  // Lister tous les budgets par catégorie
+  async list(month?: string, activeOnly: boolean = true): Promise<CategoryBudget[]> {
+    const params: Record<string, any> = { active_only: activeOnly };
+    if (month) params.month = month;
+
+    const response = await api.get<CategoryBudget[]>('/budgets/categories', { params });
+    return response.data || [];
+  },
+
+  // Alias pour compatibilité avec les composants
+  async getAll(month?: string, activeOnly: boolean = true): Promise<CategoryBudget[]> {
+    return this.list(month, activeOnly);
+  },
+
+  // Créer un nouveau budget par catégorie
+  async create(budget: CategoryBudgetCreate): Promise<CategoryBudget> {
+    const response = await api.post<CategoryBudget>('/budgets/categories', budget);
+    return response.data;
+  },
+
+  // Récupérer un budget spécifique
+  async get(id: number): Promise<CategoryBudget> {
+    const response = await api.get<CategoryBudget>(`/budgets/categories/${id}`);
+    return response.data;
+  },
+
+  // Mettre à jour un budget
+  async update(id: number, updates: CategoryBudgetUpdate): Promise<CategoryBudget> {
+    const response = await api.put<CategoryBudget>(`/budgets/categories/${id}`, updates);
+    return response.data;
+  },
+
+  // Supprimer un budget
+  async delete(id: number): Promise<void> {
+    await api.delete(`/budgets/categories/${id}`);
+  },
+
+  // Obtenir des suggestions basées sur l'historique
+  async getSuggestions(monthsHistory: number = 6): Promise<BudgetSuggestionsResponse> {
+    const response = await api.get<BudgetSuggestionsResponse>('/budgets/suggestions', {
+      params: { months_history: monthsHistory }
+    });
+    return response.data;
+  },
+
+  // Créer plusieurs budgets en une fois
+  async bulkCreate(budgets: CategoryBudgetCreate[]): Promise<CategoryBudget[]> {
+    const response = await api.post<CategoryBudget[]>('/budgets/bulk-create', budgets);
+    return response.data || [];
+  },
+
+  // Appliquer automatiquement les suggestions pour un mois
+  async applySuggestions(month: string, minAmount: number = 50): Promise<CategoryBudget[]> {
+    const response = await api.post<CategoryBudget[]>('/budgets/apply-suggestions', null, {
+      params: { month, min_amount: minAmount }
+    });
+    return response.data || [];
+  }
+};
+
+// =============================================================================
+// VARIANCE ANALYSIS API (v4.0)
+// =============================================================================
+
+export type CategoryVariance = {
+  category: string;
+  budgeted: number;
+  actual: number;
+  variance: number;
+  variance_pct: number;
+  status: 'under_budget' | 'on_track' | 'warning' | 'over_budget' | 'no_budget';
+  top_transactions: Array<{
+    id?: number;
+    label: string;
+    amount: number;
+    date?: string;
+  }>;
+  vs_last_month?: string;
+  transaction_count: number;
+};
+
+export type GlobalVariance = {
+  budgeted: number;
+  actual: number;
+  variance: number;
+  variance_pct: number;
+  status: 'under_budget' | 'on_track' | 'warning' | 'over_budget' | 'no_budget';
+};
+
+export type VarianceAlert = {
+  type: string;
+  category: string;
+  message: string;
+  severity: 'info' | 'warning' | 'critical';
+};
+
+export type VarianceAnalysisResponse = {
+  month: string;
+  global_variance: GlobalVariance;
+  by_category: CategoryVariance[];
+  categories_over_budget: number;
+  categories_on_track: number;
+  alerts: VarianceAlert[];
+};
+
+export const varianceApi = {
+  // Obtenir l'analyse de variance pour un mois
+  async analyze(month: string): Promise<VarianceAnalysisResponse> {
+    const response = await api.get<VarianceAnalysisResponse>('/analytics/variance', {
+      params: { month }
+    });
+    return response.data;
+  }
+};
+
+// =============================================================================
+// AI ANALYSIS API (v4.0 - OpenRouter Integration)
+// =============================================================================
+
+export type AIStatus = {
+  configured: boolean;
+  model: string;
+  language: string;
+  max_tokens: number;
+};
+
+export type AIExplanationResponse = {
+  explanation: string;
+  model_used: string;
+  language: string;
+};
+
+export type AISavingsResponse = {
+  category: string;
+  suggestions: string;
+  average_spending: number;
+  model_used: string;
+};
+
+export type AIMonthlySummaryResponse = {
+  month: string;
+  summary: string;
+  income: number;
+  expenses: number;
+  savings: number;
+  model_used: string;
+};
+
+export type AIQuestionResponse = {
+  question: string;
+  answer: string;
+  model_used: string;
+};
+
+export const aiApi = {
+  // Vérifier le statut du service IA
+  async getStatus(): Promise<AIStatus> {
+    const response = await api.get<AIStatus>('/ai/status');
+    return response.data;
+  },
+
+  // Obtenir une explication IA des écarts budgétaires
+  async explainVariance(month: string): Promise<AIExplanationResponse> {
+    const response = await api.post<AIExplanationResponse>('/ai/explain-variance', { month });
+    return response.data;
+  },
+
+  // Obtenir des suggestions d'économie pour une catégorie
+  async suggestSavings(category: string, monthsHistory: number = 6): Promise<AISavingsResponse> {
+    const response = await api.post<AISavingsResponse>('/ai/suggest-savings', {
+      category,
+      months_history: monthsHistory
+    });
+    return response.data;
+  },
+
+  // Générer un résumé mensuel intelligent
+  async getMonthlySummary(month: string): Promise<AIMonthlySummaryResponse> {
+    const response = await api.post<AIMonthlySummaryResponse>('/ai/monthly-summary', { month });
+    return response.data;
+  },
+
+  // Poser une question libre sur le budget
+  async askQuestion(question: string, month?: string): Promise<AIQuestionResponse> {
+    const response = await api.post<AIQuestionResponse>('/ai/chat', {
+      question,
+      month
+    });
+    return response.data;
+  },
+
+  // Alias pour monthlySummary
+  async monthlySummary(month: string): Promise<AIMonthlySummaryResponse> {
+    return this.getMonthlySummary(month);
+  },
+
+  // Alias pour chat
+  async chat(question: string, month?: string): Promise<AIQuestionResponse> {
+    return this.askQuestion(question, month);
+  }
+};
+
+// =============================================================================
+// ML PREDICTIONS & ALERTS API (v4.0 - Budget Intelligence)
+// =============================================================================
+
+export type BudgetPrediction = {
+  category: string;
+  current_spent: number;
+  predicted_month_end: number;
+  monthly_average: number;
+  trend_direction: 'increasing' | 'decreasing' | 'stable' | 'unknown';
+  confidence: number;
+  recommendation: string;
+};
+
+export type BudgetAlert = {
+  alert_type: 'overspend_risk' | 'unusual_spike' | 'category_trend';
+  category: string;
+  severity: 'low' | 'medium' | 'high';
+  message: string;
+  current_amount: number;
+  predicted_amount: number;
+  threshold: number;
+  days_remaining: number;
+};
+
+export type SmartRecommendation = {
+  recommendation_type: 'budget_increase' | 'savings_opportunity' | 'spending_optimization';
+  category: string;
+  current_budget: number;
+  suggested_budget: number;
+  reasoning: string;
+  impact_estimate: string;
+  confidence: number;
+};
+
+export type Anomaly = {
+  transaction_id: string;
+  anomaly_type: 'amount' | 'frequency' | 'merchant' | 'duplicate' | 'statistical';
+  severity: number;
+  explanation: string;
+  confidence: number;
+};
+
+export type DuplicateGroup = {
+  transaction_ids: string[];
+  similarity_score: number;
+  duplicate_type: 'exact' | 'fuzzy' | 'temporal';
+  explanation: string;
+};
+
+export type PredictionsOverview = {
+  predictions: BudgetPrediction[];
+  alerts: BudgetAlert[];
+  recommendations: SmartRecommendation[];
+  summary: {
+    total_categories: number;
+    total_spending?: number;
+    at_risk_count: number;
+    alerts_count?: number;
+    month: string;
+    message?: string;
+  };
+};
+
+export type AnomaliesOverview = {
+  anomalies: Anomaly[];
+  duplicate_groups: DuplicateGroup[];
+  summary: {
+    total_transactions: number;
+    anomalies_found: number;
+    duplicates_found: number;
+    high_severity_count?: number;
+  };
+};
+
+export const predictionsApi = {
+  // Get comprehensive predictions overview
+  async getOverview(month: string): Promise<PredictionsOverview> {
+    const response = await api.get<PredictionsOverview>('/predictions/overview', {
+      params: { month }
+    });
+    return response.data;
+  },
+
+  // Get budget alerts only
+  async getAlerts(month: string, severity?: 'low' | 'medium' | 'high'): Promise<BudgetAlert[]> {
+    const response = await api.get<BudgetAlert[]>('/predictions/alerts', {
+      params: { month, severity }
+    });
+    return response.data;
+  },
+
+  // Detect anomalies in transactions
+  async detectAnomalies(month: string, limit: number = 20): Promise<AnomaliesOverview> {
+    const response = await api.get<AnomaliesOverview>('/predictions/anomalies', {
+      params: { month, limit }
+    });
+    return response.data;
+  },
+
+  // Force ML systems retraining
+  async retrain(): Promise<{ status: string; message: string }> {
+    const response = await api.post('/predictions/retrain');
+    return response.data;
+  }
+};

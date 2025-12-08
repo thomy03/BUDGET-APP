@@ -379,7 +379,7 @@ Base.metadata.create_all(bind=engine)
 
 # Import routers
 from routers.auth import router as auth_router
-from routers.cache import router as cache_router
+# from routers.cache import router as cache_router
 from routers.config import router as config_router
 from routers.fixed_expenses import router as fixed_expenses_router
 from routers.provisions import router as provisions_router
@@ -397,10 +397,14 @@ from routers.ml_tagging import router as ml_tagging_router  # ML-based tagging w
 from routers.ml_feedback import router as ml_feedback_router  # ML feedback learning system
 from routers.ml_enhanced_classification import router as ml_enhanced_classification_router  # Enhanced ML classification
 from routers.balance import router as balance_router  # Account balance management
+from routers.tag_categories import router as tag_categories_router  # Tag-category mappings persistence
+from routers.budgets import router as budgets_router  # Category budget management for variance analysis
+from routers.ai import router as ai_router  # AI-powered budget analysis with OpenRouter
+from routers.predictions import router as predictions_router  # ML predictions and anomaly detection
 
 # Include routers with their prefixes
 app.include_router(auth_router, tags=["authentication"])
-app.include_router(cache_router, tags=["cache"])
+# app.include_router(cache_router, tags=["cache"])
 app.include_router(config_router, tags=["configuration"])
 app.include_router(fixed_expenses_router, tags=["fixed-expenses"])
 app.include_router(provisions_router, tags=["provisions"])
@@ -418,6 +422,10 @@ app.include_router(ml_tagging_router, tags=["ml-tagging"])  # ML-based tagging w
 app.include_router(ml_feedback_router, tags=["ml-feedback"])  # ML feedback learning system
 app.include_router(ml_enhanced_classification_router, tags=["ml-enhanced-classification"])  # Enhanced ML classification
 app.include_router(balance_router, tags=["account-balance"])  # Account balance management
+app.include_router(tag_categories_router, tags=["tag-categories"])  # Tag-category mappings persistence
+app.include_router(budgets_router, tags=["category-budgets"])  # Category budget management for variance analysis
+app.include_router(ai_router, tags=["ai-analysis"])  # AI-powered budget analysis with OpenRouter
+app.include_router(predictions_router, tags=["ml-predictions"])  # ML budget predictions and anomaly detection
 
 # Configure CORS middleware after all routes are defined
 # This ensures CORS preflight requests are handled correctly for all endpoints
