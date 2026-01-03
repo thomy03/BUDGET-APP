@@ -1,8 +1,26 @@
-import { api } from '../lib/api'
-import axios from 'axios'
+// Mock axios.create to return a proper mock object
+jest.mock('axios', () => {
+  const mockAxiosInstance = {
+    get: jest.fn(),
+    post: jest.fn(),
+    put: jest.fn(),
+    patch: jest.fn(),
+    delete: jest.fn(),
+    interceptors: {
+      request: { use: jest.fn() },
+      response: { use: jest.fn() }
+    }
+  };
+  return {
+    create: jest.fn(() => mockAxiosInstance),
+    isAxiosError: jest.fn(),
+    default: { create: jest.fn(() => mockAxiosInstance) }
+  };
+});
 
-// Mock axios
-jest.mock('axios')
+import axios from 'axios'
+import { api } from '../lib/api'
+
 const mockedAxios = axios as jest.Mocked<typeof axios>
 
 // Mock API responses
