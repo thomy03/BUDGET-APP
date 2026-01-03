@@ -115,7 +115,7 @@ class TestAuthToken:
         assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
 
     def test_login_rate_limited(self, client):
-        """Should return error when rate limited (429 or 500 depending on error handler)."""
+        """Should return 429 when rate limited."""
         with patch('routers.auth.check_rate_limit') as mock_rate_limit, \
              patch('routers.auth.log_auth_event'):
 
@@ -127,9 +127,7 @@ class TestAuthToken:
                 headers={"Content-Type": "application/x-www-form-urlencoded"}
             )
 
-            # Note: Returns 500 due to missing TOO_MANY_REQUESTS in COMMON_ERRORS
-            # This is a known limitation - the rate limit error handling needs fixing
-            assert response.status_code in [status.HTTP_429_TOO_MANY_REQUESTS, status.HTTP_500_INTERNAL_SERVER_ERROR]
+            assert response.status_code == status.HTTP_429_TOO_MANY_REQUESTS
 
 
 class TestAuthLogin:
