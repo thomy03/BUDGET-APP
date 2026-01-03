@@ -1194,3 +1194,95 @@ class BalanceTransferCalculation(BaseModel):
                 "balance_status": "sufficient"
             }
         }
+
+
+# Category Budget schemas for Budget Intelligence System v4.0
+
+class CategoryBudgetCreate(BaseModel):
+    """Schema for creating a category budget"""
+    category: str = Field(min_length=1, max_length=100, description="Category or tag name")
+    budget_amount: float = Field(gt=0, description="Monthly budget amount")
+    month: Optional[str] = Field(None, description="Specific month (YYYY-MM) or None for default")
+
+    class Config:
+        schema_extra = {
+            "example": {
+                "category": "courses",
+                "budget_amount": 400.0,
+                "month": "2025-01"
+            }
+        }
+
+
+class CategoryBudgetUpdate(BaseModel):
+    """Schema for updating a category budget"""
+    category: Optional[str] = Field(None, min_length=1, max_length=100)
+    budget_amount: Optional[float] = Field(None, gt=0)
+    month: Optional[str] = None
+    is_active: Optional[bool] = None
+
+
+class CategoryBudgetResponse(BaseModel):
+    """Schema for category budget response"""
+    id: int
+    category: str
+    budget_amount: float
+    month: Optional[str]
+    is_active: bool
+    created_at: Optional[dt.datetime] = None
+    updated_at: Optional[dt.datetime] = None
+
+    class Config:
+        from_attributes = True
+
+
+class CategoryBudgetSuggestion(BaseModel):
+    """Schema for budget suggestion based on historical spending"""
+    category: str
+    suggested_amount: float
+    average_spending: float
+    max_spending: float
+    min_spending: float
+    months_analyzed: int
+    confidence: float = Field(ge=0, le=1, description="Confidence score 0-1")
+
+
+class BudgetSuggestionsResponse(BaseModel):
+    """Schema for budget suggestions response"""
+    suggestions: List[CategoryBudgetSuggestion]
+    period_analyzed: str
+    total_categories: int
+
+
+# Variance Analysis schemas for Budget Intelligence System v4.0
+
+class GlobalVariance(BaseModel):
+    """Global budget variance summary"""
+    budgeted: float
+    actual: float
+    variance: float
+    variance_pct: float
+    status: str = Field(description="on_track, under_budget, or over_budget")
+
+
+class CategoryVariance(BaseModel):
+    """Category-level budget variance"""
+    category: str
+    budgeted: float
+    actual: float
+    variance: float
+    variance_pct: float
+    status: str
+    top_transactions: List[Dict[str, Any]] = []
+    vs_last_month: Optional[float] = None
+    transaction_count: int = 0
+
+
+class VarianceAnalysisResponse(BaseModel):
+    """Complete variance analysis response"""
+    month: str
+    global_variance: GlobalVariance
+    by_category: List[CategoryVariance]
+    categories_over_budget: int
+    categories_on_track: int
+    alerts: List[str] = []

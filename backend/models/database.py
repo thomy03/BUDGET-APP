@@ -636,6 +636,55 @@ class ResearchCache(Base):
     )
 
 
+class TagCategoryMapping(Base):
+    """
+    Maps tags to parent categories for analytics grouping.
+    Used for drill-down visualizations and spending analysis.
+    """
+    __tablename__ = "tag_category_mappings"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    tag_name = Column(String(100), nullable=False, index=True)
+    category_id = Column(String(50), nullable=False, index=True)
+    user_id = Column(String(100), nullable=True, index=True)
+
+    # Tracking
+    usage_count = Column(Integer, default=0)
+    created_at = Column(DateTime, server_default=func.now())
+    updated_at = Column(DateTime, onupdate=func.now())
+
+    # Indexes
+    __table_args__ = (
+        Index('idx_tag_category_tag_user', 'tag_name', 'user_id'),
+    )
+
+
+class CategoryBudget(Base):
+    """
+    Budget targets for categories/tags.
+    Allows setting monthly spending targets and tracking against actuals.
+    """
+    __tablename__ = "category_budgets"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    category = Column(String(100), nullable=False, index=True)  # Category or tag name
+    budget_amount = Column(Float, nullable=False)  # Monthly budget target
+    month = Column(String(7), nullable=True, index=True)  # YYYY-MM or NULL for default
+
+    # Status
+    is_active = Column(Boolean, default=True, index=True)
+
+    # Metadata
+    created_at = Column(DateTime, server_default=func.now())
+    updated_at = Column(DateTime, onupdate=func.now())
+
+    # Indexes for common queries
+    __table_args__ = (
+        Index('idx_category_budget_category_month', 'category', 'month'),
+        Index('idx_category_budget_active_month', 'is_active', 'month'),
+    )
+
+
 # Database events for optimization
 
 @event.listens_for(Engine, "connect")
