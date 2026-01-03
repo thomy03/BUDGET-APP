@@ -114,14 +114,15 @@ async def login_for_access_token(
         )
         
         # Log successful login
-        log_auth_event("login_success", user.username, True, 
+        log_auth_event("login_success", user.username, True,
                      {"client_ip": client_ip}, request)
-        
-        return create_success_response({
-            "access_token": access_token, 
+
+        # Return OAuth2-compatible token response (not wrapped in create_success_response)
+        return {
+            "access_token": access_token,
             "token_type": "bearer",
             "expires_in": ACCESS_TOKEN_EXPIRE_MINUTES * 60
-        })
+        }
         
     except HTTPException:
         raise
