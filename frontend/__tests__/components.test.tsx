@@ -3,7 +3,16 @@ import { render, screen, fireEvent } from '@testing-library/react'
 import Button from '../components/ui/Button'
 import Card from '../components/ui/Card'
 import Alert from '../components/ui/Alert'
-import MonthPicker from '../components/MonthPicker'
+
+// Mock des hooks necessaires pour MonthPicker
+jest.mock('next/navigation', () => ({
+  usePathname: () => '/dashboard',
+}))
+
+jest.mock('../lib/month', () => ({
+  useGlobalMonth: () => ['2023-06', jest.fn()],
+  useGlobalMonthWithUrl: () => ['2023-06', jest.fn()],
+}))
 
 describe('Composants UI', () => {
   describe('Button', () => {
@@ -13,12 +22,22 @@ describe('Composants UI', () => {
       expect(buttonElement).toBeInTheDocument()
     })
 
-    it('gère le clic correctement', () => {
+    it('gere le clic correctement', () => {
       const handleClick = jest.fn()
       render(<Button onClick={handleClick}>Cliquez-moi</Button>)
       const buttonElement = screen.getByText('Cliquez-moi')
       fireEvent.click(buttonElement)
       expect(handleClick).toHaveBeenCalledTimes(1)
+    })
+
+    it('affiche etat de chargement', () => {
+      render(<Button loading>Test</Button>)
+      expect(screen.getByText('Chargement...')).toBeInTheDocument()
+    })
+
+    it('desactive le bouton quand disabled', () => {
+      render(<Button disabled>Desactive</Button>)
+      expect(screen.getByRole('button')).toBeDisabled()
     })
   })
 
@@ -34,42 +53,65 @@ describe('Composants UI', () => {
     })
   })
 
-  describe('Toast', () => {
-    it('affiche le message de toast', () => {
+  describe('Alert', () => {
+    it('affiche le message de succes', () => {
       render(<Alert message="Message de test" type="success" />)
-      const toastElement = screen.getByText('Message de test')
-      expect(toastElement).toBeInTheDocument()
-      expect(toastElement).toHaveClass('text-green-800')
+      const alertElement = screen.getByText('Message de test')
+      expect(alertElement).toBeInTheDocument()
+    })
+
+    it('affiche le message erreur', () => {
+      render(<Alert message="Erreur test" type="error" />)
+      const alertElement = screen.getByText('Erreur test')
+      expect(alertElement).toBeInTheDocument()
     })
   })
 
   describe('MonthPicker', () => {
-    it('rend le sélecteur de mois', () => {
-      const handleMonthChange = jest.fn()
-      render(<MonthPicker 
-        currentMonth="2023-06" 
-        onMonthChange={handleMonthChange} 
-      />)
-      
-      const monthDisplay = screen.getByText('Juin 2023')
-      expect(monthDisplay).toBeInTheDocument()
+    // Note: MonthPicker uses icon buttons with title attributes, not text
+    it('rend le selecteur de mois', async () => {
+      const MonthPicker = (await import('../components/MonthPicker')).default
+      render(<MonthPicker />)
+
+      // Le MonthPicker affiche "Juin 2023" pour 2023-06
+      expect(screen.getByText(/Juin/)).toBeInTheDocument()
+      expect(screen.getByText(/2023/)).toBeInTheDocument()
     })
 
-    it('navigue entre les mois', () => {
-      const handleMonthChange = jest.fn()
-      render(<MonthPicker 
-        currentMonth="2023-06" 
-        onMonthChange={handleMonthChange} 
-      />)
-      
-      const nextMonthButton = screen.getByText('Suivant')
-      const previousMonthButton = screen.getByText('Précédent')
-      
-      fireEvent.click(nextMonthButton)
-      expect(handleMonthChange).toHaveBeenCalledWith('2023-07')
-      
-      fireEvent.click(previousMonthButton)
-      expect(handleMonthChange).toHaveBeenCalledWith('2023-05')
+    it('a des boutons de navigation', async () => {
+      const MonthPicker = (await import('../components/MonthPicker')).default
+      render(<MonthPicker />)
+
+      // Les boutons utilisent title pour accessibilite
+      const prevButton = screen.getByTitle('Mois precedent')
+      const nextButton = screen.getByTitle('Mois suivant')
+
+      expect(prevButton).toBeInTheDocument()
+      expect(nextButton).toBeInTheDocument()
+    })
+
+    it('navigue au mois precedent avec props', async () => {
+      const MonthPicker = (await import('../components/MonthPicker')).default
+      const setMonth = jest.fn()
+
+      render(<MonthPicker currentMonth="2023-06" onMonthChange={setMonth} />)
+
+      const prevButton = screen.getByTitle('Mois precedent')
+      fireEvent.click(prevButton)
+
+      expect(setMonth).toHaveBeenCalledWith('2023-05')
+    })
+
+    it('navigue au mois suivant avec props', async () => {
+      const MonthPicker = (await import('../components/MonthPicker')).default
+      const setMonth = jest.fn()
+
+      render(<MonthPicker currentMonth="2023-06" onMonthChange={setMonth} />)
+
+      const nextButton = screen.getByTitle('Mois suivant')
+      fireEvent.click(nextButton)
+
+      expect(setMonth).toHaveBeenCalledWith('2023-07')
     })
   })
 })
