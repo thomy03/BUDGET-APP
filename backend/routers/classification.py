@@ -57,7 +57,7 @@ class ClassificationRequest(BaseModel):
     
 class BatchClassificationRequest(BaseModel):
     """Request model for batch tag classification"""
-    tag_names: List[str] = Field(min_items=1, max_items=50, description="List of tags to classify")
+    tag_names: List[str] = Field(min_length=1, max_length=50, description="List of tags to classify")
 
 class ClassificationOverride(BaseModel):
     """Request model for manual classification override"""
@@ -207,7 +207,7 @@ class UnifiedClassificationResponse(BaseModel):
 
 class BatchUnifiedClassificationRequest(BaseModel):
     """Request model for batch unified classification"""
-    transactions: List[Dict[str, Any]] = Field(min_items=1, max_items=100, description="List of transactions with id, label, amount")
+    transactions: List[Dict[str, Any]] = Field(min_length=1, max_length=100, description="List of transactions with id, label, amount")
     use_web_research: bool = Field(default=False, description="Enable web research (slower but more accurate)")
     include_expense_type: bool = Field(default=False, description="Include FIXED/VARIABLE for compatibility")
 
@@ -274,8 +274,8 @@ class TagSuggestionResponse(BaseModel):
 class BatchTagSuggestionRequest(BaseModel):
     """Request model for batch tag suggestions"""
     transactions: List[Dict[str, Any]] = Field(
-        min_items=1, 
-        max_items=100, 
+        min_length=1,
+        max_length=100,
         description="List of transactions with id, label, and optional amount"
     )
     use_web_research: bool = Field(default=False, description="Enable web research (slower but more accurate)")
@@ -2783,7 +2783,7 @@ async def get_instant_ai_suggestion(
 
 class HoverTriggerRequest(BaseModel):
     """Request model for hover-triggered analysis"""
-    transaction_ids: List[int] = Field(max_items=10, description="Up to 10 transactions for hover preview")
+    transaction_ids: List[int] = Field(max_length=10, description="Up to 10 transactions for hover preview")
     preview_only: bool = Field(True, description="Just preview data, don't cache results")
 
 class HoverTriggerResponse(BaseModel):

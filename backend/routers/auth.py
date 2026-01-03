@@ -2,7 +2,7 @@
 Authentication router for Budget API
 """
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status, Request
@@ -331,7 +331,7 @@ async def auth_health():
             "jwt_key_valid": jwt_key_valid,
             "algorithm": settings.security.algorithm,
             "token_expire_minutes": settings.security.access_token_expire_minutes,
-            "timestamp": datetime.utcnow().isoformat()
+            "timestamp": datetime.now(timezone.utc).isoformat()
         }
         
     except Exception as e:
@@ -340,5 +340,5 @@ async def auth_health():
             "status": "error",
             "service": "authentication",
             "error": str(e),
-            "timestamp": datetime.utcnow().isoformat()
+            "timestamp": datetime.now(timezone.utc).isoformat()
         }

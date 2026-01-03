@@ -35,8 +35,8 @@ class TagSuggestionRequest(BaseModel):
 class BatchTagSuggestionRequest(BaseModel):
     """Request model for batch tag suggestions"""
     transactions: List[Dict[str, Any]] = Field(
-        min_items=1, 
-        max_items=100, 
+        min_length=1,
+        max_length=100,
         description="List of transactions with id, label, and amount"
     )
     use_web_research: bool = Field(False, description="Enable web research (slower, more accurate)")

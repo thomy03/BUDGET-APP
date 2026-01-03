@@ -5,11 +5,14 @@ import os
 import logging
 from typing import List, Optional
 try:
-    from pydantic_settings import BaseSettings
-    from pydantic import field_validator
+    from pydantic_settings import BaseSettings, SettingsConfigDict
+    from pydantic import field_validator, ConfigDict
 except ImportError:
     from pydantic import BaseSettings, validator
     field_validator = validator
+    # Fallback for older Pydantic versions
+    ConfigDict = None
+    SettingsConfigDict = None
 from dotenv import load_dotenv
 
 # Load environment variables
@@ -33,15 +36,14 @@ class DatabaseSettings(BaseSettings):
     enable_performance_monitoring: bool = True
     max_query_cache_size: int = 1000
     
+    model_config = SettingsConfigDict(env_prefix="DB_", extra="ignore")
+
     @field_validator('enable_encryption')
+    @classmethod
     def parse_encryption(cls, v):
         if isinstance(v, str):
             return v.lower() == 'true'
         return bool(v)
-    
-    class Config:
-        env_prefix = "DB_"
-        extra = "ignore"
 
 
 class SecuritySettings(BaseSettings):
@@ -85,10 +87,8 @@ class SecuritySettings(BaseSettings):
                 f"JWT secret key must be at least {self.min_key_length} characters long. "
                 f"Current length: {len(self.secret_key)}"
             )
-    
-    class Config:
-        env_prefix = "JWT_"
-        extra = "ignore"
+
+    model_config = SettingsConfigDict(env_prefix="JWT_", extra="ignore")
 
 
 class CORSSettings(BaseSettings):
@@ -127,6 +127,7 @@ class CORSSettings(BaseSettings):
             ]
     
     @field_validator('allowed_origins')
+    @classmethod
     def parse_origins(cls, v):
         if isinstance(v, str):
             origins = [origin.strip() for origin in v.split(',') if origin.strip()]
@@ -137,16 +138,15 @@ class CORSSettings(BaseSettings):
             return origins
         return v
     
+    model_config = SettingsConfigDict(env_prefix="CORS_", extra="ignore")
+
     @field_validator('allow_credentials')
+    @classmethod
     def validate_credentials_with_origins(cls, v):
         """Validate CORS credentials configuration"""
         # Note: Cross-field validation would need model_validator in Pydantic v2
         # For now, just validate the field itself
         return v
-    
-    class Config:
-        env_prefix = "CORS_"
-        extra = "ignore"
 
 
 class FileUploadSettings(BaseSettings):
@@ -154,10 +154,8 @@ class FileUploadSettings(BaseSettings):
     max_file_size: int = 10 * 1024 * 1024  # 10MB
     allowed_extensions: List[str] = [".csv", ".txt"]
     temp_dir: str = "/tmp"
-    
-    class Config:
-        env_prefix = "UPLOAD_"
-        extra = "ignore"
+
+    model_config = SettingsConfigDict(env_prefix="UPLOAD_", extra="ignore")
 
 
 class LoggingSettings(BaseSettings):
@@ -165,10 +163,8 @@ class LoggingSettings(BaseSettings):
     level: str = "INFO"
     format: str = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
     enable_sql_logging: bool = False
-    
-    class Config:
-        env_prefix = "LOG_"
-        extra = "ignore"
+
+    model_config = SettingsConfigDict(env_prefix="LOG_", extra="ignore")
 
 
 class CacheSettings(BaseSettings):
@@ -176,10 +172,8 @@ class CacheSettings(BaseSettings):
     enable_cache: bool = True
     cache_ttl: int = 300  # 5 minutes
     max_cache_size: int = 1000
-    
-    class Config:
-        env_prefix = "CACHE_"
-        extra = "ignore"
+
+    model_config = SettingsConfigDict(env_prefix="CACHE_", extra="ignore")
 
 
 class RedisSettings(BaseSettings):
@@ -208,10 +202,8 @@ class RedisSettings(BaseSettings):
     # Health check settings
     health_check_interval: int = 30  # seconds
     max_retry_attempts: int = 3
-    
-    class Config:
-        env_prefix = "REDIS_"
-        extra = "ignore"
+
+    model_config = SettingsConfigDict(env_prefix="REDIS_", extra="ignore")
 
 
 class APISettings(BaseSettings):
@@ -222,10 +214,8 @@ class APISettings(BaseSettings):
     api_version: str = "v1"
     docs_url: str = "/docs"
     redoc_url: str = "/redoc"
-    
-    class Config:
-        env_prefix = "API_"
-        extra = "ignore"
+
+    model_config = SettingsConfigDict(env_prefix="API_", extra="ignore")
 
 
 class Settings(BaseSettings):
@@ -243,16 +233,14 @@ class Settings(BaseSettings):
     environment: str = "development"
     debug: bool = False
     
+    model_config = SettingsConfigDict(env_file=".env", case_sensitive=False, extra="ignore")
+
     @field_validator('debug')
+    @classmethod
     def parse_debug(cls, v):
         if isinstance(v, str):
             return v.lower() == 'true'
         return bool(v)
-    
-    class Config:
-        env_file = ".env"
-        case_sensitive = False
-        extra = "ignore"
 
 
 # Global settings instance

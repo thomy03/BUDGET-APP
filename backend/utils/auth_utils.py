@@ -5,7 +5,7 @@ Eliminates duplicate authentication patterns across the application
 
 import os
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional, Dict, Any, Union, Tuple, List
 from functools import wraps
 
@@ -97,11 +97,11 @@ def create_access_token(
     to_encode = data.copy()
     
     if expires_delta:
-        expire = datetime.utcnow() + expires_delta
+        expire = datetime.now(timezone.utc) + expires_delta
     else:
-        expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+        expire = datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     
-    to_encode.update({"exp": expire, "iat": datetime.utcnow()})
+    to_encode.update({"exp": expire, "iat": datetime.now(timezone.utc)})
     
     try:
         encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
@@ -128,7 +128,7 @@ def verify_jwt_token(token: str) -> Dict[str, Any]:
         
         # Check expiration
         exp = payload.get("exp")
-        if exp and datetime.utcnow().timestamp() > exp:
+        if exp and datetime.now(timezone.utc).timestamp() > exp:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Token expired"
@@ -429,7 +429,7 @@ def log_auth_event(
     log_data = {
         "event_type": event_type,
         "success": success,
-        "timestamp": datetime.utcnow().isoformat(),
+        "timestamp": datetime.now(timezone.utc).isoformat(),
     }
     
     if username:
@@ -458,7 +458,7 @@ class RateLimiter:
     
     def is_allowed(self, identifier: str) -> bool:
         """Check if identifier is within rate limits"""
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         window_start = now - timedelta(minutes=self.window_minutes)
         
         # Clean old attempts
@@ -476,7 +476,7 @@ class RateLimiter:
         """Record an authentication attempt"""
         if identifier not in self.attempts:
             self.attempts[identifier] = []
-        self.attempts[identifier].append(datetime.utcnow())
+        self.attempts[identifier].append(datetime.now(timezone.utc))
 
 # Global rate limiter instance
 auth_rate_limiter = RateLimiter()
