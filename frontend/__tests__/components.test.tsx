@@ -68,22 +68,23 @@ describe('Composants UI', () => {
   })
 
   describe('MonthPicker', () => {
-    // Note: MonthPicker uses icon buttons with title attributes, not text
+    // Note: MonthPicker uses an HTML month input and icon buttons with title attributes
     it('rend le selecteur de mois', async () => {
       const MonthPicker = (await import('../components/MonthPicker')).default
-      render(<MonthPicker />)
+      render(<MonthPicker currentMonth="2023-06" onMonthChange={jest.fn()} />)
 
-      // Le MonthPicker affiche "Juin 2023" pour 2023-06
-      expect(screen.getByText(/Juin/)).toBeInTheDocument()
-      expect(screen.getByText(/2023/)).toBeInTheDocument()
+      // Le MonthPicker utilise un input[type="month"] avec value au format YYYY-MM
+      const monthInput = document.querySelector('input[type="month"]')
+      expect(monthInput).toBeInTheDocument()
+      expect(monthInput).toHaveValue('2023-06')
     })
 
     it('a des boutons de navigation', async () => {
       const MonthPicker = (await import('../components/MonthPicker')).default
-      render(<MonthPicker />)
+      render(<MonthPicker currentMonth="2023-06" onMonthChange={jest.fn()} />)
 
-      // Les boutons utilisent title pour accessibilite
-      const prevButton = screen.getByTitle('Mois precedent')
+      // Les boutons utilisent title pour accessibilite (avec accents)
+      const prevButton = screen.getByTitle('Mois précédent')
       const nextButton = screen.getByTitle('Mois suivant')
 
       expect(prevButton).toBeInTheDocument()
@@ -96,7 +97,7 @@ describe('Composants UI', () => {
 
       render(<MonthPicker currentMonth="2023-06" onMonthChange={setMonth} />)
 
-      const prevButton = screen.getByTitle('Mois precedent')
+      const prevButton = screen.getByTitle('Mois précédent')
       fireEvent.click(prevButton)
 
       expect(setMonth).toHaveBeenCalledWith('2023-05')

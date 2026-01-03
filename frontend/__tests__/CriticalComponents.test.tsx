@@ -47,8 +47,8 @@ describe('MonthPicker Component', () => {
 
     render(<MonthPicker currentMonth="2024-01" onMonthChange={jest.fn()} />)
 
-    // Check for navigation buttons by title
-    expect(screen.getByTitle('Mois precedent')).toBeInTheDocument()
+    // Check for navigation buttons by title (with accents)
+    expect(screen.getByTitle('Mois précédent')).toBeInTheDocument()
     expect(screen.getByTitle('Mois suivant')).toBeInTheDocument()
   })
 
@@ -58,7 +58,7 @@ describe('MonthPicker Component', () => {
 
     render(<MonthPicker currentMonth="2024-01" onMonthChange={onMonthChange} />)
 
-    const prevButton = screen.getByTitle('Mois precedent')
+    const prevButton = screen.getByTitle('Mois précédent')
     fireEvent.click(prevButton)
 
     expect(onMonthChange).toHaveBeenCalledWith('2023-12')

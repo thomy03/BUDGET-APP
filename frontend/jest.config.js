@@ -14,7 +14,7 @@ const customJestConfig = {
   setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
   
   // Module paths
-  moduleNameMapping: {
+  moduleNameMapper: {
     '^@/components/(.*)$': '<rootDir>/components/$1',
     '^@/lib/(.*)$': '<rootDir>/lib/$1',
     '^@/app/(.*)$': '<rootDir>/app/$1',
@@ -119,54 +119,14 @@ const customJestConfig = {
   maxWorkers: process.env.CI ? 2 : '50%',
   
   // Watch mode configuration (for development)
-  watchman: true,
-  watchPlugins: [
-    'jest-watch-typeahead/filename',
-    'jest-watch-typeahead/testname',
-  ],
+  watchman: false,
   
   // Performance monitoring
   detectOpenHandles: true,
   detectLeaks: false, // Enable in CI if memory leaks suspected
   
   // Test result processors
-  reporters: [
-    'default',
-    [
-      'jest-html-reporters',
-      {
-        publicPath: './coverage',
-        filename: 'report.html',
-        expand: true,
-      },
-    ],
-    [
-      'jest-junit',
-      {
-        outputDirectory: './coverage',
-        outputName: 'junit.xml',
-        ancestorSeparator: ' › ',
-        uniqueOutputName: 'false',
-        suiteNameTemplate: '{filepath}',
-        classNameTemplate: '{classname}',
-        titleTemplate: '{title}',
-      },
-    ],
-  ],
-  
-  // Custom test patterns for different types
-  projects: [
-    {
-      displayName: 'unit',
-      testMatch: ['<rootDir>/__tests__/**/*.(test|spec).{js,jsx,ts,tsx}'],
-      testPathIgnorePatterns: ['<rootDir>/__tests__/e2e/', '<rootDir>/__tests__/integration/'],
-    },
-    {
-      displayName: 'integration',
-      testMatch: ['<rootDir>/__tests__/integration/**/*.(test|spec).{js,jsx,ts,tsx}'],
-      setupFilesAfterEnv: ['<rootDir>/jest.integration.setup.js'],
-    },
-  ],
+  reporters: ['default'],
 }
 
 // Create and export configuration
