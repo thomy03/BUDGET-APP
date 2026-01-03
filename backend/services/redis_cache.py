@@ -10,7 +10,17 @@ from typing import Any, Dict, Optional, List, Union
 from contextlib import asynccontextmanager
 
 import redis
-import aioredis
+
+# aioredis is not compatible with Python 3.11+ (duplicate base class TimeoutError)
+# Try to import, fall back gracefully if not available
+try:
+    import aioredis
+    AIOREDIS_AVAILABLE = True
+except (ImportError, TypeError) as e:
+    aioredis = None  # type: ignore
+    AIOREDIS_AVAILABLE = False
+    logging.getLogger(__name__).warning(f"aioredis not available: {e}. Using sync-only mode.")
+
 from config.settings import settings
 
 logger = logging.getLogger(__name__)
@@ -24,9 +34,9 @@ class RedisCacheService:
     
     def __init__(self):
         self._sync_pool: Optional[redis.ConnectionPool] = None
-        self._async_pool: Optional[aioredis.ConnectionPool] = None
+        self._async_pool: Optional[Any] = None  # aioredis.ConnectionPool if available
         self._sync_client: Optional[redis.Redis] = None
-        self._async_client: Optional[aioredis.Redis] = None
+        self._async_client: Optional[Any] = None  # aioredis.Redis if available
         self._is_connected = False
         self._connection_attempts = 0
         self._last_health_check = None
@@ -74,13 +84,16 @@ class RedisCacheService:
             self._stats["last_error"] = str(e)
             raise
     
-    async def _create_async_connection(self) -> aioredis.Redis:
+    async def _create_async_connection(self) -> Any:
         """Create asynchronous Redis connection with pool"""
+        if not AIOREDIS_AVAILABLE:
+            raise RuntimeError("aioredis is not available (Python 3.11+ compatibility issue)")
+
         try:
             redis_url = f"redis://{settings.redis.host}:{settings.redis.port}/{settings.redis.db}"
             if settings.redis.password:
                 redis_url = f"redis://:{settings.redis.password}@{settings.redis.host}:{settings.redis.port}/{settings.redis.db}"
-            
+
             pool = aioredis.ConnectionPool.from_url(
                 redis_url,
                 max_connections=settings.redis.max_connections,
@@ -90,17 +103,17 @@ class RedisCacheService:
                 decode_responses=True,
                 **settings.redis.connection_pool_kwargs
             )
-            
+
             client = aioredis.Redis(connection_pool=pool)
-            
+
             # Test connection
             await client.ping()
-            
+
             self._async_pool = pool
             self._async_client = client
             logger.info("✅ Redis asynchronous connection established")
             return client
-            
+
         except Exception as e:
             logger.error(f"❌ Failed to create Redis async connection: {e}")
             self._stats["errors"] += 1
@@ -127,7 +140,7 @@ class RedisCacheService:
                 self._is_connected = False
                 raise
     
-    async def get_async_client(self) -> aioredis.Redis:
+    async def get_async_client(self) -> Any:
         """Get asynchronous Redis client with connection management"""
         if not self._async_client:
             self._async_client = await self._create_async_connection()
