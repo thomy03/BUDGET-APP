@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useMemo, useCallback } from "react";
+import { useEffect, useState, useMemo, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { api, tagCategoryApi } from "../../lib/api";
 import { useGlobalMonth } from "../../lib/month";
@@ -91,11 +91,21 @@ export default function Analytics() {
   const [selectedMonth, setSelectedMonth] = useState<MonthTagData | null>(null);
   const [selectedCategoryMonth, setSelectedCategoryMonth] = useState<CategoryMonthData | null>(null);
 
-  // Période pour analyse (12 mois par défaut pour voir l'année glissante complète)
-  const [periodMonths, setPeriodMonths] = useState(12);
+  // Période pour analyse (1 mois par défaut = mois sélectionné uniquement)
+  const [periodMonths, setPeriodMonths] = useState(1);
 
   // Onglet actif pour la vue principale
   const [activeTab, setActiveTab] = useState<AnalyticsTab>('drilldown');
+
+  // État pour l'édition des tags
+  const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
+  const [newTagInput, setNewTagInput] = useState('');
+  const [savingTag, setSavingTag] = useState(false);
+  const [availableTags, setAvailableTags] = useState<string[]>([]);
+
+  // Ref avec timestamp pour éviter le rechargement des données après une modification de tag
+  // On bloque les reloads pendant 2 secondes après une modification
+  const lastTagModificationRef = useRef<number>(0);
 
   // Redirection si non authentifie
   useEffect(() => {
@@ -140,23 +150,34 @@ export default function Analytics() {
     }
   }, [isAuthenticated]);
 
-  // Generer la liste des mois pour la periode
+  // Generer la liste des mois pour la periode (basee sur le mois selectionne)
   const getMonthsInPeriod = useCallback((numMonths: number): string[] => {
     const months: string[] = [];
-    const now = new Date();
+    // Utiliser le mois selectionne comme point de reference au lieu de la date actuelle
+    const [selectedYear, selectedMonth] = month.split('-').map(Number);
+    const baseDate = new Date(selectedYear, selectedMonth - 1, 1);
 
     for (let i = 0; i < numMonths; i++) {
-      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const d = new Date(baseDate.getFullYear(), baseDate.getMonth() - i, 1);
       const monthStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
       months.push(monthStr);
     }
 
     return months;
-  }, []);
+  }, [month]);
 
   // Charger les transactions mois par mois
   const loadData = useCallback(async () => {
     if (!isAuthenticated) return;
+
+    // Éviter le rechargement si on vient de modifier un tag (dans les 2 dernières secondes)
+    const timeSinceLastModification = Date.now() - lastTagModificationRef.current;
+    if (timeSinceLastModification < 2000) {
+      console.log('[Analytics] loadData SKIPPED (tag modified', timeSinceLastModification, 'ms ago)');
+      return;
+    }
+
+    console.log('[Analytics] loadData called! periodMonths:', periodMonths);
 
     try {
       setLoading(true);
@@ -190,7 +211,189 @@ export default function Analytics() {
     if (isAuthenticated) {
       loadData();
     }
-  }, [isAuthenticated, periodMonths, loadData]);
+  }, [isAuthenticated, periodMonths, loadData, month]);
+
+  // Extraire tous les tags uniques des transactions
+  useEffect(() => {
+    if (transactions.length > 0) {
+      const tagsSet = new Set<string>();
+      transactions.forEach(tx => {
+        (tx.tags || []).forEach(tag => {
+          if (tag && tag.toLowerCase() !== 'non classe' && tag.toLowerCase() !== 'non classé') {
+            tagsSet.add(tag.toLowerCase());
+          }
+        });
+      });
+      setAvailableTags(Array.from(tagsSet).sort());
+    }
+  }, [transactions]);
+
+  // Handler pour rediriger vers la page Transactions pour modifier le tag
+  const handleEditTag = useCallback((tx: Transaction) => {
+    // Rediriger vers la page Transactions avec l'ID de la transaction à éditer
+    const txMonth = tx.month || tx.date_op?.substring(0, 7) || month;
+    router.push(`/transactions?editTx=${tx.id}&month=${txMonth}`);
+  }, [router, month]);
+
+  // État pour le message de confirmation
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
+  // Handler pour sauvegarder le nouveau tag
+  const handleSaveTag = useCallback(async () => {
+    if (!editingTransaction || !newTagInput.trim()) return;
+
+    const oldTag = editingTransaction.tags?.[0]?.toLowerCase() || '';
+    const newTag = newTagInput.trim().toLowerCase();
+    const tagChanged = oldTag !== newTag;
+    const editedTxId = editingTransaction.id;
+
+    setSavingTag(true);
+    try {
+      // Appeler l'API pour mettre à jour le tag
+      const response = await api.patch(`/transactions/${editingTransaction.id}/tags`, {
+        tags: [newTag]
+      });
+
+      console.log('[Analytics] Tag update response:', response.data);
+      console.log('[Analytics] Tag changed:', { oldTag, newTag, tagChanged, txId: editedTxId });
+
+      // Fermer le modal
+      setEditingTransaction(null);
+      setNewTagInput('');
+
+      // Afficher message de confirmation
+      if (tagChanged) {
+        setSuccessMessage(`Transaction déplacée vers "${newTag}"`);
+        setTimeout(() => setSuccessMessage(null), 3000);
+
+        // *** IMPORTANT: Marquer le timestamp pour bloquer les reloads pendant 2 secondes ***
+        lastTagModificationRef.current = Date.now();
+        console.log('[Analytics] Tag modification timestamp set:', lastTagModificationRef.current);
+
+        // *** IMPORTANT: Mettre à jour l'état transactions DIRECTEMENT ***
+        // Ceci garantit que categoryStats sera recalculé avec les bonnes données
+        console.log('[Analytics] Updating transactions state for tx', editedTxId, 'to tag:', newTag);
+        setTransactions(prevTransactions => {
+          const updated = prevTransactions.map(tx =>
+            tx.id === editedTxId
+              ? { ...tx, tags: [newTag] }
+              : tx
+          );
+          console.log('[Analytics] Transactions state updated. Total:', updated.length, 'Modified tx tags:', updated.find(t => t.id === editedTxId)?.tags);
+          return updated;
+        });
+
+        // Mettre à jour immédiatement la liste locale pour retirer la transaction de la vue actuelle
+        const txAmount = Math.abs(editingTransaction.amount);
+
+        if (selectedTag && selectedTag.transactions) {
+          const updatedTransactions = selectedTag.transactions.filter(tx => tx.id !== editedTxId);
+          const newTotal = updatedTransactions.reduce((sum, tx) => sum + Math.abs(tx.amount), 0);
+          setSelectedTag({
+            ...selectedTag,
+            transactions: updatedTransactions,
+            count: updatedTransactions.length,
+            total: newTotal
+          });
+
+          // *** IMPORTANT: Mettre à jour aussi selectedCategory pour refléter le changement ***
+          if (selectedCategory) {
+            const updatedTags = selectedCategory.tags.map(tag => {
+              if (tag.name === selectedTag.name) {
+                // Retirer la transaction de l'ancien tag
+                return {
+                  ...tag,
+                  transactions: updatedTransactions,
+                  count: updatedTransactions.length,
+                  total: newTotal
+                };
+              }
+              return tag;
+            });
+
+            // Calculer le nouveau total de la catégorie
+            const newCategoryTotal = updatedTags.reduce((sum, tag) => sum + tag.total, 0);
+            const newCategoryCount = updatedTags.reduce((sum, tag) => sum + tag.count, 0);
+
+            console.log('[Analytics] Updating selectedCategory after tag change:', {
+              oldTotal: selectedCategory.total,
+              newTotal: newCategoryTotal,
+              tagName: selectedTag.name
+            });
+
+            setSelectedCategory({
+              ...selectedCategory,
+              tags: updatedTags,
+              total: newCategoryTotal,
+              count: newCategoryCount
+            });
+          }
+        }
+
+        if (selectedCategoryMonth && selectedCategoryMonth.transactions) {
+          const updatedTransactions = selectedCategoryMonth.transactions.filter(tx => tx.id !== editedTxId);
+          const newTotal = updatedTransactions.reduce((sum, tx) => sum + Math.abs(tx.amount), 0);
+          setSelectedCategoryMonth({
+            ...selectedCategoryMonth,
+            transactions: updatedTransactions,
+            count: updatedTransactions.length,
+            total: newTotal,
+            tag: {
+              ...selectedCategoryMonth.tag,
+              transactions: updatedTransactions,
+              count: updatedTransactions.length,
+              total: newTotal
+            }
+          });
+
+          // *** IMPORTANT: Mettre à jour aussi selectedCategory pour category-month view ***
+          if (selectedCategory) {
+            const updatedTags = selectedCategory.tags.map(tag => {
+              if (tag.name === selectedCategoryMonth.tag.name) {
+                const updatedTagTransactions = (tag.transactions || []).filter(tx => tx.id !== editedTxId);
+                return {
+                  ...tag,
+                  transactions: updatedTagTransactions,
+                  count: updatedTagTransactions.length,
+                  total: updatedTagTransactions.reduce((sum, tx) => sum + Math.abs(tx.amount), 0)
+                };
+              }
+              return tag;
+            });
+
+            const newCategoryTotal = updatedTags.reduce((sum, tag) => sum + tag.total, 0);
+            const newCategoryCount = updatedTags.reduce((sum, tag) => sum + tag.count, 0);
+
+            setSelectedCategory({
+              ...selectedCategory,
+              tags: updatedTags,
+              total: newCategoryTotal,
+              count: newCategoryCount
+            });
+          }
+        }
+      } else {
+        setSuccessMessage('Tag mis à jour');
+        setTimeout(() => setSuccessMessage(null), 2000);
+      }
+
+      // Note: On ne recharge plus les données via loadData() car on a déjà mis à jour l'état local
+      // Cela évite les problèmes de timing et garantit une mise à jour instantanée
+
+    } catch (error: any) {
+      console.error('Erreur lors de la mise à jour du tag:', error);
+      const errorMessage = error.response?.data?.detail || error.message || 'Erreur inconnue';
+      alert(`Erreur lors de la mise à jour du tag: ${errorMessage}`);
+    } finally {
+      setSavingTag(false);
+    }
+  }, [editingTransaction, newTagInput, selectedTag, selectedCategoryMonth, selectedCategory]);
+
+  // Handler pour fermer le modal
+  const handleCloseEditModal = useCallback(() => {
+    setEditingTransaction(null);
+    setNewTagInput('');
+  }, []);
 
   // Calculer les statistiques par categorie
   // NOTE: Inclut tous les tags, meme non categorises (dans "autres")
@@ -302,6 +505,86 @@ export default function Analytics() {
 
     return result.sort((a, b) => b.total - a.total);
   }, [transactions, tagCategoryMap]);
+
+  // Synchroniser les états selectedCategory et selectedTag quand categoryStats change
+  // Ceci permet de mettre à jour la vue après un changement de tag
+  useEffect(() => {
+    console.log('[Analytics] Sync useEffect triggered. categoryStats length:', categoryStats.length, 'selectedCategory:', selectedCategory?.id, 'selectedTag:', selectedTag?.name);
+
+    if (!categoryStats.length) return;
+
+    // Mettre à jour selectedCategory si elle existe
+    if (selectedCategory) {
+      const updatedCategory = categoryStats.find(cat => cat.id === selectedCategory.id);
+      if (updatedCategory) {
+        // Comparer les tags individuellement pour détecter les changements internes
+        // (ex: déplacement d'une transaction d'un tag à un autre dans la même catégorie)
+        const tagsChanged = () => {
+          if (updatedCategory.tags.length !== selectedCategory.tags.length) return true;
+          for (const updatedTag of updatedCategory.tags) {
+            const oldTag = selectedCategory.tags.find(t => t.name === updatedTag.name);
+            if (!oldTag) return true;
+            if (oldTag.total !== updatedTag.total || oldTag.count !== updatedTag.count) return true;
+          }
+          return false;
+        };
+
+        // Vérifier si les données ont changé (y compris les tags individuels)
+        if (updatedCategory.total !== selectedCategory.total ||
+            updatedCategory.count !== selectedCategory.count ||
+            tagsChanged()) {
+          console.log('[Analytics] Syncing selectedCategory after tag change');
+          setSelectedCategory(updatedCategory);
+
+          // Mettre à jour selectedTag si elle existe dans cette catégorie
+          if (selectedTag) {
+            const updatedTag = updatedCategory.tags.find(tag => tag.name === selectedTag.name);
+            if (updatedTag) {
+              if (updatedTag.total !== selectedTag.total ||
+                  updatedTag.count !== selectedTag.count) {
+                console.log('[Analytics] Syncing selectedTag after tag change');
+                setSelectedTag(updatedTag);
+              }
+            } else {
+              // Le tag n'existe plus dans cette catégorie, retourner à la vue catégorie
+              console.log('[Analytics] Tag removed from category, going back');
+              setSelectedTag(null);
+              if (drillLevel === 'transactions') {
+                setDrillLevel('tags');
+              }
+            }
+          }
+        }
+      }
+    }
+
+    // Mettre à jour selectedCategoryMonth si elle existe
+    if (selectedCategoryMonth && selectedCategory) {
+      const updatedCategory = categoryStats.find(cat => cat.id === selectedCategory.id);
+      if (updatedCategory) {
+        const updatedTag = updatedCategory.tags.find(tag => tag.name === selectedCategoryMonth.tag.name);
+        if (updatedTag) {
+          // Filtrer les transactions pour le mois spécifique
+          const monthTransactions = (updatedTag.transactions || []).filter(tx => {
+            const txMonth = tx.month || tx.date_op?.substring(0, 7);
+            return txMonth === selectedCategoryMonth.month;
+          });
+          const newTotal = monthTransactions.reduce((sum, tx) => sum + Math.abs(tx.amount), 0);
+
+          if (monthTransactions.length !== selectedCategoryMonth.transactions.length ||
+              newTotal !== selectedCategoryMonth.total) {
+            setSelectedCategoryMonth({
+              ...selectedCategoryMonth,
+              transactions: monthTransactions,
+              count: monthTransactions.length,
+              total: newTotal,
+              tag: updatedTag
+            });
+          }
+        }
+      }
+    }
+  }, [categoryStats]); // Déclenché uniquement quand categoryStats change
 
   // Totaux globaux
   const totals = useMemo(() => {
@@ -458,9 +741,78 @@ export default function Analytics() {
     setDrillLevel('category-month-transactions');
   }, [selectedCategory]);
 
-  const handleBack = () => {
+  // Fonction utilitaire pour recalculer une catégorie depuis transactions
+  const recalculateCategoryFromTransactions = useCallback((categoryId: string) => {
+    if (!categoryId) return null;
+
+    // Recalculer directement depuis les transactions actuelles
+    const tagMap = new Map<string, { total: number; count: number; transactions: Transaction[] }>();
+
+    transactions.forEach(tx => {
+      if (tx.amount >= 0) return;
+      const amount = Math.abs(tx.amount);
+      const txTags = tx.tags || [];
+      if (txTags.length === 0) return;
+
+      txTags.forEach(tag => {
+        if (!tag || tag.toLowerCase() === 'non classe' || tag.toLowerCase() === 'non classé') return;
+        const tagCategoryId = tagCategoryMap[tag] || 'autres';
+
+        if (tagCategoryId === categoryId) {
+          if (!tagMap.has(tag)) {
+            tagMap.set(tag, { total: 0, count: 0, transactions: [] });
+          }
+          const data = tagMap.get(tag)!;
+          data.total += amount;
+          data.count += 1;
+          data.transactions.push(tx);
+        }
+      });
+    });
+
+    const categoryDef = DEFAULT_CATEGORIES.find(c => c.id === categoryId);
+    if (!categoryDef) return null;
+
+    const tags: TagData[] = Array.from(tagMap.entries()).map(([name, data]) => ({
+      name,
+      total: data.total,
+      count: data.count,
+      categoryId,
+      transactions: data.transactions
+    })).sort((a, b) => b.total - a.total);
+
+    const total = tags.reduce((sum, t) => sum + t.total, 0);
+    const count = tags.reduce((sum, t) => sum + t.count, 0);
+
+    return {
+      id: categoryId,
+      name: categoryDef.name,
+      icon: categoryDef.icon,
+      color: categoryDef.color,
+      total,
+      count,
+      tags,
+      monthlyData: [],
+      avgMonthly: 0,
+      variation: 0
+    };
+  }, [transactions, tagCategoryMap]);
+
+  const handleBack = useCallback(() => {
     if (drillLevel === 'transactions') {
       setSelectedTag(null);
+      // *** IMPORTANT: Recalculer selectedCategory DIRECTEMENT depuis transactions ***
+      if (selectedCategory) {
+        const freshCategory = recalculateCategoryFromTransactions(selectedCategory.id);
+        if (freshCategory) {
+          console.log('[Analytics] handleBack: Recalculated category from transactions:', {
+            id: freshCategory.id,
+            total: freshCategory.total,
+            tagCount: freshCategory.tags.length
+          });
+          setSelectedCategory(freshCategory);
+        }
+      }
       setDrillLevel('tags');
     } else if (drillLevel === 'tags') {
       setSelectedCategory(null);
@@ -473,9 +825,17 @@ export default function Analytics() {
       setDrillLevel('categories');
     } else if (drillLevel === 'category-month-transactions') {
       setSelectedCategoryMonth(null);
+      // *** IMPORTANT: Recalculer selectedCategory DIRECTEMENT depuis transactions ***
+      if (selectedCategory) {
+        const freshCategory = recalculateCategoryFromTransactions(selectedCategory.id);
+        if (freshCategory) {
+          console.log('[Analytics] handleBack: Recalculated category (category-month)');
+          setSelectedCategory(freshCategory);
+        }
+      }
       setDrillLevel('tags');
     }
-  };
+  }, [drillLevel, selectedCategory, recalculateCategoryFromTransactions]);
 
   // Rendu conditionnel
   if (authLoading) {
@@ -527,6 +887,7 @@ export default function Analytics() {
                 <tr>
                   <th className="text-left p-4 font-medium text-gray-600 dark:text-gray-400">Date</th>
                   <th className="text-left p-4 font-medium text-gray-600 dark:text-gray-400">Libelle</th>
+                  <th className="text-left p-4 font-medium text-gray-600 dark:text-gray-400">Tag</th>
                   <th className="text-right p-4 font-medium text-gray-600 dark:text-gray-400">Montant</th>
                 </tr>
               </thead>
@@ -539,6 +900,18 @@ export default function Analytics() {
                         {new Date(tx.date_op).toLocaleDateString('fr-FR')}
                       </td>
                       <td className="p-4 text-gray-900 dark:text-white">{tx.label}</td>
+                      <td className="p-4">
+                        <button
+                          onClick={() => handleEditTag(tx)}
+                          className="inline-flex items-center gap-1 px-2 py-1 text-sm bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-lg hover:bg-blue-200 dark:hover:bg-blue-800/50 transition-colors"
+                          title="Cliquez pour modifier le tag"
+                        >
+                          <span>{tx.tags?.[0] || 'Non tagué'}</span>
+                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                          </svg>
+                        </button>
+                      </td>
                       <td className="p-4 text-right font-mono text-red-600">
                         -{Math.abs(tx.amount).toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
                       </td>
@@ -548,6 +921,86 @@ export default function Analytics() {
             </table>
           </div>
         </Card>
+
+        {/* Modal d'edition de tag */}
+        {editingTransaction && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={handleCloseEditModal}>
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-md w-full mx-4 p-6" onClick={e => e.stopPropagation()}>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Modifier le tag</h3>
+                <button onClick={handleCloseEditModal} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+
+              <div className="mb-4">
+                <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">Transaction:</p>
+                <p className="font-medium text-gray-900 dark:text-white truncate">{editingTransaction.label}</p>
+                <p className="text-sm text-red-600">
+                  {Math.abs(editingTransaction.amount).toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
+                </p>
+              </div>
+
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Nouveau tag:
+                </label>
+                <input
+                  type="text"
+                  value={newTagInput}
+                  onChange={(e) => setNewTagInput(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="Entrez un tag..."
+                  list="available-tags"
+                />
+                <datalist id="available-tags">
+                  {availableTags.map(tag => (
+                    <option key={tag} value={tag} />
+                  ))}
+                </datalist>
+              </div>
+
+              {availableTags.length > 0 && (
+                <div className="mb-4">
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">Tags existants:</p>
+                  <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto focus:outline-none scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600">
+                    {availableTags.slice(0, 20).map(tag => (
+                      <button
+                        key={tag}
+                        onClick={() => setNewTagInput(tag)}
+                        className={`px-2 py-1 text-sm rounded-lg transition-colors ${
+                          newTagInput === tag
+                            ? 'bg-blue-600 text-white'
+                            : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                        }`}
+                      >
+                        {tag}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div className="flex gap-3">
+                <button
+                  onClick={handleCloseEditModal}
+                  className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                >
+                  Annuler
+                </button>
+                <button
+                  onClick={handleSaveTag}
+                  disabled={savingTag || !newTagInput.trim()}
+                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  {savingTag ? 'Sauvegarde...' : 'Sauvegarder'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </main>
     );
   }
@@ -595,6 +1048,7 @@ export default function Analytics() {
                 <tr>
                   <th className="text-left p-4 font-medium text-gray-600 dark:text-gray-400">Date</th>
                   <th className="text-left p-4 font-medium text-gray-600 dark:text-gray-400">Libelle</th>
+                  <th className="text-left p-4 font-medium text-gray-600 dark:text-gray-400">Tag</th>
                   <th className="text-right p-4 font-medium text-gray-600 dark:text-gray-400">Montant</th>
                 </tr>
               </thead>
@@ -607,6 +1061,18 @@ export default function Analytics() {
                         {new Date(tx.date_op).toLocaleDateString('fr-FR')}
                       </td>
                       <td className="p-4 text-gray-900 dark:text-white">{tx.label}</td>
+                      <td className="p-4">
+                        <button
+                          onClick={() => handleEditTag(tx)}
+                          className="inline-flex items-center gap-1 px-2 py-1 text-sm bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-lg hover:bg-blue-200 dark:hover:bg-blue-800/50 transition-colors"
+                          title="Cliquez pour modifier le tag"
+                        >
+                          <span>{tx.tags?.[0] || 'Non tagué'}</span>
+                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                          </svg>
+                        </button>
+                      </td>
                       <td className="p-4 text-right font-mono text-red-600">
                         -{Math.abs(tx.amount).toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
                       </td>
@@ -616,6 +1082,86 @@ export default function Analytics() {
             </table>
           </div>
         </Card>
+
+        {/* Modal d'edition de tag */}
+        {editingTransaction && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={handleCloseEditModal}>
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-md w-full mx-4 p-6" onClick={e => e.stopPropagation()}>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Modifier le tag</h3>
+                <button onClick={handleCloseEditModal} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+
+              <div className="mb-4">
+                <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">Transaction:</p>
+                <p className="font-medium text-gray-900 dark:text-white truncate">{editingTransaction.label}</p>
+                <p className="text-sm text-red-600">
+                  {Math.abs(editingTransaction.amount).toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
+                </p>
+              </div>
+
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Nouveau tag:
+                </label>
+                <input
+                  type="text"
+                  value={newTagInput}
+                  onChange={(e) => setNewTagInput(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="Entrez un tag..."
+                  list="available-tags-month"
+                />
+                <datalist id="available-tags-month">
+                  {availableTags.map(tag => (
+                    <option key={tag} value={tag} />
+                  ))}
+                </datalist>
+              </div>
+
+              {availableTags.length > 0 && (
+                <div className="mb-4">
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">Tags existants:</p>
+                  <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto focus:outline-none scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600">
+                    {availableTags.slice(0, 20).map(tag => (
+                      <button
+                        key={tag}
+                        onClick={() => setNewTagInput(tag)}
+                        className={`px-2 py-1 text-sm rounded-lg transition-colors ${
+                          newTagInput === tag
+                            ? 'bg-blue-600 text-white'
+                            : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                        }`}
+                      >
+                        {tag}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div className="flex gap-3">
+                <button
+                  onClick={handleCloseEditModal}
+                  className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                >
+                  Annuler
+                </button>
+                <button
+                  onClick={handleSaveTag}
+                  disabled={savingTag || !newTagInput.trim()}
+                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  {savingTag ? 'Sauvegarde...' : 'Sauvegarder'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </main>
     );
   }
@@ -680,10 +1226,11 @@ export default function Analytics() {
           </Card>
         </div>
 
-        {/* Pie chart des tags du mois */}
+        {/* Pie chart des tags du mois - Cliquable */}
         <Card className="p-6">
           <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">
             Repartition des depenses - {selectedMonth.monthLabel}
+            <span className="text-sm font-normal text-gray-500 ml-2">(cliquez pour voir les transactions)</span>
           </h3>
           <div className="h-[300px]">
             <ResponsiveContainer width="100%" height="100%">
@@ -697,15 +1244,67 @@ export default function Analytics() {
                   outerRadius={100}
                   label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
                   labelLine={false}
+                  cursor="pointer"
+                  onClick={(data, index) => {
+                    console.log('[Analytics] Month pie slice clicked:', data, 'index:', index);
+                    const tagsSlice = selectedMonth.tags.slice(0, 8);
+                    if (data && typeof index === 'number' && tagsSlice[index]) {
+                      handleMonthTagClick(tagsSlice[index]);
+                    }
+                  }}
                 >
                   {selectedMonth.tags.slice(0, 8).map((tag, index) => {
                     const cat = DEFAULT_CATEGORIES.find(c => c.id === tag.categoryId);
                     const colors = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#06B6D4', '#84CC16'];
-                    return <Cell key={`cell-${index}`} fill={cat?.color || colors[index % colors.length]} />;
+                    return (
+                      <Cell
+                        key={`cell-${index}`}
+                        fill={cat?.color || colors[index % colors.length]}
+                        className="hover:opacity-80 transition-opacity"
+                      />
+                    );
                   })}
                 </Pie>
                 <Tooltip
-                  formatter={(value: number) => value.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 })}
+                  content={({ active, payload }) => {
+                    if (active && payload && payload.length) {
+                      const data = payload[0].payload;
+                      const cat = DEFAULT_CATEGORIES.find(c => c.id === data.categoryId);
+                      return (
+                        <div className="bg-white dark:bg-gray-800 p-3 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700">
+                          <p className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                            {cat && <span>{cat.icon}</span>} {data.name}
+                          </p>
+                          <p className="text-gray-600 dark:text-gray-400">
+                            {data.total.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 })}
+                          </p>
+                          <p className="text-xs text-gray-500 mt-1">{data.count} transactions</p>
+                          <p className="text-xs text-blue-500 mt-1 font-medium">Cliquez pour voir les transactions</p>
+                        </div>
+                      );
+                    }
+                    return null;
+                  }}
+                />
+                <Legend
+                  layout="vertical"
+                  align="right"
+                  verticalAlign="middle"
+                  formatter={(value, entry: any) => {
+                    const tag = selectedMonth.tags.find(t => t.name === value);
+                    const cat = tag?.categoryId ? DEFAULT_CATEGORIES.find(c => c.id === tag.categoryId) : null;
+                    return (
+                      <span
+                        className="text-sm text-gray-700 dark:text-gray-300 hover:text-blue-600 cursor-pointer"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (tag) handleMonthTagClick(tag);
+                        }}
+                      >
+                        {cat?.icon} {value}
+                      </span>
+                    );
+                  }}
                 />
               </PieChart>
             </ResponsiveContainer>
@@ -842,6 +1441,7 @@ export default function Analytics() {
                 <tr>
                   <th className="text-left p-4 font-medium text-gray-600 dark:text-gray-400">Date</th>
                   <th className="text-left p-4 font-medium text-gray-600 dark:text-gray-400">Libelle</th>
+                  <th className="text-left p-4 font-medium text-gray-600 dark:text-gray-400">Tag</th>
                   <th className="text-right p-4 font-medium text-gray-600 dark:text-gray-400">Montant</th>
                 </tr>
               </thead>
@@ -854,6 +1454,18 @@ export default function Analytics() {
                         {new Date(tx.date_op).toLocaleDateString('fr-FR')}
                       </td>
                       <td className="p-4 text-gray-900 dark:text-white">{tx.label}</td>
+                      <td className="p-4">
+                        <button
+                          onClick={() => handleEditTag(tx)}
+                          className="inline-flex items-center gap-1 px-2 py-1 text-sm bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-lg hover:bg-blue-200 dark:hover:bg-blue-800/50 transition-colors"
+                          title="Cliquez pour modifier le tag"
+                        >
+                          <span>{tx.tags?.[0] || 'Non tagué'}</span>
+                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                          </svg>
+                        </button>
+                      </td>
                       <td className="p-4 text-right font-mono text-red-600">
                         -{Math.abs(tx.amount).toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
                       </td>
@@ -863,6 +1475,86 @@ export default function Analytics() {
             </table>
           </div>
         </Card>
+
+        {/* Modal d'edition de tag */}
+        {editingTransaction && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={handleCloseEditModal}>
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-md w-full mx-4 p-6" onClick={e => e.stopPropagation()}>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Modifier le tag</h3>
+                <button onClick={handleCloseEditModal} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+
+              <div className="mb-4">
+                <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">Transaction:</p>
+                <p className="font-medium text-gray-900 dark:text-white truncate">{editingTransaction.label}</p>
+                <p className="text-sm text-red-600">
+                  {Math.abs(editingTransaction.amount).toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
+                </p>
+              </div>
+
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Nouveau tag:
+                </label>
+                <input
+                  type="text"
+                  value={newTagInput}
+                  onChange={(e) => setNewTagInput(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="Entrez un tag..."
+                  list="available-tags-cat-month"
+                />
+                <datalist id="available-tags-cat-month">
+                  {availableTags.map(tag => (
+                    <option key={tag} value={tag} />
+                  ))}
+                </datalist>
+              </div>
+
+              {availableTags.length > 0 && (
+                <div className="mb-4">
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">Tags existants:</p>
+                  <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto focus:outline-none scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600">
+                    {availableTags.slice(0, 20).map(tag => (
+                      <button
+                        key={tag}
+                        onClick={() => setNewTagInput(tag)}
+                        className={`px-2 py-1 text-sm rounded-lg transition-colors ${
+                          newTagInput === tag
+                            ? 'bg-blue-600 text-white'
+                            : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                        }`}
+                      >
+                        {tag}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div className="flex gap-3">
+                <button
+                  onClick={handleCloseEditModal}
+                  className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                >
+                  Annuler
+                </button>
+                <button
+                  onClick={handleSaveTag}
+                  disabled={savingTag || !newTagInput.trim()}
+                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  {savingTag ? 'Sauvegarde...' : 'Sauvegarder'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </main>
     );
   }
@@ -1140,11 +1832,38 @@ export default function Analytics() {
   // ============================================================================
   return (
     <main className="container mx-auto px-4 py-6 space-y-6">
+      {/* Toast de confirmation */}
+      {successMessage && (
+        <div className="fixed top-4 right-4 z-50 animate-in fade-in slide-in-from-top-2 duration-300">
+          <div className="bg-green-500 text-white px-4 py-3 rounded-lg shadow-lg flex items-center gap-2">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            </svg>
+            <span>{successMessage}</span>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
             Analyse des depenses
+            {activeTab === 'drilldown' && (
+              <span className="ml-3 text-lg font-normal text-blue-600 dark:text-blue-400">
+                {(() => {
+                  const monthNames = ['Janvier', 'Fevrier', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Aout', 'Septembre', 'Octobre', 'Novembre', 'Decembre'];
+                  const [year, monthNum] = month.split('-').map(Number);
+                  if (periodMonths === 1) {
+                    return `- ${monthNames[monthNum - 1]} ${year}`;
+                  } else {
+                    const startDate = new Date(year, monthNum - 1 - (periodMonths - 1), 1);
+                    const startMonthName = monthNames[startDate.getMonth()];
+                    return `- ${startMonthName} ${startDate.getFullYear()} à ${monthNames[monthNum - 1]} ${year}`;
+                  }
+                })()}
+              </span>
+            )}
           </h1>
           <p className="text-gray-500 dark:text-gray-400">
             {activeTab === 'drilldown' && 'Vue hierarchique: Categories → Tags → Transactions'}
@@ -1160,6 +1879,7 @@ export default function Analytics() {
               onChange={(e) => setPeriodMonths(parseInt(e.target.value))}
               className="px-3 py-2 border border-gray-300 rounded-lg bg-white dark:bg-gray-700 dark:border-gray-600"
             >
+              <option value={1}>Ce mois</option>
               <option value={3}>3 mois</option>
               <option value={6}>6 mois</option>
               <option value={12}>12 mois</option>
@@ -1266,10 +1986,11 @@ export default function Analytics() {
 
           {/* Graphiques cote a cote */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Pie Chart */}
+            {/* Pie Chart - Cliquable pour drill-down */}
             <Card className="p-6">
               <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">
                 Repartition par categorie
+                <span className="text-sm font-normal text-gray-500 ml-2">(cliquez pour voir le detail)</span>
               </h3>
               <div className="h-[300px]">
                 <ResponsiveContainer width="100%" height="100%">
@@ -1283,13 +2004,59 @@ export default function Analytics() {
                       outerRadius={100}
                       label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
                       labelLine={false}
+                      cursor="pointer"
+                      onClick={(data, index) => {
+                        console.log('[Analytics] Pie slice clicked:', data, 'index:', index);
+                        if (data && typeof index === 'number' && categoryStats[index]) {
+                          handleCategoryClick(categoryStats[index]);
+                        }
+                      }}
                     >
                       {categoryStats.map((cat, index) => (
-                        <Cell key={`cell-${index}`} fill={cat.color} />
+                        <Cell
+                          key={`cell-${index}`}
+                          fill={cat.color}
+                          className="hover:opacity-80 transition-opacity"
+                        />
                       ))}
                     </Pie>
                     <Tooltip
                       formatter={(value: number) => value.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 })}
+                      content={({ active, payload }) => {
+                        if (active && payload && payload.length) {
+                          const data = payload[0].payload;
+                          return (
+                            <div className="bg-white dark:bg-gray-800 p-3 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700">
+                              <p className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                                <span>{data.icon}</span> {data.name}
+                              </p>
+                              <p className="text-gray-600 dark:text-gray-400">
+                                {data.total.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 })}
+                              </p>
+                              <p className="text-xs text-gray-500 mt-1">{data.tags.length} tags • {data.count} trans.</p>
+                              <p className="text-xs text-blue-500 mt-1 font-medium">Cliquez pour voir le detail</p>
+                            </div>
+                          );
+                        }
+                        return null;
+                      }}
+                    />
+                    <Legend
+                      layout="vertical"
+                      align="right"
+                      verticalAlign="middle"
+                      formatter={(value, entry: any) => (
+                        <span
+                          className="text-sm text-gray-700 dark:text-gray-300 hover:text-blue-600 cursor-pointer"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            const cat = categoryStats.find(c => c.name === value);
+                            if (cat) handleCategoryClick(cat);
+                          }}
+                        >
+                          {entry.payload?.icon} {value}
+                        </span>
+                      )}
                     />
                   </PieChart>
                 </ResponsiveContainer>

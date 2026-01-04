@@ -49,6 +49,18 @@ export default function ModernTransactionsPage() {
   const [selectedSuggestions, setSelectedSuggestions] = useState<Set<number>>(new Set());
   const [applyingTags, setApplyingTags] = useState(false);
 
+  // Lecture du paramètre editTx pour ouvrir l'édition d'une transaction spécifique (depuis Analytics)
+  const editTxParam = searchParams.get('editTx');
+  const editTransactionId = editTxParam ? parseInt(editTxParam, 10) : null;
+
+  // Callback pour nettoyer l'URL après l'édition
+  const handleEditComplete = useCallback(() => {
+    // Supprimer le paramètre editTx de l'URL sans recharger la page
+    const newUrl = new URL(window.location.href);
+    newUrl.searchParams.delete('editTx');
+    window.history.replaceState({}, '', newUrl.toString());
+  }, []);
+
   // Prévisualiser les suggestions d'auto-tagging
   const handlePreviewAutoTag = useCallback(async () => {
     if (!month) return;
@@ -374,6 +386,8 @@ export default function ModernTransactionsPage() {
               onToggle={toggle}
               onSaveTags={saveTags}
               onBulkUnexcludeAll={bulkUnexcludeAll}
+              editTransactionId={editTransactionId}
+              onEditComplete={handleEditComplete}
             />
           </>
         )}

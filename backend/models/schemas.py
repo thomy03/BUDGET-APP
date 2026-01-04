@@ -143,7 +143,7 @@ class FixedLineIn(BaseModel):
     split_mode: str = Field(default="clé", pattern="^(clé|50/50|m1|m2|manuel|proportionnel)$", description="Mode de répartition")
     split1: float = Field(default=50.0, ge=0, le=100, description="Répartition membre 1 (%)")
     split2: float = Field(default=50.0, ge=0, le=100, description="Répartition membre 2 (%)")
-    category: str = Field(default="autres", pattern="^(logement|transport|services|loisirs|santé|autres)$", description="Catégorie")
+    category: str = Field(default="autres", max_length=200, description="Catégorie")
     active: bool = Field(default=True, description="Ligne active")
 
     @validator('split2', always=True)

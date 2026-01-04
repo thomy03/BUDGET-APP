@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useRef, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 import { useGlobalMonth, useGlobalMonthWithUrl } from '../lib/month';
 
@@ -8,71 +9,220 @@ interface MonthPickerProps {
   onMonthChange?: (month: string) => void;
 }
 
+const MONTH_NAMES = [
+  'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
+  'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'
+];
+
+const MONTH_NAMES_SHORT = [
+  'Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Jun',
+  'Jul', 'Aoû', 'Sep', 'Oct', 'Nov', 'Déc'
+];
+
 export default function MonthPicker({ currentMonth, onMonthChange }: MonthPickerProps = {}) {
   const pathname = usePathname();
-  
+  const [isOpen, setIsOpen] = useState(false);
+  const [showYearSelector, setShowYearSelector] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
   // Utiliser les props si fournis (pour les tests), sinon utiliser les hooks normalement
   const isTransactionsPage = pathname === '/transactions';
-  const [month, setMonth] = currentMonth && onMonthChange 
+  const [month, setMonth] = currentMonth && onMonthChange
     ? [currentMonth, onMonthChange]
-    : (isTransactionsPage 
-        ? useGlobalMonthWithUrl() 
+    : (isTransactionsPage
+        ? useGlobalMonthWithUrl()
         : useGlobalMonth());
 
-  console.log('📅 MonthPicker render - Page:', pathname, 'Month:', month, 'URL sync:', isTransactionsPage);
+  // Parser le mois actuel
+  const [currentYear, currentMonthNum] = month.split('-').map(Number);
+
+  // Fermer le dropdown quand on clique ailleurs
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+        setShowYearSelector(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const navigateMonth = (direction: 'prev' | 'next') => {
     const currentDate = new Date(month + "-01");
     const offset = direction === 'prev' ? -1 : 1;
     currentDate.setMonth(currentDate.getMonth() + offset);
     const newMonth = currentDate.toISOString().slice(0, 7);
-    
-    console.log('📅 MonthPicker navigation:', direction, month, '->', newMonth, 'on page:', pathname);
     setMonth(newMonth);
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newMonth = e.target.value;
-    console.log('📅 MonthPicker input change:', month, '->', newMonth, 'on page:', pathname);
+  const selectMonth = (monthIndex: number) => {
+    const newMonth = `${currentYear}-${String(monthIndex + 1).padStart(2, '0')}`;
     setMonth(newMonth);
+    setIsOpen(false);
   };
+
+  const selectYear = (year: number) => {
+    const newMonth = `${year}-${String(currentMonthNum).padStart(2, '0')}`;
+    setMonth(newMonth);
+    setShowYearSelector(false);
+  };
+
+  // Générer les années disponibles (5 ans avant et après l'année actuelle)
+  const years = Array.from({ length: 11 }, (_, i) => new Date().getFullYear() - 5 + i);
+
+  const formattedMonth = `${MONTH_NAMES[currentMonthNum - 1]} ${currentYear}`;
 
   return (
-    <div className="flex items-center justify-center">
-      {/* Container moderne avec design épuré */}
-      <div className="flex items-center bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl shadow-md border border-blue-200/50 p-2 gap-1">
-        
-        {/* Bouton précédent moderne */}
-        <button
-          onClick={() => navigateMonth('prev')}
-          className="w-10 h-10 flex items-center justify-center rounded-xl bg-white shadow-sm hover:shadow-md hover:bg-blue-50 transition-all duration-200 text-slate-700 hover:text-blue-600 font-semibold"
-          title="Mois précédent"
-        >
-          ‹
-        </button>
+    <div className="relative" ref={dropdownRef}>
+      {/* Container principal ultra-moderne */}
+      <div className="flex items-center gap-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 p-[2px] rounded-2xl shadow-lg">
+        <div className="flex items-center bg-white rounded-[14px] p-1 gap-1">
 
-        {/* Sélecteur de mois moderne et visible */}
-        <input
-          type="month"
-          value={month}
-          onChange={handleInputChange}
-          className="mx-3 px-4 py-2.5 bg-white rounded-xl shadow-sm border-0 font-semibold text-slate-800 text-center min-w-[160px] focus:outline-none focus:ring-2 focus:ring-blue-400 focus:shadow-md transition-all duration-200 cursor-pointer hover:shadow-md month-picker-modern"
-          style={{
-            colorScheme: 'light',
-            fontSize: '15px',
-            fontWeight: '600'
-          }}
-        />
+          {/* Bouton précédent */}
+          <button
+            onClick={() => navigateMonth('prev')}
+            className="w-10 h-10 flex items-center justify-center rounded-xl bg-gradient-to-br from-gray-50 to-gray-100 hover:from-indigo-50 hover:to-purple-50 transition-all duration-300 text-gray-600 hover:text-indigo-600 group"
+            title="Mois précédent"
+          >
+            <svg className="w-5 h-5 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
 
-        {/* Bouton suivant moderne */}
-        <button
-          onClick={() => navigateMonth('next')}
-          className="w-10 h-10 flex items-center justify-center rounded-xl bg-white shadow-sm hover:shadow-md hover:bg-blue-50 transition-all duration-200 text-slate-700 hover:text-blue-600 font-semibold"
-          title="Mois suivant"
-        >
-          ›
-        </button>
+          {/* Affichage du mois cliquable */}
+          <button
+            onClick={() => setIsOpen(!isOpen)}
+            className="flex items-center gap-2 px-4 py-2 min-w-[180px] justify-center rounded-xl bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 hover:from-indigo-100 hover:via-purple-100 hover:to-pink-100 transition-all duration-300 group"
+          >
+            <span className="text-2xl">📅</span>
+            <div className="flex flex-col items-start">
+              <span className="text-sm font-bold bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
+                {MONTH_NAMES[currentMonthNum - 1]}
+              </span>
+              <span className="text-xs text-gray-500 font-medium">{currentYear}</span>
+            </div>
+            <svg
+              className={`w-4 h-4 text-gray-400 transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`}
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+
+          {/* Bouton suivant */}
+          <button
+            onClick={() => navigateMonth('next')}
+            className="w-10 h-10 flex items-center justify-center rounded-xl bg-gradient-to-br from-gray-50 to-gray-100 hover:from-indigo-50 hover:to-purple-50 transition-all duration-300 text-gray-600 hover:text-indigo-600 group"
+            title="Mois suivant"
+          >
+            <svg className="w-5 h-5 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
+            </svg>
+          </button>
+        </div>
       </div>
+
+      {/* Dropdown moderne */}
+      {isOpen && (
+        <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 z-50 animate-fadeIn">
+          <div className="bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden min-w-[280px]">
+
+            {/* Header avec sélecteur d'année */}
+            <div className="bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 p-4">
+              <button
+                onClick={() => setShowYearSelector(!showYearSelector)}
+                className="w-full flex items-center justify-center gap-2 text-white font-bold text-lg hover:opacity-90 transition-opacity"
+              >
+                <span>{currentYear}</span>
+                <svg
+                  className={`w-4 h-4 transition-transform ${showYearSelector ? 'rotate-180' : ''}`}
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Sélecteur d'année */}
+            {showYearSelector ? (
+              <div className="p-3 max-h-[200px] overflow-y-auto">
+                <div className="grid grid-cols-3 gap-2">
+                  {years.map(year => (
+                    <button
+                      key={year}
+                      onClick={() => selectYear(year)}
+                      className={`py-2 px-3 rounded-xl font-medium transition-all duration-200 ${
+                        year === currentYear
+                          ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white shadow-lg'
+                          : 'bg-gray-50 text-gray-700 hover:bg-indigo-50 hover:text-indigo-600'
+                      }`}
+                    >
+                      {year}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              /* Grille des mois */
+              <div className="p-3">
+                <div className="grid grid-cols-3 gap-2">
+                  {MONTH_NAMES_SHORT.map((name, index) => (
+                    <button
+                      key={index}
+                      onClick={() => selectMonth(index)}
+                      className={`py-3 px-2 rounded-xl font-medium transition-all duration-200 ${
+                        index + 1 === currentMonthNum
+                          ? 'bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 text-white shadow-lg scale-105'
+                          : 'bg-gray-50 text-gray-700 hover:bg-gradient-to-r hover:from-indigo-50 hover:to-purple-50 hover:text-indigo-600 hover:scale-102'
+                      }`}
+                    >
+                      {name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Footer avec raccourcis */}
+            <div className="border-t border-gray-100 p-2 bg-gray-50 flex justify-center gap-2">
+              <button
+                onClick={() => {
+                  const today = new Date();
+                  const newMonth = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
+                  setMonth(newMonth);
+                  setIsOpen(false);
+                }}
+                className="px-4 py-1.5 text-sm font-medium text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+              >
+                Aujourd'hui
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Styles pour l'animation */}
+      <style jsx>{`
+        @keyframes fadeIn {
+          from {
+            opacity: 0;
+            transform: translateX(-50%) translateY(-10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+          }
+        }
+        .animate-fadeIn {
+          animation: fadeIn 0.2s ease-out;
+        }
+      `}</style>
     </div>
   );
 }

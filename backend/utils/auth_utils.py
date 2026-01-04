@@ -9,18 +9,18 @@ from datetime import datetime, timedelta, timezone
 from typing import Optional, Dict, Any, Union, Tuple, List
 from functools import wraps
 
+import bcrypt
 from fastapi import Depends, HTTPException, status, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from jose import JWTError, jwt
-from passlib.context import CryptContext
 
 from .error_handlers import handle_auth_error, handle_permission_error
 
 logger = logging.getLogger(__name__)
 
 # Authentication configuration
+# Using bcrypt directly instead of passlib to avoid compatibility issues with bcrypt 4.x
 security = HTTPBearer()
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 # JWT configuration
 SECRET_KEY = os.getenv("JWT_SECRET_KEY", "fallback-secret-key")
@@ -53,32 +53,36 @@ class AuthContext:
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """
-    Verify password against hash
-    
+    Verify password against hash using bcrypt directly (compatible bcrypt 4.x)
+
     Args:
         plain_password: Plain text password
         hashed_password: Hashed password
-        
+
     Returns:
         True if password matches
     """
     try:
-        return pwd_context.verify(plain_password, hashed_password)
+        return bcrypt.checkpw(
+            plain_password.encode('utf-8'),
+            hashed_password.encode('utf-8')
+        )
     except Exception as e:
         logger.error(f"Password verification error: {e}")
         return False
 
 def hash_password(password: str) -> str:
     """
-    Hash password using bcrypt
-    
+    Hash password using bcrypt directly (compatible bcrypt 4.x)
+
     Args:
         password: Plain text password
-        
+
     Returns:
         Hashed password
     """
-    return pwd_context.hash(password)
+    salt = bcrypt.gensalt(rounds=12)
+    return bcrypt.hashpw(password.encode('utf-8'), salt).decode('utf-8')
 
 def create_access_token(
     data: Dict[str, Any], 

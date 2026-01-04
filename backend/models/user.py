@@ -10,18 +10,13 @@ from datetime import datetime, timedelta
 from typing import Optional, List, Tuple
 from sqlalchemy import Column, Integer, String, DateTime, Boolean, Text
 from sqlalchemy.sql import func
-from passlib.context import CryptContext
+import bcrypt
 
 from models.database import Base
 
 logger = logging.getLogger(__name__)
 
-# Password hashing context
-pwd_context = CryptContext(
-    schemes=["bcrypt"],
-    deprecated="auto",
-    bcrypt__rounds=12  # Increase rounds for better security
-)
+# Using bcrypt directly instead of passlib to avoid compatibility issues with bcrypt 4.x
 
 
 class User(Base):
@@ -80,14 +75,18 @@ class UserSession(Base):
 
 
 def hash_password(password: str) -> str:
-    """Hash a password using bcrypt"""
-    return pwd_context.hash(password)
+    """Hash a password using bcrypt directly (compatible bcrypt 4.x)"""
+    salt = bcrypt.gensalt(rounds=12)
+    return bcrypt.hashpw(password.encode('utf-8'), salt).decode('utf-8')
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    """Verify a password against its hash"""
+    """Verify a password against its hash using bcrypt directly (compatible bcrypt 4.x)"""
     try:
-        return pwd_context.verify(plain_password, hashed_password)
+        return bcrypt.checkpw(
+            plain_password.encode('utf-8'),
+            hashed_password.encode('utf-8')
+        )
     except Exception as e:
         logger.error(f"Password verification error: {e}")
         return False

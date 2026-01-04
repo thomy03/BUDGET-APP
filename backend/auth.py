@@ -8,10 +8,10 @@ import logging
 from datetime import datetime, timedelta
 from typing import Optional
 
+import bcrypt
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from jose import JWTError, jwt
-from passlib.context import CryptContext
 from pydantic import BaseModel
 from dotenv import load_dotenv
 
@@ -56,7 +56,7 @@ ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 * 7  # 7 jours
 logger.info(f"🔐 JWT SECRET_KEY initialisé: {SECRET_KEY[:8]}...{SECRET_KEY[-8:]} (longueur: {len(SECRET_KEY)})")
 
 # Configuration bcrypt pour hashage des mots de passe
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+# Note: Using bcrypt directly instead of passlib to avoid compatibility issues with bcrypt 4.x
 security = HTTPBearer()
 
 class Token(BaseModel):
@@ -82,16 +82,20 @@ fake_users_db = {
 }
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    """Vérifie le mot de passe avec bcrypt"""
+    """Vérifie le mot de passe avec bcrypt directement (compatible bcrypt 4.x)"""
     try:
-        return pwd_context.verify(plain_password, hashed_password)
+        return bcrypt.checkpw(
+            plain_password.encode('utf-8'),
+            hashed_password.encode('utf-8')
+        )
     except Exception as e:
         logger.error(f"Erreur vérification mot de passe: {e}")
         return False
 
 def get_password_hash(password: str) -> str:
-    """Hash le mot de passe avec bcrypt"""
-    return pwd_context.hash(password)
+    """Hash le mot de passe avec bcrypt directement (compatible bcrypt 4.x)"""
+    salt = bcrypt.gensalt(rounds=12)
+    return bcrypt.hashpw(password.encode('utf-8'), salt).decode('utf-8')
 
 def get_user(db: dict, username: str) -> Optional[UserInDB]:
     """Récupère un utilisateur depuis la base"""

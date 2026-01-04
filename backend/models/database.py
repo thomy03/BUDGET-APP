@@ -685,6 +685,33 @@ class CategoryBudget(Base):
     )
 
 
+class CustomCategory(Base):
+    """
+    User-defined custom categories for expense classification.
+    These are categories created by users (not default system categories).
+    """
+    __tablename__ = "custom_categories"
+
+    id = Column(String(50), primary_key=True, index=True)  # Category ID (e.g., "restaurant", "bar")
+    name = Column(String(100), nullable=False)  # Display name (e.g., "Restaurant", "Bar & Pub")
+    icon = Column(String(10), nullable=True)  # Emoji icon (e.g., "🍽️")
+    color = Column(String(7), nullable=True)  # Hex color (e.g., "#FF5733")
+    user_id = Column(String(100), nullable=True, index=True)  # Owner user ID
+
+    # Status
+    is_active = Column(Boolean, default=True, index=True)
+
+    # Metadata
+    created_at = Column(DateTime, server_default=func.now())
+    updated_at = Column(DateTime, onupdate=func.now())
+
+    # Indexes
+    __table_args__ = (
+        Index('idx_custom_category_user_active', 'user_id', 'is_active'),
+        Index('idx_custom_category_name', 'name'),
+    )
+
+
 # Database events for optimization
 
 @event.listens_for(Engine, "connect")

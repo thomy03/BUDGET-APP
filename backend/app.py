@@ -398,6 +398,7 @@ from routers.ml_feedback import router as ml_feedback_router  # ML feedback lear
 from routers.ml_enhanced_classification import router as ml_enhanced_classification_router  # Enhanced ML classification
 from routers.balance import router as balance_router  # Account balance management
 from routers.tag_categories import router as tag_categories_router  # Tag-category mappings persistence
+from routers.custom_categories import router as custom_categories_router  # User-defined custom categories
 from routers.budgets import router as budgets_router  # Category budget management for variance analysis
 from routers.ai import router as ai_router  # AI-powered budget analysis with OpenRouter
 from routers.predictions import router as predictions_router  # ML predictions and anomaly detection
@@ -423,6 +424,7 @@ app.include_router(ml_feedback_router, tags=["ml-feedback"])  # ML feedback lear
 app.include_router(ml_enhanced_classification_router, tags=["ml-enhanced-classification"])  # Enhanced ML classification
 app.include_router(balance_router, tags=["account-balance"])  # Account balance management
 app.include_router(tag_categories_router, tags=["tag-categories"])  # Tag-category mappings persistence
+app.include_router(custom_categories_router, tags=["custom-categories"])  # User-defined custom categories
 app.include_router(budgets_router, tags=["category-budgets"])  # Category budget management for variance analysis
 app.include_router(ai_router, tags=["ai-analysis"])  # AI-powered budget analysis with OpenRouter
 app.include_router(predictions_router, tags=["ml-predictions"])  # ML budget predictions and anomaly detection
