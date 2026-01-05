@@ -451,12 +451,16 @@ export const UltraModernDashboard: React.FC<UltraModernDashboardProps> = ({ mont
             amount={toProvision > 0 ? data.familyProvision.member1 : 0}
             income={data.revenue.member1.net}
             formatters={formatters}
+            provisionAmount={data.familyProvision.detail?.provisions?.member1 ?? 0}
+            expenseAmount={data.familyProvision.detail?.expenses?.member1 ?? 0}
           />
           <MemberCard
             name={data.revenue.member2.name}
             amount={toProvision > 0 ? data.familyProvision.member2 : 0}
             income={data.revenue.member2.net}
             formatters={formatters}
+            provisionAmount={data.familyProvision.detail?.provisions?.member2 ?? 0}
+            expenseAmount={data.familyProvision.detail?.expenses?.member2 ?? 0}
           />
         </div>
       </section>
@@ -534,7 +538,9 @@ const MemberCard: React.FC<{
   amount: number;
   income: number;
   formatters: ReturnType<typeof useCleanDashboard>['formatters'];
-}> = ({ name, amount, income, formatters }) => {
+  provisionAmount?: number;
+  expenseAmount?: number;
+}> = ({ name, amount, income, formatters, provisionAmount = 0, expenseAmount = 0 }) => {
   const percentage = income > 0 ? (amount / income) * 100 : 0;
 
   return (
@@ -549,6 +555,19 @@ const MemberCard: React.FC<{
       <p className="text-sm text-gray-400">
         {percentage.toFixed(0)}% de son revenu ({formatters.currency(income)})
       </p>
+
+      {/* Détail Provisions / Dépenses nettes */}
+      <div className="mt-4 pt-4 border-t border-gray-100 space-y-2">
+        <div className="flex justify-between items-center text-sm">
+          <span className="text-indigo-600 font-medium">Provisions</span>
+          <span className="font-semibold text-indigo-700">{formatters.currency(provisionAmount)}</span>
+        </div>
+        <div className="flex justify-between items-center text-sm">
+          <span className="text-orange-600 font-medium">Dépenses nettes</span>
+          <span className="font-semibold text-orange-700">{formatters.currency(expenseAmount)}</span>
+        </div>
+      </div>
+
       {/* Mini barre de progression */}
       <div className="mt-3 h-1.5 bg-gray-100 rounded-full overflow-hidden">
         <div

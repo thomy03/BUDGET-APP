@@ -430,7 +430,13 @@ def put_transaction_tag(tx_id: int, payload: TagsIn, current_user = Depends(get_
             logger.info(f"📊 ML feedback sent for tag change on transaction {tx_id}")
         except Exception as e:
             logger.warning(f"Failed to send ML feedback for transaction {tx_id}: {e}")
-    
+
+    # Learn pattern from user tagging for future auto-tag
+    if new_tags and tx.label:
+        for tag in new_tags:
+            if tag.strip():
+                save_learned_pattern(tx.label, tag.strip())
+
     return tx_to_response(tx)
 
 @router.patch("/{tx_id}/tags", response_model=TxOut)
@@ -478,7 +484,13 @@ def update_tags(tx_id: int, payload: TagsIn, current_user = Depends(get_current_
         except Exception as e:
             # Don't fail the tag update if automation fails
             logger.error(f"Tag automation error for transaction {tx_id}: {e}")
-    
+
+    # Learn pattern from user tagging for future auto-tag
+    if added_tags and tx.label:
+        for tag in added_tags:
+            if tag.strip():
+                save_learned_pattern(tx.label, tag.strip())
+
     return tx_to_response(tx)
 
 @router.put("/{tx_id}", response_model=TxOut)
@@ -863,13 +875,333 @@ def create_category(
     """
     return {"message": f"Category '{name}' noted for future use", "name": name}
 
-@router.post("/tags")  
+@router.post("/tags")
 def create_tag(
     name: str,
     current_user = Depends(get_current_user),
-    db: Session = Depends(get_db)  
+    db: Session = Depends(get_db)
 ):
     """
     Create a new tag (for now, just return success since tags are implicit)
     """
     return {"message": f"Tag '{name}' noted for future use", "name": name}
+
+
+# ============================================================================
+# AUTO-TAGGING ENDPOINTS - Suggestion de tags basée sur les patterns appris
+# ============================================================================
+
+import json
+import os
+import re
+from pathlib import Path
+
+def get_patterns_path():
+    """Get the path to learned_patterns.json"""
+    return Path(__file__).parent.parent / "data" / "learned_patterns.json"
+
+def load_learned_patterns():
+    """Load learned patterns from JSON file"""
+    patterns_path = get_patterns_path()
+    if patterns_path.exists():
+        try:
+            with open(patterns_path, 'r', encoding='utf-8') as f:
+                return json.load(f)
+        except Exception as e:
+            logger.error(f"Error loading learned patterns: {e}")
+    return {}
+
+def save_learned_pattern(label: str, tag: str):
+    """
+    Save or update a learned pattern when user tags a transaction.
+    This enables auto-tagging to learn from user actions.
+    """
+    if not label or not tag:
+        return
+
+    # Normalize the label for pattern matching
+    normalized = normalize_label_for_matching(label)
+    if not normalized or len(normalized) < 3:
+        return
+
+    try:
+        patterns_path = get_patterns_path()
+
+        # Ensure data directory exists
+        patterns_path.parent.mkdir(parents=True, exist_ok=True)
+
+        # Load existing patterns
+        patterns = load_learned_patterns()
+
+        # Update or create pattern
+        normalized_upper = normalized.upper()
+        if normalized_upper in patterns:
+            # Update existing pattern
+            pattern_data = patterns[normalized_upper]
+            pattern_data['correction_count'] = pattern_data.get('correction_count', 0) + 1
+
+            # Track all tags used for this pattern
+            all_tags = pattern_data.get('all_tags', {})
+            all_tags[tag] = all_tags.get(tag, 0) + 1
+            pattern_data['all_tags'] = all_tags
+
+            # Update suggested tag to the most common one
+            most_common_tag = max(all_tags.items(), key=lambda x: x[1])[0]
+            pattern_data['suggested_tag'] = most_common_tag
+            pattern_data['last_updated'] = datetime.now().isoformat()
+
+            # Update confidence based on consistency
+            total_tags = sum(all_tags.values())
+            pattern_data['confidence_score'] = min(1.0, all_tags[most_common_tag] / total_tags)
+        else:
+            # Create new pattern
+            patterns[normalized_upper] = {
+                'suggested_tag': tag,
+                'correction_count': 1,
+                'confidence_score': 1.0,
+                'last_updated': datetime.now().isoformat(),
+                'source': 'user_tagging',
+                'all_tags': {tag: 1}
+            }
+
+        # Save updated patterns
+        with open(patterns_path, 'w', encoding='utf-8') as f:
+            json.dump(patterns, f, indent=2, ensure_ascii=False)
+
+        logger.info(f"Learned pattern saved: '{normalized_upper}' -> '{tag}'")
+
+    except Exception as e:
+        logger.error(f"Error saving learned pattern: {e}")
+
+def normalize_label_for_matching(label: str) -> str:
+    """Normalize transaction label for pattern matching"""
+    if not label:
+        return ""
+
+    # Convert to uppercase
+    clean = label.upper().strip()
+
+    # Remove common prefixes
+    prefixes = ['CARTE ', 'VIR ', 'PRLV ', 'AVOIR ', 'CHQ ', 'RETRAIT ']
+    for prefix in prefixes:
+        if clean.startswith(prefix):
+            clean = clean[len(prefix):]
+
+    # Remove dates (DD/MM/YY or DD/MM/YYYY)
+    clean = re.sub(r'\d{2}/\d{2}/\d{2,4}', '', clean)
+
+    # Remove card numbers (CB*1234)
+    clean = re.sub(r'CB\*?\d+', '', clean)
+
+    # Remove trailing amounts
+    clean = re.sub(r'\d+[,\.]\d{2}\s*(?:EUR|€)?$', '', clean)
+
+    # Clean up spaces
+    clean = re.sub(r'\s+', ' ', clean).strip()
+
+    return clean
+
+def find_tag_suggestion(label: str, patterns: dict) -> tuple:
+    """
+    Find a tag suggestion for a transaction label using learned patterns.
+    Returns (suggested_tag, confidence, match_type) or (None, 0, None)
+    """
+    if not label or not patterns:
+        return None, 0, None
+
+    normalized = normalize_label_for_matching(label)
+    normalized_upper = normalized.upper()
+
+    # 1. Exact match (highest confidence)
+    for pattern_key, pattern_data in patterns.items():
+        if normalized_upper == pattern_key.upper():
+            return pattern_data.get('suggested_tag'), 1.0, 'exact'
+
+    # 2. Pattern contains the key or key contains pattern (good confidence)
+    for pattern_key, pattern_data in patterns.items():
+        pattern_upper = pattern_key.upper()
+        # Check if the pattern is a significant part of the label
+        if pattern_upper in normalized_upper or normalized_upper in pattern_upper:
+            # Extra validation: pattern should be at least 4 chars
+            if len(pattern_key) >= 4:
+                return pattern_data.get('suggested_tag'), 0.85, 'contains'
+
+    # 3. First word match (medium confidence)
+    first_word = normalized_upper.split()[0] if normalized_upper.split() else ""
+    if first_word and len(first_word) >= 3:
+        for pattern_key, pattern_data in patterns.items():
+            pattern_first = pattern_key.upper().split()[0] if pattern_key.split() else ""
+            if first_word == pattern_first:
+                return pattern_data.get('suggested_tag'), 0.7, 'first_word'
+
+    # 4. Known merchant keywords (lower confidence)
+    merchant_keywords = {
+        'AMAZON': 'amazon',
+        'AMZN': 'amazon',
+        'AMZ': 'amazon',
+        'LECLERC': 'courses',
+        'FRANPRIX': 'courses',
+        'CARREFOUR': 'courses',
+        'AUCHAN': 'courses',
+        'PICARD': 'courses',
+        'LIDL': 'courses',
+        'MONOPRIX': 'courses',
+        'CASINO': 'courses',
+        'INTERMARCHE': 'courses',
+        'TEMU': 'temu',
+        'VINTED': 'vinted',
+        'NETFLIX': 'streaming',
+        'SPOTIFY': 'streaming',
+        'DISNEY': 'streaming',
+        'MCDO': 'restaurant',
+        'MCDONALD': 'restaurant',
+        'BURGER': 'restaurant',
+        'KFC': 'restaurant',
+        'SNCF': 'transport',
+        'RATP': 'transport',
+        'UBER': 'transport',
+        'EDF': 'electricité',
+        'ENGIE': 'énergie',
+        'BOUYGUES': 'internet',
+        'ORANGE': 'téléphone',
+        'SFR': 'téléphone',
+        'FREE': 'internet',
+    }
+
+    for keyword, tag in merchant_keywords.items():
+        if keyword in normalized_upper:
+            return tag, 0.6, 'keyword'
+
+    return None, 0, None
+
+
+@router.get("/auto-tag-preview")
+def auto_tag_preview(
+    month: str = Query(..., description="Month in YYYY-MM format"),
+    min_confidence: float = Query(0.5, description="Minimum confidence threshold"),
+    current_user = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Preview auto-tag suggestions for transactions without tags.
+
+    Returns suggestions based on learned patterns from user feedback.
+    """
+    try:
+        # Load learned patterns
+        patterns = load_learned_patterns()
+        logger.info(f"Loaded {len(patterns)} patterns for auto-tagging")
+
+        # Get transactions without tags for the specified month
+        transactions = db.query(Transaction).filter(
+            Transaction.month == month,
+            Transaction.exclude == False
+        ).all()
+
+        # Filter to only untagged transactions (including "Non classé" which is the default)
+        untagged = [tx for tx in transactions if not tx.tags or tx.tags.strip() == '' or tx.tags.strip().lower() == 'non classé']
+
+        suggestions = []
+        for tx in untagged:
+            suggested_tag, confidence, match_type = find_tag_suggestion(tx.label, patterns)
+
+            if suggested_tag and confidence >= min_confidence:
+                suggestions.append({
+                    'transaction_id': tx.id,
+                    'label': tx.label,
+                    'suggested_tag': suggested_tag,
+                    'confidence': confidence,
+                    'match_type': match_type,
+                    'source_label': tx.label
+                })
+
+        # Sort by confidence descending
+        suggestions.sort(key=lambda x: x['confidence'], reverse=True)
+
+        return {
+            'total_untagged': len(untagged),
+            'suggestions_found': len(suggestions),
+            'suggestions': suggestions,
+            'patterns_loaded': len(patterns)
+        }
+
+    except Exception as e:
+        logger.error(f"Error in auto-tag preview: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error generating auto-tag suggestions: {str(e)}"
+        )
+
+
+@router.post("/auto-tag-month")
+def auto_tag_month(
+    month: str = Query(..., description="Month in YYYY-MM format"),
+    min_confidence: float = Query(0.7, description="Minimum confidence to auto-apply"),
+    dry_run: bool = Query(False, description="If true, don't apply changes"),
+    current_user = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Apply auto-tagging to all untagged transactions for a month.
+
+    Only applies tags where confidence >= min_confidence.
+    Use dry_run=true to preview without applying changes.
+    """
+    try:
+        # Load learned patterns
+        patterns = load_learned_patterns()
+
+        # Get untagged transactions
+        transactions = db.query(Transaction).filter(
+            Transaction.month == month,
+            Transaction.exclude == False
+        ).all()
+
+        untagged = [tx for tx in transactions if not tx.tags or tx.tags.strip() == '' or tx.tags.strip().lower() == 'non classé']
+
+        applied = []
+        skipped = []
+
+        for tx in untagged:
+            suggested_tag, confidence, match_type = find_tag_suggestion(tx.label, patterns)
+
+            if suggested_tag and confidence >= min_confidence:
+                if not dry_run:
+                    tx.tags = suggested_tag
+                    db.add(tx)
+
+                applied.append({
+                    'transaction_id': tx.id,
+                    'label': tx.label,
+                    'suggested_tag': suggested_tag,
+                    'confidence': confidence,
+                    'match_type': match_type
+                })
+            else:
+                skipped.append({
+                    'transaction_id': tx.id,
+                    'label': tx.label,
+                    'suggested_tag': suggested_tag,
+                    'confidence': confidence,
+                    'reason': 'low_confidence' if suggested_tag else 'no_match'
+                })
+
+        if not dry_run and applied:
+            db.commit()
+            logger.info(f"Auto-tagged {len(applied)} transactions for {month}")
+
+        return {
+            'total_untagged': len(untagged),
+            'suggestions': applied,
+            'applied_count': len(applied) if not dry_run else 0,
+            'skipped_count': len(skipped),
+            'dry_run': dry_run
+        }
+
+    except Exception as e:
+        logger.error(f"Error in auto-tag month: {e}")
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error applying auto-tags: {str(e)}"
+        )

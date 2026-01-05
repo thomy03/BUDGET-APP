@@ -29,6 +29,19 @@ export interface CleanDashboardData {
     status: 'surplus' | 'balanced' | 'deficit';
     member1: number;
     member2: number;
+    // Détail par membre
+    detail: {
+      provisions: {
+        total: number;
+        member1: number;
+        member2: number;
+      };
+      expenses: {
+        total: number;  // Dépenses nettes (dépenses - avoirs)
+        member1: number;
+        member2: number;
+      };
+    };
   };
 }
 
@@ -70,16 +83,18 @@ export const useCleanDashboard = (month: string, isAuthenticated: boolean) => {
       setLoading(true);
       setError(null);
 
-      // Chargement parallèle des données essentielles
-      const [configResponse, provisionsResponse, summaryResponse] = await Promise.all([
+      // Chargement parallèle des données essentielles + transactions réelles
+      const [configResponse, provisionsResponse, summaryResponse, transactionsResponse] = await Promise.all([
         api.get('/config'),
         api.get('/custom-provisions'),
-        api.get(`/summary?month=${month}`)
+        api.get(`/summary?month=${month}`),
+        api.get(`/transactions?month=${month}`)  // Ajout: transactions réelles
       ]);
 
       const config = configResponse.data;
       const provisions = provisionsResponse.data;
       const summary = summaryResponse.data;
+      const transactions = transactionsResponse.data || [];
       // Pour l'instant, on utilise une valeur par défaut pour le solde
       const balance = { account_balance: 0 };
 
@@ -119,24 +134,65 @@ export const useCleanDashboard = (month: string, isAuthenticated: boolean) => {
         };
       });
 
-      // Dépenses totales (fixes + variables)
-      const fixedExpensesTotal = summary.fixed_lines_total || 0;
-      const variableExpensesTotal = Math.abs(summary.var_total || 0); // var_total est négatif
-      const totalExpenses = fixedExpensesTotal + variableExpensesTotal;
+      // ===== CORRECTION: Calcul des dépenses depuis les TRANSACTIONS RÉELLES =====
+      // Filtrer les transactions: montant négatif (dépenses) ET non exclues
+      const expenseTransactions = transactions.filter((t: any) =>
+        t.amount < 0 && !t.exclude
+      );
+
+      // Calculer le total réel des dépenses
+      const realExpensesTotal = expenseTransactions.reduce(
+        (sum: number, t: any) => sum + Math.abs(t.amount),
+        0
+      );
+
+      // Séparer fixes et variables si nécessaire
+      const fixedExpensesTotal = expenseTransactions
+        .filter((t: any) => t.expense_type === 'FIXED')
+        .reduce((sum: number, t: any) => sum + Math.abs(t.amount), 0);
+      const variableExpensesTotal = expenseTransactions
+        .filter((t: any) => t.expense_type !== 'FIXED')
+        .reduce((sum: number, t: any) => sum + Math.abs(t.amount), 0);
+
+      // Total = dépenses réelles (pas les charges configurées)
+      const totalExpenses = realExpensesTotal;
+
+      // ===== AVOIRS: Calculer les crédits/revenus sur le compte =====
+      // Filtrer les transactions: montant positif (avoirs/crédits) ET non exclues
+      const creditTransactions = transactions.filter((t: any) =>
+        t.amount > 0 && !t.exclude
+      );
+
+      // Total des avoirs (crédits reçus sur le compte)
+      const totalCredits = creditTransactions.reduce(
+        (sum: number, t: any) => sum + t.amount,
+        0
+      );
 
       // Solde de compte (donné par l'utilisateur)
       const currentAccountBalance = balance.account_balance || 0;
 
       // **CALCUL CLEF** : Montant à provisionner par la famille
-      // Formule: Provisions + Dépenses - Solde compte = Montant à apporter
-      const familyProvisionNeeded = totalProvisions + totalExpenses - currentAccountBalance;
+      // Formule: Provisions + Dépenses - Avoirs (crédits) - Solde compte = Montant à apporter
+      // Les avoirs réduisent ce que la famille doit provisionner
+      const familyProvisionNeeded = totalProvisions + totalExpenses - totalCredits - currentAccountBalance;
       
       // Répartition du montant selon les revenus nets
       const netRatio1 = totalNetRevenue > 0 ? rev1Net / totalNetRevenue : 0.5;
       const netRatio2 = totalNetRevenue > 0 ? rev2Net / totalNetRevenue : 0.5;
-      
+
       const familyMember1 = familyProvisionNeeded * netRatio1;
       const familyMember2 = familyProvisionNeeded * netRatio2;
+
+      // ===== DÉTAIL PAR MEMBRE: Provisions et Dépenses séparément =====
+      // Provisions par membre (réparties selon le ratio des revenus nets)
+      const provisionsMember1 = totalProvisions * netRatio1;
+      const provisionsMember2 = totalProvisions * netRatio2;
+
+      // Dépenses nettes par membre (dépenses - avoirs, réparties selon le ratio)
+      const netExpenses = totalExpenses - totalCredits;  // Dépenses nettes après avoirs
+      const expensesMember1 = netExpenses * netRatio1;
+      const expensesMember2 = netExpenses * netRatio2;
 
       // Statut de la situation familiale
       const getFamilyStatus = (needed: number, revenue: number): 'surplus' | 'balanced' | 'deficit' => {
@@ -170,7 +226,7 @@ export const useCleanDashboard = (month: string, isAuthenticated: boolean) => {
           total: totalExpenses,
           fixed: fixedExpensesTotal,
           variable: variableExpensesTotal,
-          count: summary.transaction_count || 0,
+          count: expenseTransactions.length,  // Nombre réel de transactions dépenses
           items: [] // À implémenter pour le drill-down
         },
         accountBalance: {
@@ -181,7 +237,20 @@ export const useCleanDashboard = (month: string, isAuthenticated: boolean) => {
           needed: familyProvisionNeeded,
           status: getFamilyStatus(familyProvisionNeeded, totalNetRevenue),
           member1: familyMember1,
-          member2: familyMember2
+          member2: familyMember2,
+          // Détail des provisions et dépenses par membre
+          detail: {
+            provisions: {
+              total: totalProvisions,
+              member1: provisionsMember1,
+              member2: provisionsMember2
+            },
+            expenses: {
+              total: netExpenses,  // Dépenses nettes (dépenses - avoirs)
+              member1: expensesMember1,
+              member2: expensesMember2
+            }
+          }
         }
       };
 

@@ -23,20 +23,25 @@ export function useUploadApi() {
   const performApiCall = useCallback(async (file: File): Promise<ImportResponse> => {
     const form = new FormData();
     form.append("file", file as Blob);
-    
+
     // Récupérer explicitement le token pour s'assurer qu'il est présent
     const token = localStorage.getItem("auth_token");
     const tokenType = localStorage.getItem("token_type");
-    
+
     if (!token || !tokenType) {
       throw new Error("Token d'authentification manquant");
     }
-    
+
+    // Détecter si c'est un PDF pour utiliser le smart-import
+    const isPdf = file.name.toLowerCase().endsWith('.pdf');
+    const endpoint = isPdf ? "/smart-import/quick" : "/import";
+
     console.log("🔑 Making import request with auth token:", tokenType, token.substring(0, 10) + "...");
-    
+    console.log(`📄 File type: ${isPdf ? 'PDF (relevé bancaire)' : 'CSV/XLSX'}, using endpoint: ${endpoint}`);
+
     // Log détaillé de la requête pour le débogage
     console.log("📤 Request details:", {
-      url: "/import",
+      url: endpoint,
       method: "POST",
       fileName: file.name,
       fileSize: file.size,
@@ -46,15 +51,15 @@ export function useUploadApi() {
         "Authorization": `${tokenType} ${token.substring(0, 10)}...`
       }
     });
-    
+
     try {
-      const response = await api.post<ImportResponse>("/import", form, {
-        headers: { 
+      const response = await api.post<any>(endpoint, form, {
+        headers: {
           "Content-Type": "multipart/form-data",
           "Authorization": `${tokenType} ${token}`
         }
       });
-      
+
       console.log("📥 Response received:", {
         status: response.status,
         statusText: response.statusText,
@@ -62,7 +67,31 @@ export function useUploadApi() {
         dataKeys: Object.keys(response.data || {}),
         data: response.data
       });
-      
+
+      // Si smart-import (PDF), adapter la réponse au format ImportResponse
+      if (isPdf && response.data) {
+        const smartData = response.data;
+        // Convertir months_detected de string[] à ImportMonth[]
+        const monthsFormatted = (smartData.months_detected || []).map((month: string) => ({
+          month,
+          transaction_count: Math.floor(smartData.transactions_imported / (smartData.months_detected?.length || 1)),
+          date_range: { start: null, end: null },
+          total_amount: 0,
+          categories: []
+        }));
+
+        return {
+          import_id: smartData.import_id,
+          status: smartData.success ? 'success' : 'error',
+          filename: file.name,
+          rows_processed: smartData.transactions_imported,
+          months_detected: monthsFormatted,
+          duplicates_info: { duplicates_count: 0 },
+          validation_errors: smartData.errors || [],
+          message: smartData.message
+        };
+      }
+
       return response.data;
     } catch (apiError: any) {
       // Log détaillé de l'erreur pour le débogage
@@ -80,7 +109,7 @@ export function useUploadApi() {
         code: apiError.code,
         stack: apiError.stack
       });
-      
+
       throw apiError;
     }
   }, []);

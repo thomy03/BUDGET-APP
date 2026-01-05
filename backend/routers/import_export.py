@@ -32,24 +32,50 @@ from export_engine import ExportManager, ExportRequest, ExportFilters
 @router.post("/import", response_model=ImportResponse)
 def import_file(file: UploadFile = File(...), current_user = Depends(get_current_user), db: Session = Depends(get_db)):
     """
-    Import CSV file with transactions
-    
-    Uploads and processes a CSV file containing transaction data.
+    Import CSV/XLSX file with transactions
+
+    Uploads and processes a CSV or XLSX file containing transaction data.
     Performs validation, duplicate detection, and data import.
     """
     import uuid
     import datetime as dt
-    
+    from services.smart_parser import get_smart_parser
+
     logger.info(f"Début import fichier '{file.filename}' par utilisateur: {current_user.username}")
-    
+
     try:
         # Validation sécurité
         if not validate_file_security(file):
             raise HTTPException(status_code=400, detail="Fichier non autorisé ou dangereux")
-        
-        # Lecture robuste du CSV
-        df = robust_read_csv(file)
-        logger.info(f"CSV lu avec succès: {len(df)} lignes")
+
+        # Detect file type
+        file_ext = file.filename.lower().rsplit('.', 1)[-1] if '.' in file.filename else ''
+
+        if file_ext in ('xlsx', 'xls'):
+            # Use smart parser for Excel files
+            content = file.file.read()
+            file.file.seek(0)
+            parser = get_smart_parser()
+            result = parser.parse(content, file.filename)
+
+            if not result.success or not result.transactions:
+                raise HTTPException(status_code=400, detail=f"Erreur lors du parsing XLSX: {result.errors}")
+
+            # Convert ParsedTransaction to DataFrame-like structure for compatibility
+            data = []
+            for tx in result.transactions:
+                data.append({
+                    'date': tx.date_op,
+                    'label': tx.label,
+                    'amount': tx.amount,
+                    'month': tx.date_op.strftime("%Y-%m") if tx.date_op else None
+                })
+            df = pd.DataFrame(data)
+            logger.info(f"XLSX parsé avec succès: {len(df)} transactions")
+        else:
+            # Lecture robuste du CSV
+            df = robust_read_csv(file)
+            logger.info(f"CSV lu avec succès: {len(df)} lignes")
         
         # Détection des mois
         months_data = detect_months_with_metadata(df)
@@ -153,6 +179,7 @@ def import_file(file: UploadFile = File(...), current_user = Depends(get_current
                 
                 # Pas de vérification de doublons car on fait un ANNULE ET REMPLACE
                 # Créer l'objet Transaction
+                # is_expense est True si le montant est négatif (dépense)
                 transaction = Transaction(
                     label=str(label_val),
                     amount=amount,
@@ -163,6 +190,7 @@ def import_file(file: UploadFile = File(...), current_user = Depends(get_current
                     category_parent="VARIABLE",
                     exclude=False,
                     expense_type="VARIABLE",
+                    is_expense=(amount < 0),  # Définir is_expense basé sur le signe du montant
                     import_id=import_id
                 )
                 db.add(transaction)

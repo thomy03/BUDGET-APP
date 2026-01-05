@@ -152,16 +152,10 @@ export function useTransactions(): UseTransactionsReturn {
 
   const saveTags = async (id: number, tagsCSV: string) => {
     try {
-      const transaction = rows.find(row => row.id === id);
-      if (!transaction) {
-        setError(`Transaction #${id} introuvable dans la liste actuelle. Veuillez rafraîchir la page.`);
-        return;
-      }
-
       const tags = tagsCSV.split(',').map(s => s.trim()).filter(Boolean);
-      
-      console.log('🏷️ Saving tags for transaction', id, ':', tags);
-      
+
+      console.log('🏷️ Saving tags for transaction', id, ':', tags, '(raw:', tagsCSV, ')');
+
       const response = await api.put(`/transactions/${id}/tag`, { tags: tagsCSV });
       
       console.log('✅ Tags saved successfully:', response.data);

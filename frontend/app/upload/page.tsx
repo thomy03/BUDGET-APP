@@ -77,7 +77,7 @@ export default function UploadPage() {
       <div className="flex items-center justify-between">
         <h1 className="h1">📥 Import de fichier</h1>
         <div className="text-sm text-zinc-500">
-          <span className="mr-4">Formats acceptés: CSV, XLSX, XLS</span>
+          <span className="mr-4">Formats acceptés: CSV, XLSX, XLS, PDF</span>
           <span>Max: 10MB</span>
         </div>
       </div>

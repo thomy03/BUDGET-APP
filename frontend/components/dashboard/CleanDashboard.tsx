@@ -38,7 +38,11 @@ export const CleanDashboard: React.FC<CleanDashboardProps> = ({ month, isAuthent
   const { data, loading, error, formatters } = useCleanDashboard(month, isAuthenticated);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [selectedExpenseType, setSelectedExpenseType] = useState<'variable' | 'fixed' | null>(null);
-  
+
+  // DEBUG: Log data to console
+  console.log('🔍 CleanDashboard data:', data);
+  console.log('🔍 familyProvision.detail:', data?.familyProvision?.detail);
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-24">
@@ -124,37 +128,143 @@ export const CleanDashboard: React.FC<CleanDashboardProps> = ({ month, isAuthent
         </SlideIn>
       </div>
 
-      {/* Informations complémentaires */}
-      <FadeIn delay={500} className="grid grid-cols-1 md:grid-cols-3 gap-4 p-6 bg-gray-100 rounded-xl">
-        
-        {/* Solde de compte */}
-        <div className="text-center">
-          <h3 className="text-sm font-medium text-gray-600 mb-2">Solde du Compte</h3>
-          <div className="text-2xl font-light text-gray-900">
-            {formatters.currency(data.accountBalance.current)}
+      {/* DEBUG SECTION - À SUPPRIMER */}
+      <div className="p-4 mb-4 bg-yellow-100 border-2 border-yellow-500 rounded-lg">
+        <h3 className="font-bold text-yellow-800 mb-2">DEBUG - VERSION 3</h3>
+        <div className="text-xs text-yellow-900 space-y-1">
+          <p>totalProvisions: {data.provisions?.total ?? 'undefined'}</p>
+          <p>totalExpenses: {data.expenses?.total ?? 'undefined'}</p>
+          <p>detail exists: {data.familyProvision?.detail ? 'OUI' : 'NON'}</p>
+          <p>detail.provisions.member1: {data.familyProvision?.detail?.provisions?.member1 ?? 'undefined'}</p>
+          <p>detail.expenses.member1: {data.familyProvision?.detail?.expenses?.member1 ?? 'undefined'}</p>
+        </div>
+      </div>
+
+      {/* RÉPARTITION FAMILIALE - Section détaillée avec breakdown */}
+      <FadeIn delay={500} className="p-6 bg-gray-50 rounded-xl">
+        <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-1">
+          Répartition Familiale (Détail v3)
+        </h2>
+        <p className="text-xs text-gray-400 mb-4">
+          Contribution par membre = Provisions + Dépenses nettes
+        </p>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Membre 1 */}
+          <div className="bg-white rounded-xl p-5 border border-gray-200">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-full bg-indigo-900 flex items-center justify-center text-white font-semibold">
+                {data.revenue.member1.name.charAt(0).toUpperCase()}
+              </div>
+              <div>
+                <div className="font-medium text-gray-900">{data.revenue.member1.name}</div>
+                <div className="text-xs text-gray-500">
+                  {Math.round((data.revenue.member1.net / (data.revenue.member1.net + data.revenue.member2.net)) * 100)}% de son revenu ({formatters.currency(data.revenue.member1.net)})
+                </div>
+              </div>
+            </div>
+
+            <div className="text-3xl font-light text-indigo-900 mb-4">
+              {formatters.currency(data.familyProvision.member1)}
+            </div>
+
+            {/* Détail provisions et dépenses - VISIBLE */}
+            <div className="space-y-2 text-sm bg-indigo-50 rounded-lg p-3 mt-3">
+              <div className="flex justify-between items-center">
+                <span className="text-indigo-700 font-medium">Provisions</span>
+                <span className="font-bold text-indigo-900 text-base">
+                  {formatters.currency(data.familyProvision.detail?.provisions?.member1 ?? 0)}
+                </span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-orange-700 font-medium">Dépenses nettes</span>
+                <span className="font-bold text-orange-900 text-base">
+                  {formatters.currency(data.familyProvision.detail?.expenses?.member1 ?? 0)}
+                </span>
+              </div>
+            </div>
+
+            {/* Barre de progression */}
+            <div className="mt-4">
+              <div className="w-full bg-gray-200 rounded-full h-2">
+                <div
+                  className="bg-indigo-600 h-2 rounded-full"
+                  style={{ width: `${Math.min((data.familyProvision.member1 / data.revenue.member1.net) * 100, 100)}%` }}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Membre 2 */}
+          <div className="bg-white rounded-xl p-5 border border-gray-200">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-full bg-slate-700 flex items-center justify-center text-white font-semibold">
+                {data.revenue.member2.name.charAt(0).toUpperCase()}
+              </div>
+              <div>
+                <div className="font-medium text-gray-900">{data.revenue.member2.name}</div>
+                <div className="text-xs text-gray-500">
+                  {Math.round((data.revenue.member2.net / (data.revenue.member1.net + data.revenue.member2.net)) * 100)}% de son revenu ({formatters.currency(data.revenue.member2.net)})
+                </div>
+              </div>
+            </div>
+
+            <div className="text-3xl font-light text-slate-700 mb-4">
+              {formatters.currency(data.familyProvision.member2)}
+            </div>
+
+            {/* Détail provisions et dépenses - VISIBLE */}
+            <div className="space-y-2 text-sm bg-slate-100 rounded-lg p-3 mt-3">
+              <div className="flex justify-between items-center">
+                <span className="text-slate-700 font-medium">Provisions</span>
+                <span className="font-bold text-slate-900 text-base">
+                  {formatters.currency(data.familyProvision.detail?.provisions?.member2 ?? 0)}
+                </span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-orange-700 font-medium">Dépenses nettes</span>
+                <span className="font-bold text-orange-900 text-base">
+                  {formatters.currency(data.familyProvision.detail?.expenses?.member2 ?? 0)}
+                </span>
+              </div>
+            </div>
+
+            {/* Barre de progression */}
+            <div className="mt-4">
+              <div className="w-full bg-gray-200 rounded-full h-2">
+                <div
+                  className="bg-slate-600 h-2 rounded-full"
+                  style={{ width: `${Math.min((data.familyProvision.member2 / data.revenue.member2.net) * 100, 100)}%` }}
+                />
+              </div>
+            </div>
           </div>
         </div>
+      </FadeIn>
 
-        {/* Répartition Familiale */}
-        <div className="text-center">
-          <h3 className="text-sm font-medium text-gray-600 mb-2">Répartition à Provisionner</h3>
-          <div className="space-y-1">
-            <div className="text-sm text-gray-700">
-              {data.revenue.member1.name}: <span className="font-medium">{formatters.currency(data.familyProvision.member1)}</span>
-            </div>
-            <div className="text-sm text-gray-700">
-              {data.revenue.member2.name}: <span className="font-medium">{formatters.currency(data.familyProvision.member2)}</span>
-            </div>
-          </div>
+      {/* PROVISIONS ACTIVES */}
+      <FadeIn delay={600} className="p-6 bg-white rounded-xl border border-gray-200">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">
+            Provisions Actives
+          </h2>
+          <a href="/settings" className="text-sm text-indigo-600 hover:text-indigo-800">
+            Gérer →
+          </a>
         </div>
 
-        {/* Résumé du mois */}
-        <div className="text-center">
-          <h3 className="text-sm font-medium text-gray-600 mb-2">Résumé du Mois</h3>
-          <div className="text-sm text-gray-700">
-            <div>{data.expenses.count} transactions</div>
-            <div>{data.provisions.count} provisions actives</div>
-          </div>
+        <div className="space-y-3">
+          {data.provisions.items.slice(0, 4).map((provision) => (
+            <div key={provision.id} className="flex justify-between items-center py-2">
+              <span className="text-gray-700">{provision.name}</span>
+              <span className="font-medium text-gray-900">{formatters.currency(provision.currentAmount)}/mois</span>
+            </div>
+          ))}
+          {data.provisions.items.length > 4 && (
+            <div className="text-center text-sm text-gray-500 pt-2">
+              + {data.provisions.items.length - 4} autres provisions
+            </div>
+          )}
         </div>
       </FadeIn>
 

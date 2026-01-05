@@ -140,23 +140,37 @@ def sanitize_filename(filename: str) -> str:
 
 def validate_file_security(file: UploadFile) -> bool:
     """Validate uploaded file for security"""
+    # Allowed file extensions
+    ALLOWED_EXTENSIONS = {'.csv', '.xlsx', '.xls', '.pdf'}
+    # Allowed MIME types
+    ALLOWED_MIME_TYPES = {
+        'text/csv', 'text/plain', 'application/csv',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',  # xlsx
+        'application/vnd.ms-excel',  # xls
+        'application/pdf',
+        'application/octet-stream',  # Generic binary (sometimes used for xlsx)
+        'application/zip',  # XLSX files are ZIP archives
+    }
+
     try:
         # Check filename
         if not file.filename:
             logger.warning("No filename provided")
             return False
-        
+
         # Sanitize filename
         safe_filename = sanitize_filename(file.filename)
-        if not safe_filename.lower().endswith('.csv'):
-            logger.warning(f"Invalid file extension: {safe_filename}")
+        file_ext = '.' + safe_filename.lower().rsplit('.', 1)[-1] if '.' in safe_filename else ''
+
+        if file_ext not in ALLOWED_EXTENSIONS:
+            logger.warning(f"Invalid file extension: {safe_filename} (ext: {file_ext})")
             return False
-        
+
         # Check file size (max 10MB)
         if hasattr(file, 'size') and file.size and file.size > 10 * 1024 * 1024:
             logger.warning(f"File too large: {file.size} bytes")
             return False
-        
+
         # MIME type check if available
         if MAGIC_AVAILABLE:
             try:
@@ -164,15 +178,17 @@ def validate_file_security(file: UploadFile) -> bool:
                 file.file.seek(0)
                 chunk = file.file.read(1024)
                 file.file.seek(0)
-                
+
                 mime = magic.from_buffer(chunk, mime=True)
-                if not mime.startswith('text/'):
+                # Check against allowed MIME types (or text/* for CSV variants)
+                if mime not in ALLOWED_MIME_TYPES and not mime.startswith('text/'):
                     logger.warning(f"Invalid MIME type: {mime}")
                     return False
+                logger.info(f"File MIME type validated: {mime}")
             except Exception as e:
                 logger.warning(f"MIME detection failed: {str(e)}")
                 # Continue without MIME check
-        
+
         return True
     except Exception as e:
         logger.error(f"File validation error: {str(e)}")

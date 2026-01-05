@@ -164,8 +164,19 @@ export function ModernTransactionsTable({
     if (!dateStr) return '';
     const date = new Date(dateStr);
     if (isNaN(date.getTime())) return '';
-    return date.toLocaleDateString('fr-FR', { 
-      day: '2-digit', 
+    return date.toLocaleDateString('fr-FR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    });
+  };
+
+  const formatDateShort = (dateStr: string) => {
+    if (!dateStr) return '';
+    const date = new Date(dateStr);
+    if (isNaN(date.getTime())) return '';
+    return date.toLocaleDateString('fr-FR', {
+      day: '2-digit',
       month: 'short'
     });
   };
@@ -251,14 +262,15 @@ export function ModernTransactionsTable({
                     {/* Partie gauche : Date et libellé */}
                     <div className="flex-1 min-w-0 pr-4">
                       <div className="flex items-start gap-4">
-                        <div className="flex-shrink-0 text-center">
+                        {/* Colonne Date - visible et formatée */}
+                        <div className="flex-shrink-0 w-24 text-center bg-gray-50 rounded-lg px-2 py-1">
                           <div className="text-sm font-semibold text-gray-900">
-                            {formatDate(row.date)}
+                            {formatDate(row.date_op || row.date)}
                           </div>
                         </div>
-                        
+
                         <div className="flex-1 min-w-0">
-                          <div className="text-base font-medium text-gray-900 truncate">
+                          <div className="text-base font-medium text-gray-900 truncate" title={row.label}>
                             {row.label}
                           </div>
                           
