@@ -900,6 +900,60 @@ export const balanceApi = {
 };
 
 // ============================================================================
+// ANALYTICS API
+// ============================================================================
+
+export interface TrendData {
+  month: string;
+  revenues: number;
+  expenses: number;
+  savings: number;
+  balance: number;
+}
+
+export const analyticsApi = {
+  // Récupérer les tendances sur plusieurs mois
+  async getTrends(period: string = 'last6'): Promise<TrendData[]> {
+    try {
+      const response = await api.get<TrendData[]>('/api/analytics/trends', {
+        params: { months: period }
+      });
+      return response.data || [];
+    } catch (error) {
+      console.error('Error fetching trends:', error);
+      // Retourner des données vides en cas d'erreur
+      return [];
+    }
+  },
+
+  // Récupérer le résumé analytics d'un mois
+  async getSummary(month: string): Promise<any> {
+    try {
+      const response = await api.get(`/api/analytics/summary`, {
+        params: { month }
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching analytics summary:', error);
+      return null;
+    }
+  },
+
+  // Récupérer les dépenses par catégorie
+  async getExpensesByCategory(month: string): Promise<any[]> {
+    try {
+      const response = await api.get('/api/analytics/expenses-by-category', {
+        params: { month }
+      });
+      return response.data || [];
+    } catch (error) {
+      console.error('Error fetching expenses by category:', error);
+      return [];
+    }
+  }
+};
+
+// ============================================================================
 // TAG-CATEGORY MAPPINGS API
 // ============================================================================
 
@@ -942,6 +996,65 @@ export const tagCategoryApi = {
   async getStats(): Promise<{ total_mappings: number; categories_breakdown: Record<string, number> }> {
     const response = await api.get('/tag-categories/stats');
     return response.data;
+  }
+};
+
+// =============================================================================
+// CUSTOM CATEGORIES API (User-defined categories persistence)
+// =============================================================================
+
+export type CustomCategory = {
+  id: string;
+  name: string;
+  icon?: string;
+  color?: string;
+  user_id?: string;
+  is_active: boolean;
+  created_at?: string;
+  updated_at?: string;
+};
+
+export type CustomCategoryCreate = {
+  id: string;
+  name: string;
+  icon?: string;
+  color?: string;
+};
+
+export type CustomCategoryBulkOut = {
+  created: number;
+  updated: number;
+  total: number;
+  categories: CustomCategory[];
+};
+
+export const customCategoriesApi = {
+  // Récupérer toutes les catégories personnalisées
+  async getAll(): Promise<CustomCategory[]> {
+    try {
+      const response = await api.get<CustomCategory[]>('/custom-categories/');
+      return response.data || [];
+    } catch (error) {
+      console.error('Error fetching custom categories:', error);
+      return [];
+    }
+  },
+
+  // Créer ou mettre à jour une catégorie
+  async save(category: CustomCategoryCreate): Promise<CustomCategory> {
+    const response = await api.post<CustomCategory>('/custom-categories/', category);
+    return response.data;
+  },
+
+  // Synchroniser toutes les catégories (bulk)
+  async syncAll(categories: CustomCategoryCreate[]): Promise<CustomCategoryBulkOut> {
+    const response = await api.post<CustomCategoryBulkOut>('/custom-categories/bulk', { categories });
+    return response.data;
+  },
+
+  // Supprimer une catégorie
+  async delete(categoryId: string): Promise<void> {
+    await api.delete(`/custom-categories/${encodeURIComponent(categoryId)}`);
   }
 };
 

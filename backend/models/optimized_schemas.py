@@ -138,7 +138,7 @@ class TransactionSummary(BaseModel):
     amount: float
     category: str = Field(max_length=100)
     expense_type: ExpenseType
-    tags: List[str] = Field(default_factory=list, max_items=10)
+    tags: List[str] = Field(default_factory=list, max_length=10)
     
     class Config:
         schema_extra = {

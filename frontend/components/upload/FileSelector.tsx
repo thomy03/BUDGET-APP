@@ -28,16 +28,16 @@ const FileSelector = React.memo<FileSelectorProps>(({
         <div>
           <h3 className="text-lg font-semibold mb-2">Sélectionner un fichier</h3>
           <p className="text-sm text-zinc-600 mb-4">
-            Importez vos transactions bancaires. Le fichier doit contenir les colonnes : 
-            Date, Description, Montant, Compte.
+            Importez vos transactions bancaires (CSV, Excel ou PDF de relevé bancaire).
+            Le système détecte automatiquement le format et les colonnes.
           </p>
-          
+
           <div className="space-y-4">
             <div className="flex items-center gap-4">
-              <input 
-                type="file" 
+              <input
+                type="file"
                 onChange={handleFileChange}
-                accept=".csv,.xlsx,.xls"
+                accept=".csv,.xlsx,.xls,.pdf"
                 className="flex-1 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-zinc-50 file:text-zinc-700 hover:file:bg-zinc-100"
               />
             </div>

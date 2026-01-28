@@ -1,6 +1,6 @@
-// Cache fix timestamp: 2025-08-10T16:44:30Z
+// Cache fix timestamp: 2026-01-03T15:00:00Z
 'use client';
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useSyncExternalStore } from 'react';
 
 // Helper function to get current month in YYYY-MM format
 const getCurrentMonth = () => {
@@ -8,21 +8,41 @@ const getCurrentMonth = () => {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
 };
 
-// Global month state - simple approach without localStorage
+// Global month state with subscriber pattern for cross-component reactivity
 let globalMonth = getCurrentMonth();
+let subscribers = new Set<() => void>();
+
+const notifySubscribers = () => {
+  subscribers.forEach(callback => callback());
+};
+
+const subscribe = (callback: () => void) => {
+  subscribers.add(callback);
+  return () => subscribers.delete(callback);
+};
+
+const getSnapshot = () => globalMonth;
+
+const setGlobalMonth = (newMonth: string) => {
+  if (globalMonth !== newMonth) {
+    console.log('📅 Global month changed:', globalMonth, '->', newMonth);
+    globalMonth = newMonth;
+    notifySubscribers();
+  }
+};
 
 // Debug log to verify fresh code is loading
 console.log('✅ month.ts loaded fresh at:', new Date().toISOString());
 
 export function useGlobalMonth(): [string, (m: string) => void] {
-  const [, forceUpdate] = useState({});
-  
+  // useSyncExternalStore ensures ALL components using this hook re-render when month changes
+  const month = useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
+
   const setMonth = useCallback((newMonth: string) => {
-    globalMonth = newMonth;
-    forceUpdate({});  // Force re-render
+    setGlobalMonth(newMonth);
   }, []);
 
-  return [globalMonth, setMonth];
+  return [month, setMonth];
 }
 
 /**

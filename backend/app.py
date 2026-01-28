@@ -398,9 +398,11 @@ from routers.ml_feedback import router as ml_feedback_router  # ML feedback lear
 from routers.ml_enhanced_classification import router as ml_enhanced_classification_router  # Enhanced ML classification
 from routers.balance import router as balance_router  # Account balance management
 from routers.tag_categories import router as tag_categories_router  # Tag-category mappings persistence
+from routers.custom_categories import router as custom_categories_router  # User-defined custom categories
 from routers.budgets import router as budgets_router  # Category budget management for variance analysis
 from routers.ai import router as ai_router  # AI-powered budget analysis with OpenRouter
 from routers.predictions import router as predictions_router  # ML predictions and anomaly detection
+from routers.smart_import import router as smart_import_router  # Smart multi-format file import (CSV, XLSX, PDF)
 
 # Include routers with their prefixes
 app.include_router(auth_router, tags=["authentication"])
@@ -423,9 +425,11 @@ app.include_router(ml_feedback_router, tags=["ml-feedback"])  # ML feedback lear
 app.include_router(ml_enhanced_classification_router, tags=["ml-enhanced-classification"])  # Enhanced ML classification
 app.include_router(balance_router, tags=["account-balance"])  # Account balance management
 app.include_router(tag_categories_router, tags=["tag-categories"])  # Tag-category mappings persistence
+app.include_router(custom_categories_router, tags=["custom-categories"])  # User-defined custom categories
 app.include_router(budgets_router, tags=["category-budgets"])  # Category budget management for variance analysis
 app.include_router(ai_router, tags=["ai-analysis"])  # AI-powered budget analysis with OpenRouter
 app.include_router(predictions_router, tags=["ml-predictions"])  # ML budget predictions and anomaly detection
+app.include_router(smart_import_router, tags=["smart-import"])  # Smart multi-format file import
 
 # Configure CORS middleware after all routes are defined
 # This ensures CORS preflight requests are handled correctly for all endpoints
@@ -781,8 +785,9 @@ def get_summary(month: str, current_user = Depends(get_current_user), db: Sessio
             custom_provisions_detail.append((provision.name, member1_amount, member2_amount, provision.icon))
 
         # Variables (transactions du mois)
+        # Filtrer: montant négatif (dépenses) ET non exclu (prêt auto, immobilier, etc.)
         txs = db.query(Transaction).filter(Transaction.month == month).all()
-        var_total = -sum(t.amount for t in txs if (t.is_expense and not t.exclude and t.amount is not None))
+        var_total = -sum(t.amount for t in txs if (t.amount is not None and t.amount < 0 and not t.exclude))
         var_p1 = var_total * r1
         var_p2 = var_total * r2
 
@@ -964,9 +969,10 @@ def get_enhanced_summary(month: str, current_user = Depends(get_current_user), d
             })
         
         # 2. Transactions automatiquement classées FIXED par l'IA
+        # Utilise amount < 0 au lieu de is_expense pour plus de robustesse
         fixed_txs = db.query(Transaction).filter(
             Transaction.month == month,
-            Transaction.is_expense == True,
+            Transaction.amount < 0,  # Dépenses = montants négatifs
             Transaction.exclude == False,
             Transaction.expense_type == 'FIXED'
         ).all()
@@ -1033,9 +1039,10 @@ def get_enhanced_summary(month: str, current_user = Depends(get_current_user), d
         # - Les variables viennent UNIQUEMENT des transactions avec expense_type='VARIABLE'  
         # - Plus de double affichage possible entre Fixed et Variable
         
+        # Utilise amount < 0 au lieu de is_expense pour plus de robustesse
         txs = db.query(Transaction).filter(
             Transaction.month == month,
-            Transaction.is_expense == True,
+            Transaction.amount < 0,  # Dépenses = montants négatifs
             Transaction.exclude == False,
             Transaction.expense_type == 'VARIABLE'  # Filtrage strict pour éviter duplication
         ).all()
@@ -1111,12 +1118,12 @@ def get_enhanced_summary(month: str, current_user = Depends(get_current_user), d
         variables_total = variables_p1_total + variables_p2_total
         
         # === REVENUS (INCOME) ===
-        # Récupérer toutes les transactions de revenus (montants positifs, is_expense=False)
+        # Récupérer toutes les transactions de revenus (montants positifs)
+        # Utilise amount > 0 comme critère principal au lieu de is_expense
         revenue_txs = db.query(Transaction).filter(
             Transaction.month == month,
-            Transaction.is_expense == False,
-            Transaction.exclude == False,
-            Transaction.amount > 0  # Revenus = montants positifs
+            Transaction.amount > 0,  # Revenus = montants positifs
+            Transaction.exclude == False
         ).all()
         
         revenue_member1_total = 0.0

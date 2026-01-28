@@ -10,6 +10,8 @@ interface ModernTransactionsTableProps {
   onToggle: (id: number, exclude: boolean) => void;
   onSaveTags: (id: number, tagsCSV: string) => void;
   onBulkUnexcludeAll?: () => void;
+  editTransactionId?: number | null; // ID de la transaction à éditer automatiquement
+  onEditComplete?: () => void; // Callback après édition terminée
 }
 
 interface AISuggestion {
@@ -18,17 +20,46 @@ interface AISuggestion {
   source?: string;
 }
 
-export function ModernTransactionsTable({ 
-  rows, 
-  onToggle, 
+export function ModernTransactionsTable({
+  rows,
+  onToggle,
   onSaveTags,
-  onBulkUnexcludeAll
+  onBulkUnexcludeAll,
+  editTransactionId,
+  onEditComplete
 }: ModernTransactionsTableProps) {
   const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
   const [editingTags, setEditingTags] = useState<{ [key: number]: string }>({});
   const [loadingSuggestions, setLoadingSuggestions] = useState<{ [key: number]: boolean }>({});
   const [suggestions, setSuggestions] = useState<{ [key: number]: AISuggestion }>({});
   const { addToast } = useToast();
+
+  // Auto-ouvrir l'édition pour une transaction spécifique (depuis Analytics)
+  useEffect(() => {
+    if (editTransactionId && rows.length > 0) {
+      const targetRow = rows.find(r => r.id === editTransactionId);
+      if (targetRow) {
+        // Ouvrir l'édition des tags pour cette transaction
+        const currentTags = targetRow.tags?.join(', ') || '';
+        setEditingTags(prev => ({ ...prev, [editTransactionId]: currentTags }));
+        // Expand la ligne pour plus de visibilité
+        setExpandedRows(prev => new Set(prev).add(editTransactionId));
+
+        // Scroll vers la transaction (avec un délai pour le rendu)
+        setTimeout(() => {
+          const element = document.getElementById(`tx-row-${editTransactionId}`);
+          if (element) {
+            element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            // Animation de mise en évidence
+            element.classList.add('ring-2', 'ring-purple-500', 'ring-offset-2');
+            setTimeout(() => {
+              element.classList.remove('ring-2', 'ring-purple-500', 'ring-offset-2');
+            }, 3000);
+          }
+        }, 100);
+      }
+    }
+  }, [editTransactionId, rows]);
 
   // Calculer les statistiques
   const stats = useMemo(() => {
@@ -100,12 +131,17 @@ export function ModernTransactionsTable({
       const newEditingTags = { ...editingTags };
       delete newEditingTags[id];
       setEditingTags(newEditingTags);
-      
+
       addToast({
         message: "Tags mis à jour avec succès",
         type: "success",
         duration: 2000
       });
+
+      // Si c'était la transaction ouverte depuis Analytics, notifier la fin de l'édition
+      if (id === editTransactionId && onEditComplete) {
+        onEditComplete();
+      }
     }
   };
 
@@ -128,8 +164,19 @@ export function ModernTransactionsTable({
     if (!dateStr) return '';
     const date = new Date(dateStr);
     if (isNaN(date.getTime())) return '';
-    return date.toLocaleDateString('fr-FR', { 
-      day: '2-digit', 
+    return date.toLocaleDateString('fr-FR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    });
+  };
+
+  const formatDateShort = (dateStr: string) => {
+    if (!dateStr) return '';
+    const date = new Date(dateStr);
+    if (isNaN(date.getTime())) return '';
+    return date.toLocaleDateString('fr-FR', {
+      day: '2-digit',
       month: 'short'
     });
   };
@@ -204,8 +251,9 @@ export function ModernTransactionsTable({
             const isLoadingSuggestions = loadingSuggestions[row.id];
             
             return (
-              <div 
+              <div
                 key={row.id}
+                id={`tx-row-${row.id}`}
                 className={`transition-all duration-200 ${row.exclude ? 'opacity-50 bg-gray-50' : 'hover:bg-gray-50'}`}
               >
                 {/* Ligne principale */}
@@ -214,14 +262,15 @@ export function ModernTransactionsTable({
                     {/* Partie gauche : Date et libellé */}
                     <div className="flex-1 min-w-0 pr-4">
                       <div className="flex items-start gap-4">
-                        <div className="flex-shrink-0 text-center">
+                        {/* Colonne Date - visible et formatée */}
+                        <div className="flex-shrink-0 w-24 text-center bg-gray-50 rounded-lg px-2 py-1">
                           <div className="text-sm font-semibold text-gray-900">
-                            {formatDate(row.date)}
+                            {formatDate(row.date_op || row.date)}
                           </div>
                         </div>
-                        
+
                         <div className="flex-1 min-w-0">
-                          <div className="text-base font-medium text-gray-900 truncate">
+                          <div className="text-base font-medium text-gray-900 truncate" title={row.label}>
                             {row.label}
                           </div>
                           

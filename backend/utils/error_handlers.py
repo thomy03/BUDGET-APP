@@ -373,6 +373,10 @@ COMMON_ERRORS = {
         "status_code": status.HTTP_409_CONFLICT,
         "detail": "Resource conflict"
     },
+    "TOO_MANY_REQUESTS": {
+        "status_code": status.HTTP_429_TOO_MANY_REQUESTS,
+        "detail": "Too many requests, please try again later"
+    },
     "INTERNAL_ERROR": {
         "status_code": status.HTTP_500_INTERNAL_SERVER_ERROR,
         "detail": "Internal server error"

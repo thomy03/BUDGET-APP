@@ -1,7 +1,10 @@
 """
-Conftest for unit tests - exclude tests with missing fixtures or needing refactoring.
+Conftest for unit tests.
+
+Note: test_database_models.py works when run alone but has isolation issues
+when run with other tests that import the app (Base metadata conflict).
+Run separately with: pytest tests/unit/test_database_models.py -v
 """
 collect_ignore = [
-    "test_database_models.py",   # requires 'test_db' fixture
-    "test_auth_endpoints.py",    # needs refactoring to use dependency_overrides
+    "test_database_models.py",   # Run separately to avoid Base metadata conflict
 ]

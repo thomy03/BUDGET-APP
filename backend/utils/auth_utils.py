@@ -5,22 +5,22 @@ Eliminates duplicate authentication patterns across the application
 
 import os
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional, Dict, Any, Union, Tuple, List
 from functools import wraps
 
+import bcrypt
 from fastapi import Depends, HTTPException, status, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from jose import JWTError, jwt
-from passlib.context import CryptContext
 
 from .error_handlers import handle_auth_error, handle_permission_error
 
 logger = logging.getLogger(__name__)
 
 # Authentication configuration
+# Using bcrypt directly instead of passlib to avoid compatibility issues with bcrypt 4.x
 security = HTTPBearer()
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 # JWT configuration
 SECRET_KEY = os.getenv("JWT_SECRET_KEY", "fallback-secret-key")
@@ -53,32 +53,36 @@ class AuthContext:
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """
-    Verify password against hash
-    
+    Verify password against hash using bcrypt directly (compatible bcrypt 4.x)
+
     Args:
         plain_password: Plain text password
         hashed_password: Hashed password
-        
+
     Returns:
         True if password matches
     """
     try:
-        return pwd_context.verify(plain_password, hashed_password)
+        return bcrypt.checkpw(
+            plain_password.encode('utf-8'),
+            hashed_password.encode('utf-8')
+        )
     except Exception as e:
         logger.error(f"Password verification error: {e}")
         return False
 
 def hash_password(password: str) -> str:
     """
-    Hash password using bcrypt
-    
+    Hash password using bcrypt directly (compatible bcrypt 4.x)
+
     Args:
         password: Plain text password
-        
+
     Returns:
         Hashed password
     """
-    return pwd_context.hash(password)
+    salt = bcrypt.gensalt(rounds=12)
+    return bcrypt.hashpw(password.encode('utf-8'), salt).decode('utf-8')
 
 def create_access_token(
     data: Dict[str, Any], 
@@ -97,11 +101,11 @@ def create_access_token(
     to_encode = data.copy()
     
     if expires_delta:
-        expire = datetime.utcnow() + expires_delta
+        expire = datetime.now(timezone.utc) + expires_delta
     else:
-        expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+        expire = datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     
-    to_encode.update({"exp": expire, "iat": datetime.utcnow()})
+    to_encode.update({"exp": expire, "iat": datetime.now(timezone.utc)})
     
     try:
         encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
@@ -128,7 +132,7 @@ def verify_jwt_token(token: str) -> Dict[str, Any]:
         
         # Check expiration
         exp = payload.get("exp")
-        if exp and datetime.utcnow().timestamp() > exp:
+        if exp and datetime.now(timezone.utc).timestamp() > exp:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Token expired"
@@ -429,7 +433,7 @@ def log_auth_event(
     log_data = {
         "event_type": event_type,
         "success": success,
-        "timestamp": datetime.utcnow().isoformat(),
+        "timestamp": datetime.now(timezone.utc).isoformat(),
     }
     
     if username:
@@ -458,7 +462,7 @@ class RateLimiter:
     
     def is_allowed(self, identifier: str) -> bool:
         """Check if identifier is within rate limits"""
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         window_start = now - timedelta(minutes=self.window_minutes)
         
         # Clean old attempts
@@ -476,7 +480,7 @@ class RateLimiter:
         """Record an authentication attempt"""
         if identifier not in self.attempts:
             self.attempts[identifier] = []
-        self.attempts[identifier].append(datetime.utcnow())
+        self.attempts[identifier].append(datetime.now(timezone.utc))
 
 # Global rate limiter instance
 auth_rate_limiter = RateLimiter()

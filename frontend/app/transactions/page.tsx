@@ -49,6 +49,18 @@ export default function ModernTransactionsPage() {
   const [selectedSuggestions, setSelectedSuggestions] = useState<Set<number>>(new Set());
   const [applyingTags, setApplyingTags] = useState(false);
 
+  // Lecture du paramètre editTx pour ouvrir l'édition d'une transaction spécifique (depuis Analytics)
+  const editTxParam = searchParams.get('editTx');
+  const editTransactionId = editTxParam ? parseInt(editTxParam, 10) : null;
+
+  // Callback pour nettoyer l'URL après l'édition
+  const handleEditComplete = useCallback(() => {
+    // Supprimer le paramètre editTx de l'URL sans recharger la page
+    const newUrl = new URL(window.location.href);
+    newUrl.searchParams.delete('editTx');
+    window.history.replaceState({}, '', newUrl.toString());
+  }, []);
+
   // Prévisualiser les suggestions d'auto-tagging
   const handlePreviewAutoTag = useCallback(async () => {
     if (!month) return;
@@ -74,7 +86,8 @@ export default function ModernTransactionsPage() {
     try {
       const selectedItems = autoTagResult.suggestions.filter(s => selectedSuggestions.has(s.transaction_id));
       for (const suggestion of selectedItems) {
-        await saveTags(suggestion.transaction_id, [suggestion.suggested_tag]);
+        // saveTags attend une string (CSV), pas un tableau
+        await saveTags(suggestion.transaction_id, suggestion.suggested_tag);
       }
       // Rafraîchir les transactions
       refresh(isAuthenticated, month);
@@ -108,9 +121,21 @@ export default function ModernTransactionsPage() {
     }
   };
 
-  // Nombre de transactions sans tags
+  // Nombre de transactions sans tags (inclut "Non classé" comme non-tagué)
   const untaggedCount = useMemo(() => {
-    return rows.filter(r => !r.tags || r.tags.length === 0 || r.tags.every(t => !t)).length;
+    return rows.filter(r => {
+      // Pas de tags du tout
+      if (!r.tags || r.tags.length === 0) return true;
+      // Tous les tags sont vides/null
+      if (r.tags.every(t => !t)) return true;
+      // Tags est un string "Non classé" (format backend)
+      if (typeof r.tags === 'string') {
+        return r.tags.toLowerCase().trim() === 'non classé' || r.tags.trim() === '';
+      }
+      // Tags est un tableau avec uniquement "Non classé"
+      if (r.tags.length === 1 && r.tags[0]?.toLowerCase().trim() === 'non classé') return true;
+      return false;
+    }).length;
   }, [rows]);
   
   // Appliquer les filtres
@@ -374,6 +399,8 @@ export default function ModernTransactionsPage() {
               onToggle={toggle}
               onSaveTags={saveTags}
               onBulkUnexcludeAll={bulkUnexcludeAll}
+              editTransactionId={editTransactionId}
+              onEditComplete={handleEditComplete}
             />
           </>
         )}

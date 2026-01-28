@@ -15,10 +15,17 @@ from models.database import (
 
 @pytest.fixture
 def test_engine():
-    """Create in-memory SQLite engine for testing."""
-    engine = create_engine("sqlite:///:memory:", echo=False)
+    """Create in-memory SQLite engine for testing with proper isolation."""
+    from sqlalchemy.pool import StaticPool
+    engine = create_engine(
+        "sqlite:///:memory:",
+        echo=False,
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool
+    )
     Base.metadata.create_all(engine)
-    return engine
+    yield engine
+    Base.metadata.drop_all(engine)
 
 
 @pytest.fixture
@@ -27,6 +34,7 @@ def test_session(test_engine):
     Session = sessionmaker(bind=test_engine)
     session = Session()
     yield session
+    session.rollback()
     session.close()
 
 
@@ -453,9 +461,9 @@ class TestDatabaseIndexes:
     def test_custom_provision_queries(self, test_session):
         """Should handle custom provision queries efficiently."""
         provisions = [
-            CustomProvision(name="Active 1", is_active=True, display_order=1, category="savings"),
-            CustomProvision(name="Inactive", is_active=False, display_order=2, category="savings"),
-            CustomProvision(name="Active 2", is_active=True, display_order=3, category="investment"),
+            CustomProvision(name="Active 1", percentage=5.0, is_active=True, display_order=1, category="savings"),
+            CustomProvision(name="Inactive", percentage=3.0, is_active=False, display_order=2, category="savings"),
+            CustomProvision(name="Active 2", percentage=10.0, is_active=True, display_order=3, category="investment"),
         ]
         test_session.add_all(provisions)
         test_session.commit()

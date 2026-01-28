@@ -3,6 +3,7 @@ export { default as Button } from "./Button";
 export { default as Input } from "./Input";
 export { default as Card } from "./Card";
 export { default as LoadingSpinner } from "./LoadingSpinner";
+export { GlassCard, KPICard } from "./GlassCard";
 export { default as Alert } from "./Alert";
 export { default as ApiErrorAlert } from "./ApiErrorAlert";
 export { ToastProvider, useToast } from "./Toast";

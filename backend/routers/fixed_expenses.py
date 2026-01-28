@@ -36,7 +36,7 @@ from models.schemas import FixedLineIn, FixedLineOut
 
 @router.get("", response_model=List[FixedLineOut])
 async def list_fixed_lines(
-    category: Optional[str] = Query(None, pattern="^(logement|transport|services|loisirs|santé|autres)$", description="Filtrer par catégorie"),
+    category: Optional[str] = Query(None, max_length=200, description="Filtrer par catégorie"),
     active_only: bool = Query(True, description="Afficher uniquement les lignes actives"),
     current_user = Depends(get_current_user), 
     db: Session = Depends(get_db)

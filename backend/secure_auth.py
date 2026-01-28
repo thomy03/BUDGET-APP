@@ -10,10 +10,10 @@ from datetime import datetime, timedelta
 from typing import Optional, Dict, Any
 from dataclasses import dataclass
 
+import bcrypt as bcrypt_lib
 from fastapi import Depends, HTTPException, status, Request, Response
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from jose import JWTError, jwt
-from passlib.context import CryptContext
 from pydantic import BaseModel
 from dotenv import load_dotenv
 import redis
@@ -368,13 +368,13 @@ session_manager = SessionManager(token_manager.redis_client)
 
 class SecureAuthenticationService:
     """Service d'authentification sécurisé principal"""
-    
+
     def __init__(self):
         self.token_manager = token_manager
         self.rate_limiter = rate_limiter
         self.session_manager = session_manager
         self.audit_logger = get_audit_logger()
-        self.pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+        # Using bcrypt directly instead of passlib to avoid compatibility issues with bcrypt 4.x
     
     async def authenticate(self, username: str, password: str, request: Request) -> TokenPair:
         """Authentification sécurisée avec protection brute force"""
@@ -509,7 +509,7 @@ class SecureAuthenticationService:
             # Même en cas d'erreur, considérer la déconnexion comme réussie côté client
     
     def _verify_credentials(self, username: str, password: str) -> Optional[dict]:
-        """Vérifier les identifiants utilisateur"""
+        """Vérifier les identifiants utilisateur using bcrypt directly (compatible bcrypt 4.x)"""
         # TODO: Remplacer par vraie base d'utilisateurs
         fake_users = {
             "admin": {
@@ -517,14 +517,17 @@ class SecureAuthenticationService:
                 "hashed_password": "$2b$12$tc88iTlfmRyjOGwvM9MshuSpmn1JLO4dvJYIZBIKQn.0g8mYl5XVG"  # test123
             }
         }
-        
+
         user_data = fake_users.get(username)
         if not user_data:
             return None
-        
-        if not self.pwd_context.verify(password, user_data["hashed_password"]):
+
+        try:
+            if not bcrypt_lib.checkpw(password.encode('utf-8'), user_data["hashed_password"].encode('utf-8')):
+                return None
+        except Exception:
             return None
-        
+
         return user_data
     
     def _get_client_ip(self, request: Request) -> str:
