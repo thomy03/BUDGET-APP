@@ -117,31 +117,31 @@ export function BudgetVarianceAnalysis({ month: propMonth }: BudgetVarianceAnaly
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 md:space-y-6">
       {/* Header avec selection du mois */}
-      <Card className="p-6">
-        <div className="flex items-center justify-between mb-6">
+      <Card className="p-3 md:p-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 md:mb-6 gap-3">
           <div>
-            <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+            <h2 className="text-lg md:text-xl font-bold text-gray-900 dark:text-white">
               📊 Analyse Budget vs Reel
             </h2>
-            <p className="text-sm text-gray-500 dark:text-gray-400">
+            <p className="text-xs md:text-sm text-gray-500 dark:text-gray-400">
               Comparez vos depenses reelles avec vos objectifs budgetaires
             </p>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 md:gap-3">
             <input
               type="month"
               value={currentMonth}
               onChange={(e) => setCurrentMonth(e.target.value)}
-              className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+              className="px-2 md:px-3 py-2 text-sm md:text-base border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 min-h-[44px]"
             />
             <Button
               onClick={loadVarianceData}
               variant="outline"
-              className="flex items-center gap-2"
+              className="flex items-center gap-1 md:gap-2 min-h-[44px] px-3 md:px-4 text-sm md:text-base"
             >
-              🔄 Actualiser
+              🔄 <span className="hidden sm:inline">Actualiser</span>
             </Button>
           </div>
         </div>
@@ -154,38 +154,38 @@ export function BudgetVarianceAnalysis({ month: propMonth }: BudgetVarianceAnaly
 
         {/* Resume global */}
         {globalVariance && (
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div className="p-4 rounded-lg bg-blue-50 dark:bg-blue-900/20">
-              <p className="text-sm text-blue-600 dark:text-blue-400">Budget prevu</p>
-              <p className="text-2xl font-bold text-blue-700 dark:text-blue-300">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
+            <div className="p-3 md:p-4 rounded-lg bg-blue-50 dark:bg-blue-900/20">
+              <p className="text-xs md:text-sm text-blue-600 dark:text-blue-400">Budget prevu</p>
+              <p className="text-xl md:text-2xl font-bold text-blue-700 dark:text-blue-300">
                 {globalVariance.budgeted.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
               </p>
             </div>
-            <div className="p-4 rounded-lg bg-gray-50 dark:bg-gray-800">
-              <p className="text-sm text-gray-600 dark:text-gray-400">Depenses reelles</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">
+            <div className="p-3 md:p-4 rounded-lg bg-gray-50 dark:bg-gray-800">
+              <p className="text-xs md:text-sm text-gray-600 dark:text-gray-400">Depenses reelles</p>
+              <p className="text-xl md:text-2xl font-bold text-gray-900 dark:text-white">
                 {globalVariance.actual.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
               </p>
             </div>
-            <div className={`p-4 rounded-lg ${
+            <div className={`p-3 md:p-4 rounded-lg ${
               globalVariance.variance > 0 ? 'bg-red-50 dark:bg-red-900/20' : 'bg-green-50 dark:bg-green-900/20'
             }`}>
-              <p className={`text-sm ${globalVariance.variance > 0 ? 'text-red-600' : 'text-green-600'}`}>
+              <p className={`text-xs md:text-sm ${globalVariance.variance > 0 ? 'text-red-600' : 'text-green-600'}`}>
                 Ecart
               </p>
-              <p className={`text-2xl font-bold ${globalVariance.variance > 0 ? 'text-red-700' : 'text-green-700'}`}>
+              <p className={`text-xl md:text-2xl font-bold ${globalVariance.variance > 0 ? 'text-red-700' : 'text-green-700'}`}>
                 {globalVariance.variance > 0 ? '+' : ''}
                 {globalVariance.variance.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
               </p>
-              <p className={`text-sm ${globalVariance.variance > 0 ? 'text-red-500' : 'text-green-500'}`}>
+              <p className={`text-xs md:text-sm ${globalVariance.variance > 0 ? 'text-red-500' : 'text-green-500'}`}>
                 ({globalVariance.variance_pct > 0 ? '+' : ''}{globalVariance.variance_pct.toFixed(1)}%)
               </p>
             </div>
-            <div className="p-4 rounded-lg" style={{ backgroundColor: getStatusColor(globalVariance.status) + '20' }}>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Statut global</p>
+            <div className="p-3 md:p-4 rounded-lg" style={{ backgroundColor: getStatusColor(globalVariance.status) + '20' }}>
+              <p className="text-xs md:text-sm text-gray-600 dark:text-gray-400">Statut global</p>
               <div className="flex items-center gap-2">
-                <span className="text-2xl">{getStatusIcon(globalVariance.status)}</span>
-                <span className="font-bold" style={{ color: getStatusColor(globalVariance.status) }}>
+                <span className="text-xl md:text-2xl">{getStatusIcon(globalVariance.status)}</span>
+                <span className="text-sm md:text-base font-bold" style={{ color: getStatusColor(globalVariance.status) }}>
                   {getStatusLabel(globalVariance.status)}
                 </span>
               </div>
@@ -195,42 +195,46 @@ export function BudgetVarianceAnalysis({ month: propMonth }: BudgetVarianceAnaly
       </Card>
 
       {/* Explication IA */}
-      <Card className="p-6">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+      <Card className="p-3 md:p-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-3 md:mb-4 gap-3">
+          <h3 className="text-base md:text-lg font-semibold text-gray-900 dark:text-white">
             🤖 Analyse IA
           </h3>
           <Button
             onClick={handleGetAIExplanation}
             disabled={loadingAI || !globalVariance}
-            className="bg-purple-600 hover:bg-purple-700 text-white"
+            className="bg-purple-600 hover:bg-purple-700 text-white min-h-[44px] px-4 text-sm md:text-base w-full sm:w-auto"
           >
             {loadingAI ? (
               <>
                 <LoadingSpinner size="sm" className="mr-2" />
-                Analyse en cours...
+                <span className="hidden xs:inline">Analyse en cours...</span>
+                <span className="xs:hidden">Analyse...</span>
               </>
             ) : (
-              '✨ Generer une analyse IA'
+              <>
+                <span className="hidden xs:inline">✨ Generer une analyse IA</span>
+                <span className="xs:hidden">✨ Analyse IA</span>
+              </>
             )}
           </Button>
         </div>
 
         {aiExplanation ? (
-          <div className="p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
-            <div className="prose dark:prose-invert max-w-none">
-              <p className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
+          <div className="p-3 md:p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
+            <div className="prose dark:prose-invert max-w-none prose-sm md:prose-base">
+              <p className="text-sm md:text-base text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
                 {aiExplanation}
               </p>
             </div>
             {aiModelUsed && (
-              <p className="text-xs text-gray-500 mt-3">
+              <p className="text-xs text-gray-500 mt-2 md:mt-3">
                 Genere par {aiModelUsed}
               </p>
             )}
           </div>
         ) : (
-          <p className="text-gray-500 dark:text-gray-400">
+          <p className="text-xs md:text-sm text-gray-500 dark:text-gray-400">
             Cliquez sur le bouton pour generer une analyse intelligente de vos ecarts budgetaires.
           </p>
         )}
@@ -238,23 +242,39 @@ export function BudgetVarianceAnalysis({ month: propMonth }: BudgetVarianceAnaly
 
       {/* Graphique comparatif */}
       {chartData.length > 0 && (
-        <Card className="p-6">
-          <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">
+        <Card className="p-3 md:p-6">
+          <h3 className="text-base md:text-lg font-semibold mb-3 md:mb-4 text-gray-900 dark:text-white">
             Budget vs Reel par categorie
           </h3>
-          <div className="h-[400px]">
+          <div className="h-[300px] xs:h-[350px] md:h-[400px] -mx-3 md:mx-0">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={chartData} layout="vertical" margin={{ left: 80 }}>
+              <BarChart
+                data={chartData}
+                layout="vertical"
+                margin={{ left: 10, right: 10, top: 5, bottom: 5 }}
+              >
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis type="number" tickFormatter={(v) => `${v}€`} />
-                <YAxis dataKey="name" type="category" tick={{ fontSize: 12 }} />
+                <XAxis
+                  type="number"
+                  tickFormatter={(v) => `${v}€`}
+                  tick={{ fontSize: 10 }}
+                  className="text-xs md:text-sm"
+                />
+                <YAxis
+                  dataKey="name"
+                  type="category"
+                  tick={{ fontSize: 10 }}
+                  width={70}
+                  className="text-xs md:text-sm"
+                />
                 <Tooltip
                   formatter={(value: number, name: string) => [
                     value.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' }),
                     name === 'budget' ? 'Budget' : 'Reel'
                   ]}
+                  contentStyle={{ fontSize: '12px' }}
                 />
-                <Legend />
+                <Legend wrapperStyle={{ fontSize: '12px' }} />
                 <Bar dataKey="budget" fill="#3B82F6" name="Budget" radius={[0, 4, 4, 0]} />
                 <Bar dataKey="reel" name="Reel" radius={[0, 4, 4, 0]}>
                   {chartData.map((entry, index) => (
@@ -269,15 +289,15 @@ export function BudgetVarianceAnalysis({ month: propMonth }: BudgetVarianceAnaly
 
       {/* Detail par categorie */}
       {categoryVariances.length > 0 && (
-        <Card className="p-6">
-          <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">
+        <Card className="p-3 md:p-6">
+          <h3 className="text-base md:text-lg font-semibold mb-3 md:mb-4 text-gray-900 dark:text-white">
             Detail par categorie ({categoryVariances.length})
           </h3>
-          <div className="space-y-3">
+          <div className="space-y-2 md:space-y-3">
             {categoryVariances.map((cv, idx) => (
               <div
                 key={idx}
-                className={`p-4 rounded-lg border ${
+                className={`p-3 md:p-4 rounded-lg border ${
                   cv.status === 'over_budget'
                     ? 'border-red-200 bg-red-50 dark:bg-red-900/10'
                     : cv.status === 'under_budget'
@@ -285,11 +305,11 @@ export function BudgetVarianceAnalysis({ month: propMonth }: BudgetVarianceAnaly
                     : 'border-gray-200 bg-gray-50 dark:bg-gray-800'
                 }`}
               >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <span className="text-xl">{getStatusIcon(cv.status)}</span>
+                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                  <div className="flex items-center gap-2 md:gap-3">
+                    <span className="text-lg md:text-xl">{getStatusIcon(cv.status)}</span>
                     <div>
-                      <h4 className="font-medium text-gray-900 dark:text-white capitalize">
+                      <h4 className="text-sm md:text-base font-medium text-gray-900 dark:text-white capitalize">
                         {cv.category}
                       </h4>
                       {cv.vs_last_month && (
@@ -300,22 +320,22 @@ export function BudgetVarianceAnalysis({ month: propMonth }: BudgetVarianceAnaly
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-6">
-                    <div className="text-right">
-                      <p className="text-sm text-gray-500">Budget</p>
-                      <p className="font-semibold text-blue-600">
+                  <div className="flex items-center gap-3 md:gap-6 justify-between md:justify-end">
+                    <div className="text-left md:text-right">
+                      <p className="text-xs md:text-sm text-gray-500">Budget</p>
+                      <p className="text-sm md:text-base font-semibold text-blue-600">
                         {cv.budgeted.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
                       </p>
                     </div>
-                    <div className="text-right">
-                      <p className="text-sm text-gray-500">Reel</p>
-                      <p className="font-semibold text-gray-900 dark:text-white">
+                    <div className="text-left md:text-right">
+                      <p className="text-xs md:text-sm text-gray-500">Reel</p>
+                      <p className="text-sm md:text-base font-semibold text-gray-900 dark:text-white">
                         {cv.actual.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
                       </p>
                     </div>
-                    <div className="text-right min-w-[100px]">
-                      <p className="text-sm text-gray-500">Ecart</p>
-                      <p className={`font-bold ${cv.variance > 0 ? 'text-red-600' : 'text-green-600'}`}>
+                    <div className="text-left md:text-right min-w-[80px] md:min-w-[100px]">
+                      <p className="text-xs md:text-sm text-gray-500">Ecart</p>
+                      <p className={`text-sm md:text-base font-bold ${cv.variance > 0 ? 'text-red-600' : 'text-green-600'}`}>
                         {cv.variance > 0 ? '+' : ''}
                         {cv.variance.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
                       </p>
@@ -327,14 +347,14 @@ export function BudgetVarianceAnalysis({ month: propMonth }: BudgetVarianceAnaly
                 </div>
 
                 {/* Barre de progression */}
-                <div className="mt-3">
+                <div className="mt-2 md:mt-3">
                   <div className="flex justify-between text-xs text-gray-500 mb-1">
                     <span>0€</span>
                     <span>Budget: {cv.budgeted.toFixed(0)}€</span>
                   </div>
-                  <div className="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-3 overflow-hidden">
+                  <div className="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2 md:h-3 overflow-hidden">
                     <div
-                      className="h-3 rounded-full transition-all"
+                      className="h-2 md:h-3 rounded-full transition-all"
                       style={{
                         width: `${Math.min((cv.actual / cv.budgeted) * 100, 150)}%`,
                         backgroundColor: getStatusColor(cv.status)
@@ -350,15 +370,15 @@ export function BudgetVarianceAnalysis({ month: propMonth }: BudgetVarianceAnaly
 
                 {/* Top transactions */}
                 {cv.top_transactions && cv.top_transactions.length > 0 && (
-                  <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
-                    <p className="text-xs text-gray-500 mb-2">Top transactions:</p>
+                  <div className="mt-2 md:mt-3 pt-2 md:pt-3 border-t border-gray-200 dark:border-gray-700">
+                    <p className="text-xs text-gray-500 mb-1 md:mb-2">Top transactions:</p>
                     <div className="space-y-1">
                       {cv.top_transactions.slice(0, 3).map((tx: any, txIdx: number) => (
-                        <div key={txIdx} className="flex justify-between text-sm">
-                          <span className="text-gray-600 dark:text-gray-400 truncate max-w-[200px]">
+                        <div key={txIdx} className="flex justify-between text-xs md:text-sm gap-2">
+                          <span className="text-gray-600 dark:text-gray-400 truncate max-w-[150px] sm:max-w-[200px]">
                             {tx.label}
                           </span>
-                          <span className="font-mono text-gray-900 dark:text-white">
+                          <span className="font-mono text-gray-900 dark:text-white whitespace-nowrap">
                             {Math.abs(tx.amount).toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
                           </span>
                         </div>
@@ -374,17 +394,17 @@ export function BudgetVarianceAnalysis({ month: propMonth }: BudgetVarianceAnaly
 
       {/* Message si pas de budgets */}
       {categoryVariances.length === 0 && !error && (
-        <Card className="p-6 text-center">
-          <div className="text-4xl mb-4">📝</div>
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+        <Card className="p-4 md:p-6 text-center">
+          <div className="text-3xl md:text-4xl mb-3 md:mb-4">📝</div>
+          <h3 className="text-base md:text-lg font-semibold text-gray-900 dark:text-white mb-2">
             Aucun budget configure
           </h3>
-          <p className="text-gray-500 dark:text-gray-400 mb-4">
+          <p className="text-xs md:text-sm text-gray-500 dark:text-gray-400 mb-3 md:mb-4">
             Definissez des objectifs de budget par categorie pour voir l'analyse des ecarts.
           </p>
           <Button
             onClick={() => window.location.href = '/settings'}
-            className="bg-blue-600 hover:bg-blue-700 text-white"
+            className="bg-blue-600 hover:bg-blue-700 text-white min-h-[44px] px-6 text-sm md:text-base w-full sm:w-auto"
           >
             Configurer mes budgets
           </Button>

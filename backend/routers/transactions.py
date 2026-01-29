@@ -20,7 +20,7 @@ router = APIRouter(
 
 # Import models and schemas
 from models.database import Transaction
-from models.schemas import TxOut, ExcludeIn, TagsIn, TransactionUpdate, ExpenseTypeConversion
+from models.schemas import TxOut, ExcludeIn, TagsIn, TransactionUpdate, ExpenseTypeConversion, PaginatedResponse
 
 def parse_tags_to_array(tags_string: str) -> List[str]:
     """Convert comma-separated tags string to array"""
@@ -207,48 +207,127 @@ def get_hierarchy_data(
     else:
         return []
 
-@router.get("", response_model=List[TxOut])
+@router.get("", response_model=PaginatedResponse[TxOut])
 def list_transactions(
-    month: str, 
+    month: str,
     tag: Optional[str] = Query(None, description="Filter by specific tag (supports multiple tags separated by comma)"),
     expense_type: Optional[str] = Query(None, description="Filter by expense type: FIXED, VARIABLE, or PROVISION"),
+    page: int = Query(1, ge=1, description="Page number (1-indexed)"),
+    limit: int = Query(50, ge=1, le=500, description="Items per page (max 500)"),
     db: Session = Depends(get_db)
 ):
     """
-    List all transactions for a specific month with optional tag and expense type filtering
-    
-    Returns all transactions for the specified month in YYYY-MM format.
-    If tag parameter is provided, filters transactions containing any of the specified tags.
-    Multiple tags can be specified separated by commas (e.g., tag=restaurant,courses).
-    If expense_type is provided, filters transactions by their expense type.
+    List transactions for a specific month with pagination and optional filtering.
+
+    Returns paginated transactions for the specified month in YYYY-MM format.
+
+    **Pagination:**
+    - page: Page number starting from 1 (default: 1)
+    - limit: Items per page, max 500 (default: 50)
+
+    **Filtering:**
+    - tag: Filter by tag(s), comma-separated (e.g., tag=restaurant,courses)
+    - expense_type: Filter by FIXED, VARIABLE, or PROVISION
+
+    **Response:**
+    Returns a PaginatedResponse with items, total count, and navigation info.
     """
-    query = db.query(Transaction).filter(Transaction.month == month)
-    
+    from sqlalchemy import func
+
+    # Base query with month filter
+    base_query = db.query(Transaction).filter(Transaction.month == month)
+
     # Add expense_type filtering if specified
     if expense_type and expense_type.strip():
         normalized_type = expense_type.strip().upper()
         if normalized_type in ['FIXED', 'VARIABLE', 'PROVISION']:
-            query = query.filter(Transaction.expense_type == normalized_type)
+            base_query = base_query.filter(Transaction.expense_type == normalized_type)
         else:
             # If invalid expense_type provided, return empty results
-            query = query.filter(Transaction.id == -1)  # Filter that matches nothing
-    
-    txs = query.order_by(Transaction.date_op.desc()).all()
-    
-    # Add tag filtering if specified (applied after database query for complex matching)
+            base_query = base_query.filter(Transaction.id == -1)
+
+    # For tag filtering, we need to handle it specially since tags are comma-separated strings
+    # First, get all matching transactions (tag filtering requires post-processing)
     if tag:
         # Parse requested tags
         requested_tags = [t.strip().lower() for t in tag.split(',') if t.strip()]
-        
+
+        # Get all transactions matching base criteria
+        all_txs = base_query.order_by(Transaction.date_op.desc()).all()
+
+        # Filter by tags in Python (SQLite doesn't support array operations well)
+        filtered_txs = []
+        for tx in all_txs:
+            if tx.tags:
+                tx_tags = [t.strip().lower() for t in tx.tags.split(',') if t.strip()]
+                if any(req_tag in tx_tags for req_tag in requested_tags):
+                    filtered_txs.append(tx)
+
+        # Calculate total and apply pagination manually
+        total = len(filtered_txs)
+        offset = (page - 1) * limit
+        paginated_txs = filtered_txs[offset:offset + limit]
+    else:
+        # No tag filter - use efficient database pagination
+        total = base_query.count()
+        offset = (page - 1) * limit
+        paginated_txs = base_query.order_by(Transaction.date_op.desc()).offset(offset).limit(limit).all()
+
+    # Calculate pagination metadata
+    pages = (total + limit - 1) // limit if limit > 0 else 0
+    has_next = page < pages
+    has_prev = page > 1
+
+    # Convert to response format
+    items = [tx_to_response(tx) for tx in paginated_txs]
+
+    return PaginatedResponse[TxOut](
+        items=items,
+        total=total,
+        page=page,
+        limit=limit,
+        pages=pages,
+        has_next=has_next,
+        has_prev=has_prev
+    )
+
+
+# Keep backward compatibility endpoint for legacy clients
+@router.get("/all", response_model=List[TxOut])
+def list_all_transactions(
+    month: str,
+    tag: Optional[str] = Query(None, description="Filter by specific tag"),
+    expense_type: Optional[str] = Query(None, description="Filter by expense type"),
+    db: Session = Depends(get_db)
+):
+    """
+    [DEPRECATED] List ALL transactions without pagination.
+
+    Use GET /transactions with pagination instead for better performance.
+    This endpoint is kept for backward compatibility only.
+    """
+    import warnings
+    warnings.warn("GET /transactions/all is deprecated. Use GET /transactions with pagination.", DeprecationWarning)
+
+    query = db.query(Transaction).filter(Transaction.month == month)
+
+    if expense_type and expense_type.strip():
+        normalized_type = expense_type.strip().upper()
+        if normalized_type in ['FIXED', 'VARIABLE', 'PROVISION']:
+            query = query.filter(Transaction.expense_type == normalized_type)
+
+    txs = query.order_by(Transaction.date_op.desc()).all()
+
+    if tag:
+        requested_tags = [t.strip().lower() for t in tag.split(',') if t.strip()]
         filtered_txs = []
         for tx in txs:
             if tx.tags:
                 tx_tags = [t.strip().lower() for t in tx.tags.split(',') if t.strip()]
-                # Check if any requested tag is in this transaction's tags
                 if any(req_tag in tx_tags for req_tag in requested_tags):
                     filtered_txs.append(tx)
         txs = filtered_txs
-    
+
     return [tx_to_response(tx) for tx in txs]
 
 @router.patch("/{tx_id}", response_model=TxOut)

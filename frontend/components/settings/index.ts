@@ -6,6 +6,7 @@ export { TagEditModal } from './TagEditModal';
 export { TagsStatsDashboard } from './TagsStatsDashboard';
 export { TagRulesConfig } from './TagRulesConfig';
 export { TagMergeDialog } from './TagMergeDialog';
+export { MergeTagsModal } from './MergeTagsModal';
 export { TagsImportExport } from './TagsImportExport';
 export { ExpenseClassificationSettings } from './ExpenseClassificationSettings';
 export { SettingsLayout } from './SettingsLayout';

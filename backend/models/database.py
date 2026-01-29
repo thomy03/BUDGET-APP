@@ -70,6 +70,9 @@ def _create_standard_engine() -> Engine:
 engine = create_database_engine()
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
+# Export DATABASE_URL for background tasks that need their own session
+DATABASE_URL = settings.database.database_url
+
 
 def get_db() -> Generator[Session, None, None]:
     """Database session dependency"""
@@ -1134,9 +1137,45 @@ def migrate_schema():
                 
                 for index_sql in research_cache_indexes:
                     conn.exec_driver_sql(index_sql)
-                
+
                 logger.info("✅ Table research_cache created with performance indexes")
-            
+
+            # Migration for ai_cache table (AI response caching for coach/insights)
+            try:
+                conn.exec_driver_sql("SELECT 1 FROM ai_cache LIMIT 1")
+                logger.info("Table ai_cache already exists")
+            except Exception:
+                logger.info("Creating ai_cache table for AI response caching")
+                conn.exec_driver_sql("""
+                    CREATE TABLE IF NOT EXISTS ai_cache (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        cache_key VARCHAR(255) UNIQUE NOT NULL,
+                        cache_type VARCHAR(50) NOT NULL,
+                        response_data TEXT NOT NULL,
+                        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                        expires_at DATETIME NOT NULL,
+                        hit_count INTEGER DEFAULT 0,
+                        last_accessed DATETIME,
+                        user_id VARCHAR(100),
+                        month VARCHAR(7),
+                        is_valid BOOLEAN DEFAULT TRUE
+                    )
+                """)
+
+                # Create performance indexes for ai_cache
+                ai_cache_indexes = [
+                    "CREATE INDEX IF NOT EXISTS idx_ai_cache_key_valid ON ai_cache(cache_key, is_valid)",
+                    "CREATE INDEX IF NOT EXISTS idx_ai_cache_type_expires ON ai_cache(cache_type, expires_at)",
+                    "CREATE INDEX IF NOT EXISTS idx_ai_cache_user_type ON ai_cache(user_id, cache_type)",
+                    "CREATE INDEX IF NOT EXISTS idx_ai_cache_month_type ON ai_cache(month, cache_type)",
+                    "CREATE INDEX IF NOT EXISTS idx_ai_cache_expires_valid ON ai_cache(expires_at, is_valid)",
+                ]
+
+                for index_sql in ai_cache_indexes:
+                    conn.exec_driver_sql(index_sql)
+
+                logger.info("✅ Table ai_cache created with performance indexes")
+
             # Analyze query performance statistics
             try:
                 conn.exec_driver_sql("ANALYZE")
@@ -1218,6 +1257,12 @@ def get_database_info():
             'optimization_level': 'high_performance' if total_records > 1000 else 'standard'
         }
 
+
+# Import gamification models to ensure their tables are created
+from models.gamification import (
+    Achievement, UserAchievement, Challenge, UserChallenge,
+    UserStreak, UserPoints
+)
 
 # Initialize database
 create_tables()

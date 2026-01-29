@@ -1,244 +1,245 @@
-# ROADMAP - Budget Famille v2.3
+# ROADMAP - Budget Famille v4.1
 
-Feuille de route stratégique pour le développement continu de l'application Budget Famille.
+Feuille de route strategique pour le developpement continu de l'application Budget Famille.
 
-## Version Actuelle : 2.3.3 (Août 2025)
+## Version Actuelle : 4.1 (Janvier 2026)
 
-### ✅ Fonctionnalités Récemment Livrées
+### Fonctionnalites Livrees v4.0 - v4.1
 
-#### CleanDashboard Provision-First (Nouvelle Architecture)
-- **Design moderne** : 4 métriques clés avec animations CountUp
-- **Barre progression provisions** : Affichage temporel (X/12 mois) avec progression verte
-- **Calcul familial avancé** : (Provisions + Dépenses - Solde compte) / revenus nets
-- **Quick Actions opérationnels** : Navigation rapide vers fonctionnalités principales
+#### Budget Intelligence System (v4.0 - Decembre 2025)
+- **Objectifs Budget** : CRUD complet par categorie/tag
+- **Predictions ML** : Fin de mois par categorie avec tendances
+- **Alertes Intelligentes** : 3 types (overspend_risk, unusual_spike, category_trend)
+- **Analyse IA** : Integration OpenRouter (DeepSeek V3.2)
+- **Detection Anomalies** : Isolation Forest + fuzzy matching doublons
 
-#### Drill-down Dépenses Hiérarchique (Nouveau)
-- **Navigation complète** : Dépenses → Variables/Fixes → Tags → Transactions
-- **Filtrage corrigé** : Montants débiteurs uniquement + non exclus + distinction expense_type
-- **Cohérence totaux** : drill-down = somme détails, correction "Invalid date"
-- **Interface provisions intégrée** : Gestion provisions dans détail catégorie
+#### Dashboard Ameliore (v4.1 - Janvier 2026)
+- **Repartition par membre** : Details provisions et depenses par personne
+- **Production-ready** : Tests complets, corrections bugs
+- **Orchestrator Skills** : Phase 0 avec cache local et recherche skills.sh
 
-#### Système Fiscal Complet
-- **Taux d'imposition** : Configuration individuelle tax_rate1 et tax_rate2
-- **Calcul revenus nets** : Application automatique des taux sur revenus bruts
-- **Répartition équitable** : Provisions calculées sur brut, distribuées sur net
-- **Persistance corrigée** : Sauvegarde fiable des taux avec React controlled components
+#### Auto-Tagging Frontend (v3.2 - Decembre 2025)
+- **Bouton Auto-Tag** : Preview suggestions avec confiance
+- **Mode Batch** : Selection multiple, raccourcis clavier
+- **Drill-down ameliore** : Navigation jusqu'au niveau mois
 
-#### Système IA Avancé
-- **Auto-tagging** : 95.4% de précision, traitement 78+ tx/sec
-- **Classification intelligente** : FIXE/VARIABLE automatique avec ML
-- **Enrichissement de données** : Recherche web OpenStreetMap intégrée
-- **Apprentissage continu** : Feedback utilisateur pour améliorer les modèles
-
-#### Infrastructure Technique
-- **Docker pour WSL2** : Solution Next.js compatible avec scripts d'automatisation
-- **Performance optimisée** : <2s temps de réponse, 34 index de base de données
-- **Scripts modernes** : dev-docker.sh, start-development.sh pour DevOps
+#### Tests et Qualite (Janvier 2026)
+- **Frontend** : 136 tests Jest passing
+- **Backend** : pytest avec fixtures isolees
+- **CI/CD** : GitHub Actions automatises
 
 ---
 
-## ✅ Features Completed (Session 2025-08-13)
+## Historique des Versions
 
-### CleanDashboard Provision-First 
-- [x] **Design moderne implémenté** : 4 métriques clés avec animations CountUp
-- [x] **Barre progression provisions** : Indicateur temporel X/12 mois fonctionnel
-- [x] **Quick Actions** : Navigation rapide vers toutes fonctionnalités
-- [x] **Calcul familial** : Formule (Provisions + Dépenses - Solde) / revenus nets
+### v4.1 (Janvier 2026) - ACTUELLE
+- [x] Dashboard repartition detaillee provisions/depenses par membre
+- [x] Budget Intelligence System production-ready
+- [x] Corrections Pydantic v2 deprecation warnings
+- [x] Tests database models isolation
+- [x] Orchestrator avec Skills Discovery hybride
+- [x] Cache local skills-registry.json (50 skills)
 
-### Drill-down Hiérarchique Complet
-- [x] **Navigation 4 niveaux** : Dépenses → Variables/Fixes → Tags → Transactions
-- [x] **Filtrage perfectionné** : Montants débiteurs + non exclus + expense_type
-- [x] **Cohérence totaux** : drill-down = somme détails garantie
-- [x] **Correction bugs** : "Invalid date" résolu avec fallbacks
+### v4.0 (Decembre 2025)
+- [x] Budget Intelligence System complet
+- [x] Objectifs budget par categorie (CategoryBudgetsConfig)
+- [x] Predictions ML fin de mois (ml_budget_predictor.py)
+- [x] Alertes intelligentes (AlertsBanner, AlertsIndicator)
+- [x] Analyse IA ecarts (BudgetVarianceAnalysis)
+- [x] Detection anomalies (ml_anomaly_detector.py)
+- [x] Page Analytics avec onglets (drilldown, budget, ai)
+- [x] Integration OpenRouter (DeepSeek V3.2)
 
-### Système Provisions Avancé
-- [x] **Barre progression verte** : Visuel progression épargne
-- [x] **Montant cumulé** : Affichage depuis janvier automatique
-- [x] **Calcul progression** : Mois X/12 avec projections
-- [x] **Interface intégrée** : Gestion provisions dans détail catégorie
+### v3.2 (Decembre 2025)
+- [x] Auto-tagging frontend avec preview
+- [x] Drill-down analytics jusqu'au niveau mois
+- [x] Mode batch transactions (B, T, Shift+Click)
+- [x] Pattern matching intelligent (exact, first word, substring)
 
-### Corrections Techniques Majeures
-- [x] **EnhancedDashboard deprecated** : Remplacé par CleanDashboard
-- [x] **Invalid date fixé** : Fallbacks date pour robustesse
-- [x] **Expense_type différenciation** : Variables vs Fixes correctement séparés
-- [x] **Totaux cohérents** : Drill-down = somme détails mathématiquement
-- [x] **Workflow tags simplifié** : Édition directe sans modal IA
+### v3.0 (Decembre 2025)
+- [x] Dashboard Glassmorphism avec Dark Mode
+- [x] Analytics modernisee (3 vues)
+- [x] Smart Tag ameliore
+- [x] Scripts PowerShell complets
 
----
-
-## Version 2.4 - Phase Stabilisation (Sept-Oct 2025)
-
-### Priorité 1 : Optimisations et Finitions
-
-#### Performance et Cache
-- [ ] **Cache intelligent** : Réduire appels API redondants (dashboard, tags-summary)
-- [ ] **Lazy loading** : Composants lourds chargés à la demande
-- [ ] **Optimisation mémoire** : Nettoyage listeners et références inutilisées
-
-#### Nettoyage Architecture
-- [x] **Suppression composants legacy** : Retirer références EnhancedDashboard obsolètes
-- [ ] **Refactoring drill-down** : Simplifier logique navigation hiérarchique
-- [ ] **Tests E2E complets** : Valider drill-down et calculs provisions automatisés
-- [x] **Workflow tags** : Suppression modal IA, création directe
-
-#### Configuration Utilisateur (Complétée)
-- [x] **Système fiscal** : Taux d'imposition et revenus nets ✅
-- [x] **CleanDashboard** : Interface Provision-First ✅
-- [x] **Drill-down complet** : Navigation hiérarchique ✅
-- [x] **Workflow tags** : Édition directe simplifiée ✅
-- [ ] **Validation données** : Contrôles d'intégrité avancés
-- [ ] **Sauvegarde automatique** : Backup configuration utilisateur
-
-### Priorité 2 : Améliorations UX
-
-#### Interface Mobile et Responsive
-- [ ] **CleanDashboard mobile** : Adaptation smartphone avec métriques empilées
-- [ ] **Drill-down tactile** : Navigation touch optimisée pour mobile
-- [ ] **PWA Progressive** : Support offline, installation native
-- [ ] **Touch gestures** : Navigation tactile intuitive
-
-#### Interface Provisions Améliorée
-- [ ] **Modal provisions drill-down** : Interface dédiée dans détail catégorie
-- [ ] **Graphiques progression** : Visualisation avancement objectifs épargne
-- [ ] **Notifications intelligentes** : Alertes provisions sous-financées
+### v2.3.3 (Aout 2025)
+- [x] CleanDashboard Provision-First
+- [x] Drill-down depenses hierarchique
+- [x] Systeme fiscal (taux imposition)
+- [x] Provisions personnalisees
 
 ---
 
-## Version 2.5 - Phase Intelligence (Nov-Dec 2025)
+## v4.2 - Phase Mobile (Fevrier 2026)
 
-### Prédictions Budgétaires
+### Priorite 1 : Application Mobile
 
-#### Moteur ML Avancé
-- [ ] **Prédiction dépenses** : Algorithmes prévisionnels sur 3-6 mois
-- [ ] **Détection anomalies** : Alertes dépenses inhabituelles
-- [ ] **Recommandations épargne** : Suggestions basées sur patterns utilisateur
-- [ ] **Analyse saisonnalité** : Identification cycles de dépenses
+#### React Native / Expo
+- [ ] Setup projet Expo
+- [ ] Navigation React Navigation
+- [ ] Composants partages avec web
+- [ ] Authentification mobile
 
-#### Tableau de Bord Intelligent
-- [ ] **Widgets prédictifs** : Graphiques tendances et projections
-- [ ] **Alertes personnalisées** : Notifications objectifs et dépassements
-- [ ] **Scoring financier** : Évaluation santé budgétaire globale
+#### PWA Optimisee
+- [ ] Service Worker complet
+- [ ] Cache offline transactions
+- [ ] Notifications push
+- [ ] Installation native
 
-### Analytics Avancés
+### Priorite 2 : Export et Rapports
 
-#### Rapports Automatisés
-- [ ] **PDF générés** : Synthèses mensuelles automatiques
-- [ ] **Comparaisons temporelles** : Évolution sur 12 mois
-- [ ] **Benchmark familial** : Comparaison moyennes anonymisées
+#### PDF Automatise
+- [ ] Synthese mensuelle PDF
+- [ ] Graphiques inclus
+- [ ] Template personnalisable
+- [ ] Envoi par email
+
+#### Export Avance
+- [ ] Excel avec formules
+- [ ] CSV multi-format
+- [ ] API export bulk
 
 ---
 
-## Version 3.0 - Phase Écosystème (Q1 2026)
+## v4.3 - Phase Intelligence+ (Mars 2026)
 
-### Intégrations Bancaires
+### Ameliorations ML
 
-#### API PSD2 
-- [ ] **Connexions directes** : Intégration banques principales (Crédit Agricole, BNP, LCL)
-- [ ] **Synchronisation automatique** : Import transactions temps réel
-- [ ] **Catégorisation en temps réel** : Auto-tagging immédiat nouvelles transactions
-- [ ] **Multi-comptes** : Gestion comptes courants, épargne, investissements
+#### Transformers
+- [ ] Modele de classification avance
+- [ ] Embeddings marchands
+- [ ] Clustering automatique categories
 
-#### Sécurité Renforcée
-- [ ] **Chiffrement bout-en-bout** : Protection données bancaires
-- [ ] **Authentification forte** : 2FA obligatoire, biométrie
-- [ ] **Audit trail** : Traçabilité complète des accès
+#### Predictions Avancees
+- [ ] Forecast 6 mois
+- [ ] Saisonnalite detectee
+- [ ] Confidence intervals
+
+### Analytics Avances
+
+#### Nouveaux Dashboards
+- [ ] Comparaison annee precedente
+- [ ] Benchmark anonymise
+- [ ] Goals tracking visuel
+
+---
+
+## v5.0 - Phase Ecosysteme (Q2 2026)
+
+### Integrations Bancaires PSD2
+
+#### Connecteurs
+- [ ] Credit Agricole
+- [ ] BNP Paribas
+- [ ] Societe Generale
+- [ ] Boursorama
+
+#### Synchronisation
+- [ ] Import automatique quotidien
+- [ ] Reconciliation intelligente
+- [ ] Multi-comptes
 
 ### Architecture Multi-tenant
 
 #### Gestion Utilisateurs
-- [ ] **Comptes famille** : Partage budgets, permissions granulaires
-- [ ] **Profils utilisateurs** : Personnalisation complète interface
-- [ ] **Collaboration** : Commentaires, validations, workflows approbation
-
-#### Scalabilité
-- [ ] **Base distribuée** : Architecture microservices
-- [ ] **Cache Redis** : Performance temps réel
-- [ ] **WebSocket** : Updates live multi-utilisateurs
-
----
-
-## Version 3.1+ - Phase Innovation (Q2+ 2026)
-
-### Intelligence Artificielle Conversationnelle
-
-#### Assistant Budgétaire IA
-- [ ] **Chatbot intégré** : Questions naturelles sur budget
-- [ ] **Conseils personnalisés** : Recommandations contextuelles
-- [ ] **Analyse vocale** : Commandes vocales pour saisie rapide
-
-### Écosystème Partenaires
-
-#### Marketplace
-- [ ] **Applications tierces** : API publique pour développeurs
-- [ ] **Intégrations comptables** : Export vers logiciels comptables
-- [ ] **Services financiers** : Comparateurs assurances, crédits
-
-#### Export et Compliance
-- [ ] **Formats multiples** : Excel, CSV, PDF, XML
-- [ ] **Conformité fiscale** : Déclarations automatiques
-- [ ] **Archivage légal** : Conservation données 10 ans
-
----
-
-## Technologies et Architecture
-
-### Stack Technique Évolutif
-
-#### Backend 
-- **Actuel** : FastAPI + SQLite + SQLAlchemy
-- **v2.5** : + Redis Cache + ML Pipeline
-- **v3.0** : + PostgreSQL + Microservices + Kubernetes
-
-#### Frontend
-- **Actuel** : Next.js 14 + TypeScript + Tailwind
-- **v2.5** : + PWA + Service Workers
-- **v3.0** : + Micro-frontends + WebRTC
+- [ ] Comptes famille partages
+- [ ] Permissions granulaires
+- [ ] Invitations email
 
 #### Infrastructure
-- **Actuel** : Docker + Scripts WSL2
-- **v2.5** : + CI/CD GitHub Actions
-- **v3.0** : + AWS/Azure + Monitoring Observability
-
-### Métriques de Qualité
-
-#### Performance Targets
-- **Temps de réponse API** : <500ms (actuel <2s)
-- **First Contentful Paint** : <1s
-- **Time to Interactive** : <2s
-- **Uptime** : 99.9%
-
-#### Qualité Code
-- **Couverture tests** : >90% (backend et frontend)
-- **Debt technique** : Maintenir <5% du temps développement
-- **Security score** : A+ (OWASP standards)
+- [ ] PostgreSQL migration
+- [ ] Redis cache
+- [ ] WebSocket temps reel
 
 ---
 
-## Gouvernance et Processus
+## v5.1+ - Phase Innovation (Q3+ 2026)
 
-### Méthodologie de Développement
+### Assistant IA Conversationnel
 
-#### Cycles de Release
+#### Chatbot
+- [ ] Questions naturelles budget
+- [ ] Conseils personnalises
+- [ ] Commandes vocales
+
+### Marketplace
+
+#### API Publique
+- [ ] Documentation OpenAPI
+- [ ] SDK TypeScript/Python
+- [ ] Webhooks
+
+#### Integrations Tierces
+- [ ] Logiciels comptables
+- [ ] Comparateurs financiers
+- [ ] Calendriers
+
+---
+
+## Stack Technique Evolution
+
+### Backend
+| Version | Stack |
+|---------|-------|
+| v4.x | FastAPI + SQLite + SQLAlchemy |
+| v5.0 | + PostgreSQL + Redis |
+| v5.1 | + Microservices + Kubernetes |
+
+### Frontend
+| Version | Stack |
+|---------|-------|
+| v4.x | Next.js 14 + TypeScript + Tailwind |
+| v4.2 | + React Native + Expo |
+| v5.0 | + Micro-frontends |
+
+### ML/IA
+| Version | Stack |
+|---------|-------|
+| v4.x | Scikit-learn + OpenRouter |
+| v4.3 | + Transformers + Embeddings |
+| v5.0 | + Fine-tuned models |
+
+---
+
+## Metriques de Qualite
+
+### Performance Targets
+| Metrique | Actuel | Target v5.0 |
+|----------|--------|-------------|
+| API Response | <2s | <500ms |
+| FCP | <3s | <1s |
+| Uptime | 99% | 99.9% |
+
+### Tests Coverage
+| Composant | Actuel | Target |
+|-----------|--------|--------|
+| Frontend Jest | 136 tests | 200+ |
+| Backend pytest | En cours | 100+ |
+| E2E | 0 | 50+ |
+
+---
+
+## Processus de Developpement
+
+### Cycles de Release
 - **Hotfix** : <24h pour corrections critiques
-- **Minor releases** : Toutes les 2 semaines
-- **Major releases** : Tous les 3 mois
+- **Minor** : Toutes les 2 semaines
+- **Major** : Tous les 2-3 mois
 
-#### Validation Qualité
-- **Tests automatisés** : Pipeline CI/CD complet
-- **Code review** : 2 validations minimum
-- **Tests utilisateurs** : Beta testing avant release
+### Outils Claude Code
+- **Orchestrator** : Workflow structure avec Skills Discovery
+- **Agents specialises** : 17 agents dans .claude/agents/
+- **Skills.sh** : Cache local + recherche automatique
 
-### Feedback et Évolution
-
-#### Collecte Besoins
-- **Analytics usage** : Métriques comportementales
-- **Feedback utilisateurs** : Formulaires intégrés
-- **A/B testing** : Optimisation continue UX
+### Validation
+- **Tests automatises** : GitHub Actions CI/CD
+- **Code review** : Via Claude Code
+- **Tests utilisateurs** : Beta testing
 
 ---
 
-**Version document** : 1.1  
-**Dernière mise à jour** : 2025-08-13  
-**Prochaine révision** : 2025-09-15  
+**Version document** : 4.1
+**Derniere mise a jour** : 2026-01-25
+**Prochaine revision** : 2026-02-15
 
-*Cette roadmap est un document vivant, mis à jour en fonction des retours utilisateurs et de l'évolution technologique.*
+*Cette roadmap est un document vivant, mis a jour en fonction des retours utilisateurs et de l'evolution technologique.*

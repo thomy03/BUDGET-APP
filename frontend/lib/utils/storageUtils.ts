@@ -3,17 +3,24 @@
  * Eliminates duplicate storage patterns across components
  */
 
+// Helper to check if we're in a browser environment (must be defined before use)
+const isBrowser = typeof window !== 'undefined';
+
 /**
  * Safe localStorage wrapper with error handling
  */
 export class SafeStorage {
   private isAvailable: boolean;
+  private storage: Storage | null;
 
-  constructor(private storage: Storage = localStorage) {
+  constructor(storage?: Storage) {
+    // Use window.localStorage explicitly to avoid conflict with exported variable name
+    this.storage = storage ?? (isBrowser ? window.localStorage : null);
     this.isAvailable = this.checkAvailability();
   }
 
   private checkAvailability(): boolean {
+    if (!this.storage) return false;
     try {
       const test = '__storage_test__';
       this.storage.setItem(test, test);
@@ -25,7 +32,7 @@ export class SafeStorage {
   }
 
   set<T>(key: string, value: T): boolean {
-    if (!this.isAvailable) return false;
+    if (!this.isAvailable || !this.storage) return false;
 
     try {
       const serializedValue = JSON.stringify({
@@ -36,13 +43,13 @@ export class SafeStorage {
       this.storage.setItem(key, serializedValue);
       return true;
     } catch (error) {
-      console.warn(`Failed to save to ${this.storage.constructor.name}:`, error);
+      console.warn('Failed to save to storage:', error);
       return false;
     }
   }
 
   get<T>(key: string, defaultValue?: T): T | undefined {
-    if (!this.isAvailable) return defaultValue;
+    if (!this.isAvailable || !this.storage) return defaultValue;
 
     try {
       const item = this.storage.getItem(key);
@@ -51,42 +58,42 @@ export class SafeStorage {
       const parsed = JSON.parse(item);
       return parsed.value as T;
     } catch (error) {
-      console.warn(`Failed to read from ${this.storage.constructor.name}:`, error);
+      console.warn('Failed to read from storage:', error);
       return defaultValue;
     }
   }
 
   remove(key: string): boolean {
-    if (!this.isAvailable) return false;
+    if (!this.isAvailable || !this.storage) return false;
 
     try {
       this.storage.removeItem(key);
       return true;
     } catch (error) {
-      console.warn(`Failed to remove from ${this.storage.constructor.name}:`, error);
+      console.warn('Failed to remove from storage:', error);
       return false;
     }
   }
 
   clear(): boolean {
-    if (!this.isAvailable) return false;
+    if (!this.isAvailable || !this.storage) return false;
 
     try {
       this.storage.clear();
       return true;
     } catch (error) {
-      console.warn(`Failed to clear ${this.storage.constructor.name}:`, error);
+      console.warn('Failed to clear storage:', error);
       return false;
     }
   }
 
   has(key: string): boolean {
-    if (!this.isAvailable) return false;
+    if (!this.isAvailable || !this.storage) return false;
     return this.storage.getItem(key) !== null;
   }
 
   keys(): string[] {
-    if (!this.isAvailable) return [];
+    if (!this.isAvailable || !this.storage) return [];
 
     try {
       return Object.keys(this.storage);
@@ -122,16 +129,20 @@ export class SafeStorage {
   }
 }
 
-// Global instances
-export const localStorage = new SafeStorage(window?.localStorage);
-export const sessionStorage = new SafeStorage(window?.sessionStorage);
+// Global instances - only access window in browser environment
+// Named safeLocalStorage/safeSessionStorage to avoid conflict with global names
+export const safeLocalStorage = new SafeStorage(isBrowser ? window.localStorage : undefined);
+export const safeSessionStorage = new SafeStorage(isBrowser ? window.sessionStorage : undefined);
+
+// Re-export with original names for backwards compatibility (aliased)
+export { safeLocalStorage as localStorage, safeSessionStorage as sessionStorage };
 
 /**
  * Cache with expiration support
  */
 export class ExpiringCache extends SafeStorage {
-  constructor(storage: Storage = window?.localStorage, private prefix = 'cache_') {
-    super(storage);
+  constructor(storage?: Storage, private prefix = 'cache_') {
+    super(storage ?? (isBrowser ? window.localStorage : undefined));
   }
 
   setWithExpiration<T>(key: string, value: T, expirationMs: number): boolean {
@@ -195,11 +206,11 @@ export class UserPreferences {
   private storage: SafeStorage;
 
   constructor(useSession = false) {
-    this.storage = useSession ? sessionStorage : localStorage;
+    this.storage = new SafeStorage(useSession && isBrowser ? window.sessionStorage : undefined);
   }
 
   private getPreferences(): Record<string, any> {
-    return this.storage.get(this.PREFERENCES_KEY, {});
+    return this.storage.get(this.PREFERENCES_KEY, {}) ?? {};
   }
 
   private savePreferences(preferences: Record<string, any>): boolean {
@@ -248,7 +259,7 @@ export class FormPersistence {
   private storage: SafeStorage;
 
   constructor(useSession = true) {
-    this.storage = useSession ? sessionStorage : localStorage;
+    this.storage = useSession ? safeSessionStorage : safeLocalStorage;
   }
 
   saveFormData(formId: string, data: Record<string, any>): boolean {
@@ -316,13 +327,13 @@ export class RecentItems<T> {
     maxItems = 10,
     useSession = false
   ) {
-    this.storage = useSession ? sessionStorage : localStorage;
+    this.storage = new SafeStorage(useSession && isBrowser ? window.sessionStorage : undefined);
     this.key = `recent_${key}`;
     this.maxItems = maxItems;
   }
 
   private getItems(): T[] {
-    return this.storage.get<T[]>(this.key, []);
+    return this.storage.get<T[]>(this.key, []) ?? [];
   }
 
   add(item: T, uniqueField?: keyof T): boolean {
@@ -376,11 +387,11 @@ export class ThemeStorage {
   private storage: SafeStorage;
 
   constructor() {
-    this.storage = localStorage; // Always use localStorage for theme
+    this.storage = new SafeStorage(); // Always use localStorage for theme
   }
 
   getTheme(): 'light' | 'dark' | 'system' {
-    return this.storage.get(this.THEME_KEY, 'system');
+    return this.storage.get(this.THEME_KEY, 'system') ?? 'system';
   }
 
   setTheme(theme: 'light' | 'dark' | 'system'): boolean {
@@ -389,11 +400,14 @@ export class ThemeStorage {
 
   getEffectiveTheme(): 'light' | 'dark' {
     const theme = this.getTheme();
-    
+
     if (theme === 'system') {
-      return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+      if (isBrowser) {
+        return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+      }
+      return 'light'; // Default for SSR
     }
-    
+
     return theme;
   }
 }
@@ -413,7 +427,7 @@ export class AuthStorage {
   private storage: SafeStorage;
 
   constructor(useSession = false) {
-    this.storage = useSession ? sessionStorage : localStorage;
+    this.storage = useSession ? safeSessionStorage : safeLocalStorage;
   }
 
   setToken(token: string, tokenType = 'Bearer', expiryMs?: number): boolean {
@@ -440,7 +454,7 @@ export class AuthStorage {
   }
 
   getTokenType(): string {
-    return this.storage.get(this.TOKEN_TYPE_KEY, 'Bearer');
+    return this.storage.get(this.TOKEN_TYPE_KEY, 'Bearer') ?? 'Bearer';
   }
 
   getAuthHeader(): string | undefined {
@@ -492,7 +506,7 @@ export class AppStatePersistence {
   private storage: SafeStorage;
 
   constructor(useSession = false) {
-    this.storage = useSession ? sessionStorage : localStorage;
+    this.storage = useSession ? safeSessionStorage : safeLocalStorage;
   }
 
   saveState(state: Record<string, any>): boolean {
@@ -556,6 +570,13 @@ export function getStorageUsage(): {
     }
   };
 
+  if (!isBrowser) {
+    return {
+      localStorage: { used: 0, available: 0 },
+      sessionStorage: { used: 0, available: 0 }
+    };
+  }
+
   return {
     localStorage: getStorageSize(window.localStorage),
     sessionStorage: getStorageSize(window.sessionStorage)
@@ -571,12 +592,12 @@ export function cleanExpiredData(): { removed: number; errors: number } {
     removed += cache.removeExpired();
     
     // Clean old form data
-    const formKeys = localStorage.keys().filter(key => key.startsWith('form_'));
+    const formKeys = safeLocalStorage.keys().filter(key => key.startsWith('form_'));
     formKeys.forEach(key => {
       try {
-        const data = localStorage.get<{ savedAt: number }>(key);
+        const data = safeLocalStorage.get<{ savedAt: number }>(key);
         if (data && Date.now() - data.savedAt > 60 * 60 * 1000) { // 1 hour
-          if (localStorage.remove(key)) {
+          if (safeLocalStorage.remove(key)) {
             removed++;
           } else {
             errors++;
@@ -609,7 +630,7 @@ export function exportStorageData(): {
   };
 
   return {
-    localStorage: exportStorage(localStorage),
-    sessionStorage: exportStorage(sessionStorage)
+    localStorage: exportStorage(safeLocalStorage),
+    sessionStorage: exportStorage(safeSessionStorage)
   };
 }

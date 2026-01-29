@@ -904,7 +904,256 @@ async def get_tags_stats(
         
         logger.info(f"Tags stats retrieved: {total_tags} tags, {total_transactions_tagged} tagged transactions")
         return stats
-        
+
     except Exception as e:
         logger.error(f"Error getting tags stats: {e}")
         raise HTTPException(status_code=500, detail="Erreur lors de la récupération des statistiques")
+
+
+# =============================================================================
+# MERGE TAGS ENDPOINT - Fusionner plusieurs tags en un seul
+# =============================================================================
+
+from pydantic import BaseModel, Field
+from typing import List
+
+
+class MergeTagsRequest(BaseModel):
+    """Request schema for merging tags"""
+    source_tags: List[str] = Field(
+        ...,
+        min_items=1,
+        description="List of source tag names to merge (will be removed)"
+    )
+    target_tag: str = Field(
+        ...,
+        min_length=1,
+        max_length=100,
+        description="Target tag name (all transactions will receive this tag)"
+    )
+    delete_source_tags: bool = Field(
+        default=True,
+        description="If true, remove source tags from transactions after merge"
+    )
+
+    class Config:
+        schema_extra = {
+            "example": {
+                "source_tags": ["resto", "restaurant", "restau"],
+                "target_tag": "restaurant",
+                "delete_source_tags": True
+            }
+        }
+
+
+class MergeTagsResponse(BaseModel):
+    """Response schema for merge operation"""
+    success: bool
+    message: str
+    source_tags: List[str]
+    target_tag: str
+    transactions_updated: int
+    patterns_merged: int
+    fixed_line_mappings_updated: int
+    stats: Dict[str, Any]
+
+
+@router.post("/merge", response_model=MergeTagsResponse)
+async def merge_tags(
+    payload: MergeTagsRequest,
+    current_user = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Fusionner plusieurs tags en un seul.
+
+    Cette opération :
+    1. Met à jour toutes les transactions avec les tags sources pour utiliser le tag cible
+    2. Fusionne les patterns de reconnaissance automatique
+    3. Met à jour les mappings vers les lignes fixes
+    4. Optionnellement supprime les tags sources des transactions
+
+    **Exemple d'usage :**
+    - Fusionner "resto", "restaurant", "restau" → "restaurant"
+    - Fusionner "courses", "supermarché", "alimentation" → "courses"
+
+    **Important :**
+    - Le tag cible peut être un tag existant ou un nouveau tag
+    - Si delete_source_tags=true, les tags sources sont supprimés
+    - Les patterns ML sont automatiquement associés au tag cible
+    """
+    try:
+        source_tags = [tag.strip().lower() for tag in payload.source_tags if tag.strip()]
+        target_tag = payload.target_tag.strip().lower()
+
+        if not source_tags:
+            raise HTTPException(status_code=400, detail="Au moins un tag source est requis")
+
+        if target_tag in source_tags and len(source_tags) == 1:
+            raise HTTPException(
+                status_code=400,
+                detail="Le tag cible ne peut pas être le seul tag source"
+            )
+
+        # Remove target from source list if present (no need to "merge" it with itself)
+        source_tags = [tag for tag in source_tags if tag != target_tag]
+
+        if not source_tags:
+            return MergeTagsResponse(
+                success=True,
+                message="Aucune fusion nécessaire - tous les tags sources sont identiques au tag cible",
+                source_tags=payload.source_tags,
+                target_tag=target_tag,
+                transactions_updated=0,
+                patterns_merged=0,
+                fixed_line_mappings_updated=0,
+                stats={}
+            )
+
+        transactions_updated = 0
+        patterns_merged = 0
+        fixed_line_mappings_updated = 0
+        source_stats = {}
+
+        # Process each source tag
+        for source_tag in source_tags:
+            # Find all transactions with this source tag
+            transactions = db.query(Transaction).filter(
+                Transaction.tags.contains(source_tag)
+            ).all()
+
+            source_stats[source_tag] = {
+                "transaction_count": len(transactions),
+                "updated": 0
+            }
+
+            for tx in transactions:
+                if not tx.tags:
+                    continue
+
+                # Parse existing tags
+                tx_tags = [t.strip().lower() for t in tx.tags.split(',') if t.strip()]
+
+                # Check if this transaction has the source tag
+                if source_tag not in tx_tags:
+                    continue
+
+                # Update tags: remove source, add target if not present
+                new_tags = []
+                has_target = False
+
+                for tag in tx_tags:
+                    if tag == source_tag:
+                        # Replace source with target
+                        if not has_target:
+                            new_tags.append(target_tag)
+                            has_target = True
+                    elif tag == target_tag:
+                        # Target already exists
+                        if not has_target:
+                            new_tags.append(tag)
+                            has_target = True
+                    else:
+                        # Keep other tags
+                        new_tags.append(tag)
+
+                # Remove duplicates while preserving order
+                seen = set()
+                unique_tags = []
+                for tag in new_tags:
+                    if tag not in seen:
+                        seen.add(tag)
+                        unique_tags.append(tag)
+
+                tx.tags = ','.join(unique_tags)
+                transactions_updated += 1
+                source_stats[source_tag]["updated"] += 1
+
+            # Merge label_tag_mappings (patterns)
+            source_mappings = db.query(LabelTagMapping).filter(
+                LabelTagMapping.suggested_tags.contains(source_tag)
+            ).all()
+
+            for mapping in source_mappings:
+                if mapping.suggested_tags:
+                    # Replace source tag with target in suggested_tags
+                    tags_list = [t.strip() for t in mapping.suggested_tags.split(',') if t.strip()]
+                    new_mapping_tags = []
+                    has_target_mapping = False
+
+                    for tag in tags_list:
+                        if tag.lower() == source_tag:
+                            if not has_target_mapping:
+                                new_mapping_tags.append(target_tag)
+                                has_target_mapping = True
+                        elif tag.lower() == target_tag:
+                            if not has_target_mapping:
+                                new_mapping_tags.append(tag)
+                                has_target_mapping = True
+                        else:
+                            new_mapping_tags.append(tag)
+
+                    mapping.suggested_tags = ','.join(new_mapping_tags)
+                    patterns_merged += 1
+
+            # Update TagFixedLineMapping
+            fixed_mappings = db.query(TagFixedLineMapping).filter(
+                TagFixedLineMapping.tag_name == source_tag,
+                TagFixedLineMapping.is_active == True
+            ).all()
+
+            for fixed_mapping in fixed_mappings:
+                # Check if target already has a mapping
+                existing_target_mapping = db.query(TagFixedLineMapping).filter(
+                    TagFixedLineMapping.tag_name == target_tag,
+                    TagFixedLineMapping.is_active == True
+                ).first()
+
+                if existing_target_mapping:
+                    # Deactivate source mapping (target already covered)
+                    fixed_mapping.is_active = False
+                else:
+                    # Transfer mapping to target tag
+                    fixed_mapping.tag_name = target_tag
+                fixed_line_mappings_updated += 1
+
+        db.commit()
+
+        # Calculate final stats
+        tags_data = extract_tags_from_transactions(db)
+        target_stats = tags_data.get(target_tag, {})
+
+        response = MergeTagsResponse(
+            success=True,
+            message=f"Fusion réussie: {len(source_tags)} tags fusionnés vers '{target_tag}'",
+            source_tags=source_tags,
+            target_tag=target_tag,
+            transactions_updated=transactions_updated,
+            patterns_merged=patterns_merged,
+            fixed_line_mappings_updated=fixed_line_mappings_updated,
+            stats={
+                "source_tags_stats": source_stats,
+                "target_tag_final_stats": {
+                    "transaction_count": target_stats.get('transaction_count', 0),
+                    "total_amount": target_stats.get('total_amount', 0.0)
+                }
+            }
+        )
+
+        logger.info(
+            f"Tags merged by {current_user.username}: "
+            f"{source_tags} → {target_tag}, "
+            f"{transactions_updated} transactions updated"
+        )
+
+        return response
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error merging tags: {e}")
+        db.rollback()
+        raise HTTPException(
+            status_code=500,
+            detail=f"Erreur lors de la fusion des tags: {str(e)}"
+        )

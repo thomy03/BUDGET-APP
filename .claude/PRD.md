@@ -1,351 +1,345 @@
-# PRD - Budget Famille v2.3
+# PRD - Budget Famille v4.1
 ## Product Requirements Document
 
-Document de spécifications produit pour l'application de gestion budgétaire familiale Budget Famille v2.3.
+Document de specifications produit pour l'application de gestion budgetaire familiale Budget Famille v4.1.
 
 ---
 
 ## 1. Vue d'Ensemble Produit
 
 ### Vision Produit
-Budget Famille v2.3 est une application web moderne qui **simplifie la gestion budgétaire familiale** grâce à l'intelligence artificielle et une interface intuitive, permettant aux familles de **reprendre le contrôle de leurs finances** avec un suivi automatisé et des insights personnalisés.
+Budget Famille v4.1 est une application web moderne qui **simplifie la gestion budgetaire familiale** grace a l'intelligence artificielle et une interface intuitive, permettant aux familles de **reprendre le controle de leurs finances** avec un suivi automatise, des predictions ML et des insights personnalises par IA.
 
 ### Mission
-Transformer la corvée budgétaire en expérience fluide et enrichissante, en automatisant 95% des tâches répétitives tout en offrant une visibilité claire sur la santé financière familiale.
+Transformer la gestion budgetaire en experience fluide et enrichissante, en automatisant 95% des taches repetitives tout en offrant une visibilite claire sur la sante financiere familiale avec des predictions intelligentes.
 
 ### Proposition de Valeur Unique
-- **IA Auto-tagging** : 95.4% précision, catégorisation automatique de toutes les transactions
-- **Dashboard Hiérarchique** : Navigation intuitive du global au détail en 3 clics
-- **Import Intelligent** : Traitement CSV/XLSX multi-banques avec détection automatique
-- **Provisions Personnalisées** : Objectifs d'épargne flexibles avec calculs automatiques
+- **IA Auto-tagging** : 95.4% precision, categorisation automatique de toutes les transactions
+- **Budget Intelligence System** : Predictions ML fin de mois, alertes intelligentes, analyse IA des ecarts
+- **Dashboard Hierarchique** : Navigation intuitive du global au detail en 3 clics
+- **Import Intelligent** : Traitement CSV/XLSX multi-banques avec detection automatique
+- **Provisions Personnalisees** : Objectifs d'epargne flexibles avec repartition par membre
 
 ---
 
-## 2. Analyse Marché et Utilisateurs
+## 2. Analyse Marche et Utilisateurs
 
-### Marché Cible
+### Marche Cible
 
 #### Segment Primaire : Familles Tech-Friendly (70%)
-- **Profil** : Couples 28-45 ans, revenus combinés 50k-120k€/an
-- **Pain Points** : Manque de temps, complexité outils existants, pas de vision globale
-- **Motivations** : Contrôle finances, épargne projets, éducation financière enfants
+- **Profil** : Couples 28-45 ans, revenus combines 50k-120k EUR/an
+- **Pain Points** : Manque de temps, complexite outils existants, pas de vision globale
+- **Motivations** : Controle finances, epargne projets, education financiere enfants
 
-#### Segment Secondaire : Freelances et Indépendants (30%)
-- **Profil** : 25-40 ans, revenus variables, gestion pro/perso mélangée
-- **Pain Points** : Irrégularité revenus, séparation charges, provisions fiscales
+#### Segment Secondaire : Freelances et Independants (30%)
+- **Profil** : 25-40 ans, revenus variables, gestion pro/perso melangee
+- **Pain Points** : Irregularite revenus, separation charges, provisions fiscales
 - **Motivations** : Lissage revenus, optimisation fiscale, projections business
 
 ### Personas Principales
 
 #### Marie & Julien - Famille Type
-- **Contexte** : 2 enfants, double revenus, maison avec crédit
+- **Contexte** : 2 enfants, double revenus, maison avec credit
 - **Besoins** : Suivi mensuel simple, objectifs vacances/travaux
 - **Usage** : 15min/semaine, principalement mobile le soir
-- **Quote** : *"On veut juste savoir où va notre argent sans y passer des heures"*
+- **Quote** : *"On veut juste savoir ou va notre argent sans y passer des heures"*
 
-#### Sophie - Indépendante
-- **Contexte** : Consultante, revenus irréguliers, charges déductibles
+#### Sophie - Independante
+- **Contexte** : Consultante, revenus irreguliers, charges deductibles
 - **Besoins** : Lissage revenus, provisions charges sociales
-- **Usage** : 1h/mois, desktop pour analyse détaillée
-- **Quote** : *"J'ai besoin de prévoir mes charges même quand les revenus varient"*
+- **Usage** : 1h/mois, desktop pour analyse detaillee
+- **Quote** : *"J'ai besoin de prevoir mes charges meme quand les revenus varient"*
 
 ---
 
-## 3. Fonctionnalités Produit
+## 3. Fonctionnalites Produit
 
-### 3.1 Core Features (Must-Have)
+### 3.1 Core Features (Must-Have) - IMPLEMENTEES
 
-#### CleanDashboard Provision-First ✅ IMPLÉMENTÉ
-**Objectif** : Vue d'ensemble instantanée de la santé financière
-- **Design moderne** : 4 métriques clés avec animations CountUp
+#### CleanDashboard Provision-First
+**Objectif** : Vue d'ensemble instantanee de la sante financiere
+- **Design moderne** : 4 metriques cles avec animations CountUp
 - **Barre progression** : Provisions avec indicateur temporel (X/12 mois), visuel vert
-- **Calcul familial** : (Provisions + Dépenses - Solde compte) / revenus nets
-- **Quick Actions** : Navigation rapide vers fonctionnalités principales
-- **Drill-down complet** : Dépenses → Variables/Fixes → Tags → Transactions
-- **Filtrage strict** : Montants débiteurs uniquement, exclusion transactions marquées
+- **Repartition par membre** : Details provisions et depenses par personne
+- **Quick Actions** : Navigation rapide vers fonctionnalites principales
+- **Drill-down complet** : Depenses -> Variables/Fixes -> Tags -> Transactions -> Mois
+- **Filtrage strict** : Montants debiteurs uniquement, exclusion transactions marquees
 
-#### Système de Tags Simplifié
-**Objectif** : Édition directe sans interruption
-- **Création automatique** : Nouveaux tags via TagAutomationService
-- **Workflow direct** : Modification immédiate sans modal
-- **Détection intelligente** : Filtrage strict des transactions
-- **Performance** : Aucune latence, mise à jour instantanée
+#### Budget Intelligence System v4.1
+**Objectif** : Intelligence artificielle pour optimisation budgetaire
+- **Objectifs Budget** : CRUD complet par categorie/tag avec suggestions historiques
+- **Predictions ML** : Fin de mois par categorie avec tendances (increasing/decreasing/stable)
+- **Alertes Intelligentes** : overspend_risk, unusual_spike, category_trend (3 severites)
+- **Analyse IA Ecarts** : Integration OpenRouter (DeepSeek V3.2) pour explications
+- **Detection Anomalies** : Isolation Forest + fuzzy matching doublons
+- **Recommandations** : Suggestions d'economies personnalisees
 
-#### Provisions Personnalisées ✅ IMPLÉMENTÉES
-**Objectif** : Épargne objectifs flexibles et automatisées
-- **Types** : Pourcentage revenus, montant fixe, formule personnalisée
-- **Calculs** : Répartition couple, dates début/fin, provisions temporaires
-- **Suivi** : Barre progression verte avec montant cumulé depuis janvier
-- **Progression annuelle** : Calcul automatique mois X/12 avec projections
-- **Catégories** : Vacances, travaux, véhicule, urgence, projets enfants
-- **Interface intégrée** : Gestion provisions dans détail catégorie du drill-down
+#### Systeme de Tags ML
+**Objectif** : Categorisation automatique intelligente
+- **Auto-tagging** : Pattern matching (exact, first word, substring, similar)
+- **Confiance adaptative** : 100% exact, 85% first word, 70% substring
+- **Mode Batch** : Selection multiple avec raccourcis clavier (B, T, Shift+Click)
+- **Preview suggestions** : Modal avec checkboxes avant application
+- **Feedback ML** : Apprentissage continu des corrections utilisateur
 
-### 3.2 Advanced Features (Should-Have)
+#### Provisions Personnalisees
+**Objectif** : Epargne objectifs flexibles et automatisees
+- **Types** : Pourcentage revenus, montant fixe, formule personnalisee
+- **Calculs** : Repartition couple, dates debut/fin, provisions temporaires
+- **Suivi** : Barre progression verte avec montant cumule depuis janvier
+- **Repartition membre** : Affichage detaille par personne dans dashboard
+- **Categories** : Vacances, travaux, vehicule, urgence, projets enfants
+
+### 3.2 Advanced Features (Should-Have) - IMPLEMENTEES
 
 #### Analytics & Insights
-**Objectif** : Compréhension comportements financiers
-- **Tendances** : Évolution 12 mois, comparaisons périodiques
-- **Prédictions** : Projections 3-6 mois basées ML
-- **Alertes** : Dépassements budgets, objectifs atteignables
-- **Scoring** : Indice santé financière familiale
+**Objectif** : Comprehension comportements financiers
+- **Drill-down hierarchique** : 5 niveaux de navigation
+- **Tendances 6 mois** : AreaChart evolution revenus/depenses
+- **Heatmap depenses** : Carte de chaleur par jour/heure
+- **Top Categories/Marchands** : Classements automatiques
 
-#### Configuration Avancée
+#### Page Analytics Onglets
+- **Drilldown** : Navigation hierarchique depenses
+- **Budget** : Analyse Budget vs Reel avec graphiques
+- **IA** : Chat contextuel et suggestions economies
+
+#### Configuration Avancee
 **Objectif** : Adaptation tous profils familiaux
-- **Multi-membres** : Répartition charges/revenus personnalisée
-- **Calendrier** : Saisonnalité dépenses, événements récurrents
-- **Règles business** : Formules calculs, exceptions, cas particuliers
+- **Multi-membres** : Repartition charges/revenus personnalisee
+- **Taux imposition** : tax_rate1 et tax_rate2 individuels
+- **Revenus nets** : Calcul automatique apres imposition
+- **Objectifs budget** : Definition par categorie avec historique
 
-### 3.3 Nice-to-Have Features
+### 3.3 Nice-to-Have Features (PLANIFIEES)
 
 #### Collaboration Famille
 - Comptes multiples, permissions granulaires
-- Commentaires transactions, validations croisées
-- Notifications objectifs partagés
+- Commentaires transactions, validations croisees
+- Notifications objectifs partages
 
-#### Intégrations Externes
+#### Integrations Externes
 - APIs bancaires PSD2 (connexion directe)
 - Export comptables (Ciel, Sage, Excel)
-- Synchronisation calendriers (vacances, échéances)
+- Synchronisation calendriers (vacances, echeances)
+
+#### Application Mobile
+- React Native ou Expo
+- PWA optimisee
+- Notifications push
 
 ---
 
 ## 4. Exigences Techniques
 
-### 4.1 Architecture Système
+### 4.1 Architecture Systeme
 
 #### Backend Requirements
-- **Framework** : FastAPI (performance, documentation automatique)
-- **Base de données** : SQLite → PostgreSQL (évolutivité)
-- **ML Pipeline** : Scikit-learn, modèles pré-entraînés + apprentissage
-- **APIs** : RESTful, documentation Swagger, versioning
-- **Performance** : <2s temps réponse, 1000+ requêtes/min
+- **Framework** : FastAPI avec Pydantic (v1 syntax)
+- **Base de donnees** : SQLite avec SQLAlchemy ORM
+- **ML Pipeline** : Scikit-learn (Isolation Forest), patterns JSON
+- **IA** : OpenRouter API (DeepSeek V3.2)
+- **Cache** : Redis (aioredis compatible Python 3.11+)
+- **APIs** : RESTful, documentation Swagger, JWT auth
+- **Performance** : <2s temps reponse, 1000+ requetes/min
 
 #### Frontend Requirements
-- **Framework** : Next.js 14 (SSR, optimisations)
-- **UI/UX** : Tailwind CSS, composants réutilisables, design system
-- **State Management** : React Context + Zustand pour états complexes
-- **Mobile** : PWA, responsive design, touch gestures
-- **Performance** : <3s First Contentful Paint, >90 Lighthouse score
+- **Framework** : Next.js 14 avec App Router
+- **Styling** : Tailwind CSS avec Dark Mode
+- **Design System** : Glassmorphism (GlassCard, ModernCard)
+- **Graphiques** : Recharts (PieChart, AreaChart, BarChart, LineChart)
+- **State** : React Context + hooks personnalises
+- **TypeScript** : Mode strict active
+- **Tests** : Jest (136 tests passing)
 
 #### Infrastructure Requirements
-- **Containerisation** : Docker (développement + production)
-- **CI/CD** : GitHub Actions, tests automatisés
-- **Monitoring** : Logs structurés, métriques performance
-- **Sécurité** : HTTPS, JWT, chiffrement données sensibles
+- **Containerisation** : Docker (developpement + production)
+- **CI/CD** : GitHub Actions avec tests automatises
+- **Deploiement** : Vercel (frontend) + Render (backend)
+- **Monitoring** : Logs structures, metriques performance
 
-### 4.2 Compatibilité et Support
+### 4.2 Compatibilite et Support
 
 #### Navigateurs
 - **Desktop** : Chrome 90+, Firefox 88+, Safari 14+, Edge 90+
 - **Mobile** : iOS Safari 14+, Android Chrome 90+
 - **PWA** : Installation native, fonctionnement offline
 
-#### Systèmes
-- **Développement** : Windows WSL2, macOS, Linux Ubuntu
+#### Systemes
+- **Developpement** : Windows (PowerShell), macOS, Linux
 - **Production** : Linux containers, cloud providers
-- **Base de données** : SQLite (dev), PostgreSQL (prod)
+- **Python** : 3.11+ (compatibilite aioredis)
 
 ---
 
-## 5. Expérience Utilisateur (UX)
+## 5. Experience Utilisateur (UX)
 
 ### 5.1 Parcours Utilisateur Principal
 
 #### Onboarding (Premier usage)
-1. **Accueil** : Présentation valeur ajoutée, promesse "5 minutes setup"
-2. **Configuration** : Revenus couple, objectifs épargne principaux
-3. **Import initial** : Assistant CSV, détection automatique colonnes
-4. **Découverte** : Tour guidé interface, tips contextuels
+1. **Accueil** : Presentation valeur ajoutee, promesse "5 minutes setup"
+2. **Configuration** : Revenus couple, taux imposition, objectifs epargne
+3. **Import initial** : Assistant CSV, detection automatique colonnes
+4. **Decouverte** : Tour guide interface, tips contextuels
 
-#### Usage Récurrent (Hebdomadaire)
-1. **Check rapide** : Dashboard, alertes nouvelles
-2. **Transactions** : Validation auto-tagging, corrections manuelles
-3. **Objectifs** : Progression épargnes, ajustements provisions
+#### Usage Recurrent (Hebdomadaire)
+1. **Check rapide** : Dashboard, alertes predictions
+2. **Transactions** : Validation auto-tagging, corrections avec feedback ML
+3. **Objectifs** : Progression provisions, ajustements budgets
+4. **Analyse IA** : Consultation recommandations, chat contextuel
 
 ### 5.2 Principes Design
 
-#### Simplicité
-- **Règle 3 clics** : Toute information accessible en maximum 3 clics
-- **Progressive disclosure** : Information complexe masquée par défaut
-- **Defaults intelligents** : Configuration pré-remplie, suggestions contextuelles
+#### Glassmorphism
+- **Transparence** : Effets de verre avec blur
+- **Dark Mode** : Theme complet avec toggle anime
+- **Couleurs** : Gradients subtils, accents violet/bleu
 
-#### Feedback Visuel
-- **Micro-interactions** : Confirmations actions, transitions fluides
-- **État système** : Loading states, progress bars, indicateurs santé
-- **Accessibility** : Contraste, tailles texte, navigation clavier
+#### Simplicite
+- **Regle 3 clics** : Toute information accessible rapidement
+- **Progressive disclosure** : Information complexe masquee par defaut
+- **Defaults intelligents** : Configuration pre-remplie, suggestions ML
 
-#### Performance Perçue
+#### Performance Percue
 - **Skeleton screens** : Chargement progressif
-- **Cache intelligent** : Données fréquentes en local
-- **Lazy loading** : Images et composants lourds différés
+- **Animations CountUp** : Metriques animees
+- **Cache intelligent** : Donnees frequentes en local
 
 ---
 
-## 6. Modèle de Données
+## 6. Modele de Donnees
 
-### 6.1 Entités Principales
+### 6.1 Entites Principales
 
 #### Transaction
 ```sql
-- id, date, amount, description, account
-- category (auto + manual), subcategory  
-- is_expense, is_fixed, exclude_from_budget
-- tags[], ml_confidence_score
+- id, date_op, amount, label, account
+- tags[], expense_type (FIXE/VARIABLE)
+- exclude (boolean), month (YYYY-MM)
+- ml_confidence_score, source
 - created_at, updated_at, user_id
 ```
 
-#### CustomProvision (Épargne)
+#### CustomProvision (Epargne)
 ```sql
 - id, name, description, icon, color
 - percentage, fixed_amount, base_calculation
 - split_mode, split_member1, split_member2
 - target_amount, current_amount, category
 - is_active, is_temporary, start_date, end_date
-- created_by, created_at, updated_at
+```
+
+#### CategoryBudget (NEW v4.0)
+```sql
+- id, user_id, category_name, tag_name
+- budget_amount, month (YYYY-MM)
+- is_active, created_at, updated_at
 ```
 
 #### Config (Utilisateur)
 ```sql
 - id, user_id, member1_name, member2_name
 - member1_salary, member2_salary
-- tax_rate1, tax_rate2 (taux d'imposition en %)
+- tax_rate1, tax_rate2 (taux imposition %)
 - split_fixed_charges, split_variable_charges
-- created_at, updated_at
 ```
 
-### 6.2 Relations et Contraintes
-
-#### Intégrité Données
-- **Cascade Delete** : Suppression utilisateur → données associées
-- **Validation** : Montants positifs, dates cohérentes, pourcentages 0-100%
-- **Index** : Performance requêtes (date, user_id, category)
-
-#### Évolutivité
-- **Migrations** : Scripts automatisés, rollback possibles
-- **Versioning** : Schema evolution, backward compatibility
-- **Backup** : Stratégie sauvegarde, restore procédures
+### 6.2 Fichiers ML
+- `backend/data/learned_patterns.json` : Patterns marchands appris
+- `backend/ml_budget_predictor.py` : Predictions et alertes
+- `backend/ml_anomaly_detector.py` : Detection anomalies
 
 ---
 
-## 7. Sécurité et Conformité
+## 7. Securite et Conformite
 
-### 7.1 Protection Données
+### 7.1 Protection Donnees
 
 #### Authentification
 - **JWT Tokens** : Expiration automatique, refresh token
-- **Sécurité mot de passe** : Hachage bcrypt, complexité minimum
-- **Session management** : Timeout inactivité, logout automatique
+- **Securite mot de passe** : Hachage bcrypt
+- **Session management** : Timeout inactivite
 
-#### Chiffrement
-- **HTTPS obligatoire** : TLS 1.3, certificats automatiques
-- **Données sensibles** : Chiffrement AES-256 en base
-- **API Keys** : Stockage sécurisé, rotation périodique
-
-#### Audit et Monitoring
-- **Logs sécurité** : Tentatives connexion, actions sensibles
-- **Alertes** : Détection intrusions, comportements anormaux
-- **Compliance** : RGPD, droit suppression, portabilité données
+#### API Keys
+- **OpenRouter** : Stockage securise .env
+- **CORS** : Origins autorisees (localhost, 127.0.0.1)
 
 ### 7.2 Resilience
 
-#### Backup et Recovery
-- **Backup automatique** : Quotidien, rétention 30 jours
-- **Test restore** : Vérification mensuelle procédures
-- **Disaster recovery** : RTO <4h, RPO <1h
+#### Backup
+- **Scripts PowerShell** : Backup-Database.ps1
+- **Strategie** : Daily/Weekly/Manual
+- **Restore** : Restore-Database.ps1 avec rollback
 
 ---
 
-## 8. Métriques et KPIs
+## 8. Metriques et KPIs
 
-### 8.1 Métriques Produit
+### 8.1 Metriques Produit
 
-#### Adoption
-- **MAU** (Monthly Active Users) : Objectif 1000+ utilisateurs
-- **Retention** : J7 >40%, J30 >20%, J90 >15%
-- **Time to Value** : <10 minutes premier import réussi
-
-#### Engagement
-- **Session duration** : Objectif 8-12 minutes moyenne
-- **Pages par session** : >5 pages (navigation hiérarchique)
-- **Feature adoption** : >80% utilisation dashboard, >60% provisions
-
-### 8.2 Métriques Techniques
+#### Qualite ML
+- **Auto-tagging accuracy** : >95% (actuel 95.4%)
+- **Predictions accuracy** : >80% fin de mois
+- **Alertes pertinence** : <10% faux positifs
 
 #### Performance
-- **API Response Time** : P95 <2s, P99 <5s
-- **Frontend Performance** : FCP <3s, TTI <5s, CLS <0.1
-- **Uptime** : >99.5% (objectif 99.9%)
+- **API Response Time** : P95 <2s
+- **Frontend FCP** : <3s
+- **Tests coverage** : 136 tests Jest passing
 
-#### Qualité
-- **ML Accuracy** : Auto-tagging >95% (objectif 97%)
-- **Error Rate** : <1% erreurs utilisateur, <0.1% erreurs système
-- **Support Tickets** : <5% utilisateurs actifs/mois
+### 8.2 Tests
+
+#### Backend (pytest)
+- Tests unitaires modeles
+- Tests API endpoints
+- Tests ML classification
+
+#### Frontend (Jest)
+- Tests composants React
+- Tests hooks personnalises
+- Tests utilitaires
 
 ---
 
 ## 9. Roadmap et Releases
 
-### 9.1 Release Planning
+### v4.1 (Janvier 2026) - ACTUELLE
+- Dashboard repartition detaillee par membre
+- Budget Intelligence System production-ready
+- Tests complets (Jest + pytest)
+- Orchestrator avec Skills Discovery
+- Agents specialises (.claude/agents/)
 
-#### v2.3.3 (Août 2025) - Current
-- ✅ CleanDashboard Provision-First avec design moderne
-- ✅ Drill-down dépenses hiérarchique complet
-- ✅ Système de tags simplifié sans modal IA
-- ✅ Import CSV/XLSX intelligent multi-format
-- ✅ Provisions personnalisées avec barre progression verte
-- ✅ Système fiscal avec taux d'imposition individuels
-- ✅ Calcul revenus nets et répartition équitable automatisée
-- ✅ Navigation hiérarchique : Dépenses → Variables/Fixes → Tags → Transactions
-- ✅ Quick Actions opérationnels avec animations CountUp
+### v4.2 (Fevrier 2026) - PLANIFIEE
+- Application mobile (React Native/Expo)
+- PWA optimisee avec notifications
+- Export PDF automatise
+- Ameliorations ML (transformers)
 
-#### v2.4 (Octobre 2025) - Stabilisation
-- 🎯 Correction bugs critiques (CORS, authentification)
-- 🎯 PWA et optimisations mobile
-- 🎯 Tests end-to-end complets
-- 🎯 Performance <1s API response
-
-#### v2.5 (Décembre 2025) - Intelligence
-- 🎯 Prédictions ML (dépenses, épargne)
-- 🎯 Analytics avancés et insights
-- 🎯 Alertes et recommandations
-- 🎯 Export PDF automatisé
-
-### 9.2 Feature Flags
-
-#### Experimental Features
-- **ML Predictions** : Rollout progressif 10→50→100%
-- **PSD2 Integrations** : Beta testing utilisateurs volontaires
-- **Advanced Analytics** : A/B test vs interface actuelle
+### v5.0 (Q2 2026) - VISION
+- Integrations bancaires PSD2
+- Multi-tenant complet
+- WebSocket temps reel
+- Assistant IA conversationnel
 
 ---
 
 ## 10. Risques et Mitigation
 
-### 10.1 Risques Techniques
+### Risques Techniques
+- **Performance ML** : Monitoring continu, cache Redis
+- **API timeouts** : Fallbacks, retry strategies
+- **Compatibilite Python** : Tests multi-versions
 
-#### Performance et Scalabilité
-- **Risque** : Dégradation performance avec croissance données
-- **Mitigation** : Pagination, cache Redis, optimisation requêtes
-
-#### Complexité ML
-- **Risque** : Maintenance modèles, drift accuracy
-- **Mitigation** : Pipeline automatisé, monitoring qualité
-
-### 10.2 Risques Produit
-
-#### Adoption Utilisateur
-- **Risque** : Courbe apprentissage trop complexe
-- **Mitigation** : Onboarding guidé, documentation interactive
-
-#### Concurrence
-- **Risque** : Nouveaux entrants avec features similaires
-- **Mitigation** : Innovation continue, fidélisation utilisateurs
+### Risques Produit
+- **Adoption** : Onboarding guide, documentation
+- **Complexite** : Progressive disclosure, defaults intelligents
 
 ---
 
-**Document Version** : 2.3.3  
-**Auteur** : Équipe Produit Budget Famille  
-**Dernière mise à jour** : 2025-08-13  
-**Prochaine révision** : 2025-09-30  
+**Document Version** : 4.1.0
+**Auteur** : Equipe Produit Budget Famille
+**Derniere mise a jour** : 2026-01-25
+**Prochaine revision** : 2026-02-28
 
-*Ce PRD est un document évolutif, mis à jour en fonction des retours utilisateurs et de l'évolution du marché.*
+*Ce PRD est un document evolutif, mis a jour en fonction des retours utilisateurs et de l'evolution du marche.*

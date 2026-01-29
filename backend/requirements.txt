@@ -13,6 +13,11 @@ uvicorn[standard]>=0.20.0,<0.31.0
 pandas>=1.5.0,<2.1.0
 numpy>=1.21.0,<1.26.0
 
+# === ML ANOMALY DETECTION ===
+scikit-learn>=1.0.0  # IsolationForest, StandardScaler, DBSCAN
+fuzzywuzzy>=0.18.0  # Fuzzy string matching for duplicate detection
+python-Levenshtein>=0.12.0  # Speed up fuzzywuzzy
+
 # === DATABASE & ORM ===
 SQLAlchemy>=1.4.0,<2.1.0
 alembic>=1.8.0  # Pour migrations de DB
@@ -45,6 +50,15 @@ structlog>=22.0.0  # Logging structuré
 redis>=4.0.0,<5.1.0  # Redis client with async support
 redis[hiredis]>=4.0.0  # High-performance parser
 aioredis>=2.0.0  # Async Redis client
+
+# === ML TIME SERIES (Prophet) ===
+prophet>=1.1.5  # Time series forecasting with seasonality
+holidays>=0.40  # French holidays support for Prophet
+cmdstanpy>=1.2.0  # Prophet's backend
+
+# === OCR RECEIPTS ===
+easyocr>=1.7.0  # OCR engine (CPU mode, supports French)
+pillow>=10.0.0  # Image processing and EXIF rotation
 
 # === OPTIONAL - Database Encryption ===
 # Décommenté si chiffrement DB requis (nécessite libsqlcipher-dev)

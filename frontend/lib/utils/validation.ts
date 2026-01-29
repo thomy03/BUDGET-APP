@@ -38,6 +38,16 @@ export class FieldValidator {
     private validator: Validator
   ) {}
 
+  // Allow chaining to another field
+  field(fieldName: string): FieldValidator {
+    return this.validator.field(fieldName);
+  }
+
+  // Allow getting result from field validator
+  getResult(): ValidationResult {
+    return this.validator.getResult();
+  }
+
   required(message?: string): FieldValidator {
     if (this.value === null || this.value === undefined || this.value === '') {
       this.validator.addError({
@@ -171,7 +181,8 @@ export class FieldValidator {
           value: this.value
         });
       } else {
-        const [year, month] = this.value.split('-').map(Number);
+        const parts = this.value.split('-').map(Number);
+        const month = parts[1] ?? 0;
         if (month < 1 || month > 12) {
           this.validator.addError({
             field: this.fieldName,

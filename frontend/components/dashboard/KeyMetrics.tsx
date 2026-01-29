@@ -21,7 +21,7 @@ const KeyMetrics = React.memo<KeyMetricsProps>(({
   // Early return with loading state if data is not ready
   if (!summary || !config) {
     return (
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
         {[...Array(4)].map((_, index) => (
           <MetricCardSkeleton key={index} />
         ))}
@@ -43,32 +43,32 @@ const KeyMetrics = React.memo<KeyMetricsProps>(({
   } = calculateBudgetTotals(provisions, fixedExpenses, safeVarTotal, config);
 
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-      <MetricCard 
-        title="Total Provisions" 
-        value={totalProvisions} 
-        color="indigo" 
+    <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
+      <MetricCard
+        title="Total Provisions"
+        value={totalProvisions}
+        color="indigo"
         icon="🎯"
         subtitle={`${activeProvisions.length} provision${activeProvisions.length > 1 ? 's' : ''}`}
       />
-      <MetricCard 
-        title="Charges Fixes" 
-        value={totalFixedExpenses} 
-        color="emerald" 
+      <MetricCard
+        title="Charges Fixes"
+        value={totalFixedExpenses}
+        color="emerald"
         icon="💳"
         subtitle={`${activeFixedExpenses.length} dépense${activeFixedExpenses.length > 1 ? 's' : ''}`}
       />
-      <MetricCard 
-        title="Variables" 
-        value={totalVariables} 
-        color="blue" 
+      <MetricCard
+        title="Variables"
+        value={totalVariables}
+        color="blue"
         icon="📊"
         subtitle="Transactions bancaires"
       />
-      <MetricCard 
-        title="Budget Total" 
-        value={budgetTotal} 
-        color="purple" 
+      <MetricCard
+        title="Budget Total"
+        value={budgetTotal}
+        color="purple"
         icon="📈"
         subtitle="Vision d'ensemble"
         isTotal
@@ -99,16 +99,16 @@ const MetricCard = React.memo<{
   const safeValue = typeof value === 'number' && !isNaN(value) ? value : 0;
 
   return (
-    <Card className={`p-4 border-l-4 ${colorClasses[color as keyof typeof colorClasses]} ${
+    <Card className={`p-3 md:p-4 border-l-4 ${colorClasses[color as keyof typeof colorClasses]} ${
       isTotal ? 'ring-2 ring-purple-200 shadow-lg' : ''
     }`}>
-      <div className="flex items-center justify-between mb-2">
-        <span className="text-lg">{icon}</span>
-        {isTotal && <span className="text-xs font-medium px-2 py-1 bg-purple-200 rounded-full">TOTAL</span>}
+      <div className="flex items-center justify-between mb-1.5 md:mb-2">
+        <span className="text-base md:text-lg">{icon}</span>
+        {isTotal && <span className="text-[10px] md:text-xs font-medium px-1.5 md:px-2 py-0.5 md:py-1 bg-purple-200 rounded-full">TOTAL</span>}
       </div>
-      <div className="text-sm font-medium mb-1">{title}</div>
-      <div className={`text-xl font-bold ${isTotal ? 'text-2xl' : ''}`}>{safeValue.toFixed(2)} €</div>
-      {subtitle && <div className="text-xs opacity-75 mt-1">{subtitle}</div>}
+      <div className="text-xs md:text-sm font-medium mb-0.5 md:mb-1">{title}</div>
+      <div className={`text-lg md:text-xl font-bold ${isTotal ? 'md:text-2xl' : ''}`}>{safeValue.toFixed(2)} €</div>
+      {subtitle && <div className="text-[10px] md:text-xs opacity-75 mt-0.5 md:mt-1 truncate">{subtitle}</div>}
     </Card>
   );
 });

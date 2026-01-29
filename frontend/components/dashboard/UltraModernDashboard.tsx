@@ -5,6 +5,8 @@ import Link from 'next/link';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { useCleanDashboard } from '../../hooks/useCleanDashboard';
 import { balanceApi, api, tagCategoryApi } from '../../lib/api';
+import { AICoachWidget } from './AICoachWidget';
+import { GamificationWidget } from '../gamification';
 
 interface UltraModernDashboardProps {
   month: string;
@@ -122,8 +124,10 @@ export const UltraModernDashboard: React.FC<UltraModernDashboardProps> = ({ mont
       if (!isAuthenticated || !month) return;
 
       try {
-        const response = await api.get(`/transactions?month=${month}`);
-        const transactions = response.data || [];
+        const response = await api.get(`/transactions?month=${month}&limit=500`);
+        // L'API retourne maintenant un objet paginé { items: [...], total, page, ... }
+        const transactionsData = response.data || {};
+        const transactions = transactionsData.items || transactionsData || [];
 
         // Filtrer uniquement les dépenses (montants négatifs) et non exclues
         const expenses = transactions.filter((t: any) => t.amount < 0 && !t.exclude);
@@ -251,10 +255,12 @@ export const UltraModernDashboard: React.FC<UltraModernDashboardProps> = ({ mont
 
   const monthLabel = new Date(month + '-01').toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
 
-  // Calculs
-  const totalNeeded = data.expenses.total + data.provisions.total;
-  const toProvision = Math.max(0, totalNeeded - accountBalance);
-  const surplus = accountBalance - totalNeeded;
+  // Calculs - UTILISER les valeurs de useCleanDashboard pour cohérence
+  // familyProvision.needed = provisions + dépenses - crédits - solde compte
+  // Donc toProvision doit utiliser cette valeur, pas recalculer différemment
+  const toProvision = Math.max(0, data.familyProvision.needed);
+  const totalNeeded = data.provisions.total + (data.familyProvision.detail?.expenses?.total ?? 0);
+  const surplus = -Math.min(0, data.familyProvision.needed);
   const remaining = data.revenue.net - data.expenses.total - data.provisions.total;
 
   // Données pour le graphique donut
@@ -272,9 +278,17 @@ export const UltraModernDashboard: React.FC<UltraModernDashboardProps> = ({ mont
   return (
     <div className="max-w-4xl mx-auto px-6 py-10">
       {/* Header */}
-      <header className="mb-12 text-center">
+      <header className="mb-8 text-center">
         <h1 className="text-3xl font-light text-gray-900 capitalize">{monthLabel}</h1>
       </header>
+
+      {/* AI Coach Widget + Gamification - Conseils et accomplissements */}
+      <section className="mb-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <AICoachWidget month={month} />
+          <GamificationWidget compact />
+        </div>
+      </section>
 
       {/* Solde du compte - Éditable */}
       <section className="mb-12">
@@ -556,14 +570,14 @@ const MemberCard: React.FC<{
         {percentage.toFixed(0)}% de son revenu ({formatters.currency(income)})
       </p>
 
-      {/* Détail Provisions / Dépenses nettes */}
+      {/* Détail Provisions / Dépenses */}
       <div className="mt-4 pt-4 border-t border-gray-100 space-y-2">
         <div className="flex justify-between items-center text-sm">
           <span className="text-indigo-600 font-medium">Provisions</span>
           <span className="font-semibold text-indigo-700">{formatters.currency(provisionAmount)}</span>
         </div>
         <div className="flex justify-between items-center text-sm">
-          <span className="text-orange-600 font-medium">Dépenses nettes</span>
+          <span className="text-orange-600 font-medium">Dépenses</span>
           <span className="font-semibold text-orange-700">{formatters.currency(expenseAmount)}</span>
         </div>
       </div>

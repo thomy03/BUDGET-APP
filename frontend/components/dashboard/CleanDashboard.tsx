@@ -23,6 +23,9 @@ const MinusIcon = ({ className = "" }: { className?: string }) => (
   </svg>
 );
 import { useCleanDashboard } from '../../hooks/useCleanDashboard';
+import { AICoachWidget } from './AICoachWidget';
+import { GamificationWidget } from '../gamification';
+import { AlertsBanner } from '../AlertsBanner';
 
 interface CleanDashboardProps {
   month: string;
@@ -38,10 +41,6 @@ export const CleanDashboard: React.FC<CleanDashboardProps> = ({ month, isAuthent
   const { data, loading, error, formatters } = useCleanDashboard(month, isAuthenticated);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [selectedExpenseType, setSelectedExpenseType] = useState<'variable' | 'fixed' | null>(null);
-
-  // DEBUG: Log data to console
-  console.log('🔍 CleanDashboard data:', data);
-  console.log('🔍 familyProvision.detail:', data?.familyProvision?.detail);
 
   if (loading) {
     return (
@@ -63,17 +62,35 @@ export const CleanDashboard: React.FC<CleanDashboardProps> = ({ month, isAuthent
   return (
     <div className="space-y-8">
       {/* Header épuré avec animation */}
-      <FadeIn delay={0} className="text-center pb-8 border-b border-gray-100">
-        <h1 className="text-3xl font-light text-gray-900 mb-2">
+      <FadeIn delay={0} className="text-center pb-4 md:pb-8 border-b border-gray-100">
+        <h1 className="text-xl sm:text-2xl md:text-3xl font-light text-gray-900 mb-1 md:mb-2">
           Budget Familial
         </h1>
-        <p className="text-lg text-gray-500">
+        <p className="text-sm md:text-lg text-gray-500">
           {new Date(month).toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })}
         </p>
       </FadeIn>
 
+      {/* Alertes Budget - Notifications ML pour dépassements et anomalies */}
+      <FadeIn delay={25}>
+        <AlertsBanner
+          showPredictions={false}
+          showRecommendations={true}
+          maxAlerts={3}
+          refreshInterval={300}
+        />
+      </FadeIn>
+
+      {/* AI Coach Widget + Gamification - Conseils budget intelligent et accomplissements */}
+      <FadeIn delay={50}>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 md:gap-4 mb-2">
+          <AICoachWidget month={month} />
+          <GamificationWidget compact />
+        </div>
+      </FadeIn>
+
       {/* Vue d'ensemble - Indicateurs clés avec animations échelonnées */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6">
         
         {/* Revenus nets avec animation */}
         <SlideIn delay={100} direction="up">
@@ -128,43 +145,31 @@ export const CleanDashboard: React.FC<CleanDashboardProps> = ({ month, isAuthent
         </SlideIn>
       </div>
 
-      {/* DEBUG SECTION - À SUPPRIMER */}
-      <div className="p-4 mb-4 bg-yellow-100 border-2 border-yellow-500 rounded-lg">
-        <h3 className="font-bold text-yellow-800 mb-2">DEBUG - VERSION 3</h3>
-        <div className="text-xs text-yellow-900 space-y-1">
-          <p>totalProvisions: {data.provisions?.total ?? 'undefined'}</p>
-          <p>totalExpenses: {data.expenses?.total ?? 'undefined'}</p>
-          <p>detail exists: {data.familyProvision?.detail ? 'OUI' : 'NON'}</p>
-          <p>detail.provisions.member1: {data.familyProvision?.detail?.provisions?.member1 ?? 'undefined'}</p>
-          <p>detail.expenses.member1: {data.familyProvision?.detail?.expenses?.member1 ?? 'undefined'}</p>
-        </div>
-      </div>
-
       {/* RÉPARTITION FAMILIALE - Section détaillée avec breakdown */}
-      <FadeIn delay={500} className="p-6 bg-gray-50 rounded-xl">
-        <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-1">
-          Répartition Familiale (Détail v3)
+      <FadeIn delay={500} className="p-4 md:p-6 bg-gray-50 rounded-xl">
+        <h2 className="text-xs md:text-sm font-semibold text-gray-500 uppercase tracking-wider mb-1">
+          Répartition Familiale
         </h2>
-        <p className="text-xs text-gray-400 mb-4">
-          Contribution par membre = Provisions + Dépenses nettes
+        <p className="text-[10px] md:text-xs text-gray-400 mb-3 md:mb-4">
+          Contribution par membre = Provisions + Dépenses
         </p>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
           {/* Membre 1 */}
-          <div className="bg-white rounded-xl p-5 border border-gray-200">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 rounded-full bg-indigo-900 flex items-center justify-center text-white font-semibold">
+          <div className="bg-white rounded-xl p-4 md:p-5 border border-gray-200">
+            <div className="flex items-center gap-2 md:gap-3 mb-3 md:mb-4">
+              <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-indigo-900 flex items-center justify-center text-white font-semibold text-sm md:text-base">
                 {data.revenue.member1.name.charAt(0).toUpperCase()}
               </div>
-              <div>
-                <div className="font-medium text-gray-900">{data.revenue.member1.name}</div>
-                <div className="text-xs text-gray-500">
+              <div className="min-w-0 flex-1">
+                <div className="font-medium text-gray-900 text-sm md:text-base truncate">{data.revenue.member1.name}</div>
+                <div className="text-[10px] md:text-xs text-gray-500 truncate">
                   {Math.round((data.revenue.member1.net / (data.revenue.member1.net + data.revenue.member2.net)) * 100)}% de son revenu ({formatters.currency(data.revenue.member1.net)})
                 </div>
               </div>
             </div>
 
-            <div className="text-3xl font-light text-indigo-900 mb-4">
+            <div className="text-2xl md:text-3xl font-light text-indigo-900 mb-3 md:mb-4">
               {formatters.currency(data.familyProvision.member1)}
             </div>
 
@@ -177,7 +182,7 @@ export const CleanDashboard: React.FC<CleanDashboardProps> = ({ month, isAuthent
                 </span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-orange-700 font-medium">Dépenses nettes</span>
+                <span className="text-orange-700 font-medium">Dépenses</span>
                 <span className="font-bold text-orange-900 text-base">
                   {formatters.currency(data.familyProvision.detail?.expenses?.member1 ?? 0)}
                 </span>
@@ -196,20 +201,20 @@ export const CleanDashboard: React.FC<CleanDashboardProps> = ({ month, isAuthent
           </div>
 
           {/* Membre 2 */}
-          <div className="bg-white rounded-xl p-5 border border-gray-200">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 rounded-full bg-slate-700 flex items-center justify-center text-white font-semibold">
+          <div className="bg-white rounded-xl p-4 md:p-5 border border-gray-200">
+            <div className="flex items-center gap-2 md:gap-3 mb-3 md:mb-4">
+              <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-slate-700 flex items-center justify-center text-white font-semibold text-sm md:text-base">
                 {data.revenue.member2.name.charAt(0).toUpperCase()}
               </div>
-              <div>
-                <div className="font-medium text-gray-900">{data.revenue.member2.name}</div>
-                <div className="text-xs text-gray-500">
+              <div className="min-w-0 flex-1">
+                <div className="font-medium text-gray-900 text-sm md:text-base truncate">{data.revenue.member2.name}</div>
+                <div className="text-[10px] md:text-xs text-gray-500 truncate">
                   {Math.round((data.revenue.member2.net / (data.revenue.member1.net + data.revenue.member2.net)) * 100)}% de son revenu ({formatters.currency(data.revenue.member2.net)})
                 </div>
               </div>
             </div>
 
-            <div className="text-3xl font-light text-slate-700 mb-4">
+            <div className="text-2xl md:text-3xl font-light text-slate-700 mb-3 md:mb-4">
               {formatters.currency(data.familyProvision.member2)}
             </div>
 
@@ -222,7 +227,7 @@ export const CleanDashboard: React.FC<CleanDashboardProps> = ({ month, isAuthent
                 </span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-orange-700 font-medium">Dépenses nettes</span>
+                <span className="text-orange-700 font-medium">Dépenses</span>
                 <span className="font-bold text-orange-900 text-base">
                   {formatters.currency(data.familyProvision.detail?.expenses?.member2 ?? 0)}
                 </span>
@@ -243,25 +248,25 @@ export const CleanDashboard: React.FC<CleanDashboardProps> = ({ month, isAuthent
       </FadeIn>
 
       {/* PROVISIONS ACTIVES */}
-      <FadeIn delay={600} className="p-6 bg-white rounded-xl border border-gray-200">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">
+      <FadeIn delay={600} className="p-4 md:p-6 bg-white rounded-xl border border-gray-200">
+        <div className="flex justify-between items-center mb-3 md:mb-4">
+          <h2 className="text-xs md:text-sm font-semibold text-gray-500 uppercase tracking-wider">
             Provisions Actives
           </h2>
-          <a href="/settings" className="text-sm text-indigo-600 hover:text-indigo-800">
+          <a href="/settings" className="text-xs md:text-sm text-indigo-600 hover:text-indigo-800 min-h-[44px] flex items-center">
             Gérer →
           </a>
         </div>
 
-        <div className="space-y-3">
+        <div className="space-y-2 md:space-y-3">
           {data.provisions.items.slice(0, 4).map((provision) => (
-            <div key={provision.id} className="flex justify-between items-center py-2">
-              <span className="text-gray-700">{provision.name}</span>
-              <span className="font-medium text-gray-900">{formatters.currency(provision.currentAmount)}/mois</span>
+            <div key={provision.id} className="flex justify-between items-center py-1.5 md:py-2">
+              <span className="text-sm md:text-base text-gray-700 truncate flex-1 mr-2">{provision.name}</span>
+              <span className="font-medium text-gray-900 text-sm md:text-base whitespace-nowrap">{formatters.currency(provision.currentAmount)}/mois</span>
             </div>
           ))}
           {data.provisions.items.length > 4 && (
-            <div className="text-center text-sm text-gray-500 pt-2">
+            <div className="text-center text-xs md:text-sm text-gray-500 pt-2">
               + {data.provisions.items.length - 4} autres provisions
             </div>
           )}
@@ -292,8 +297,8 @@ export const CleanDashboard: React.FC<CleanDashboardProps> = ({ month, isAuthent
       )}
 
       {/* Quick Actions - Minimaliste */}
-      <div className="flex justify-center pt-8">
-        <div className="flex space-x-4">
+      <div className="flex justify-center pt-4 md:pt-8">
+        <div className="flex flex-col xs:flex-row space-y-2 xs:space-y-0 xs:space-x-4 w-full xs:w-auto px-4 xs:px-0">
           <QuickActionButton
             icon={PlusIcon}
             label="Ajouter Provision"
@@ -358,23 +363,23 @@ const MetricCard: React.FC<MetricCardProps> = ({
   };
 
   return (
-    <Card 
+    <Card
       className={`
         ${getVariantStyles()}
         ${isClickable ? 'cursor-pointer hover:shadow-md transition-shadow duration-200' : ''}
-        border-2 p-6 text-center
+        border-2 p-4 md:p-6 text-center
       `}
       onClick={onClick}
     >
-      <div className="space-y-3">
-        <h3 className="text-sm font-medium uppercase tracking-wider">
+      <div className="space-y-2 md:space-y-3">
+        <h3 className="text-xs md:text-sm font-medium uppercase tracking-wider">
           {title}
         </h3>
-        
-        <div className="text-3xl font-light">
+
+        <div className="text-xl sm:text-2xl md:text-3xl font-light">
           {animated ? (
-            <CountUp 
-              value={amount} 
+            <CountUp
+              value={amount}
               formatter={(v) => formatAmount(v)}
               duration={800}
             />
@@ -382,13 +387,13 @@ const MetricCard: React.FC<MetricCardProps> = ({
             formatAmount(amount)
           )}
         </div>
-        
+
         {subtitle && (
-          <p className="text-xs opacity-75">
+          <p className="text-[10px] md:text-xs opacity-75 truncate">
             {subtitle}
           </p>
         )}
-        
+
         {isClickable && (
           <ChevronRightIcon className="w-4 h-4 mx-auto opacity-50" />
         )}

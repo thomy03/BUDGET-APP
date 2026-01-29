@@ -1,15 +1,95 @@
-# CLAUDE.md - Budget Famille v4.0
+# CLAUDE.md - Budget Famille v4.1
 
 Ce fichier fournit les instructions et le contexte pour Claude Code lors du travail sur ce projet.
 
 ## Vue d'ensemble du projet
 
-Budget Famille v4.0 est une application web moderne de gestion budgetaire familiale avec :
+Budget Famille v4.1 est une application web moderne de gestion budgetaire familiale avec :
 - **Backend** : FastAPI + SQLite avec systeme ML avance d'auto-tagging et predictions
 - **Frontend** : Next.js 14 + TypeScript + Tailwind CSS + Recharts
 - **Design** : Glassmorphism UI avec Dark Mode complet
 - **IA/ML** : OpenRouter (DeepSeek V3.2) + Predictions budgetaires + Detection anomalies
 - **Fonctionnalites** : Import CSV, provisions, depenses fixes, analytics IA, alertes intelligentes
+- **Claude Code** : Orchestrator avec Skills Discovery + 17 agents specialises
+
+---
+
+## SESSION 25/01/2026 - ORCHESTRATOR SKILLS DISCOVERY
+
+### Amelioration de l'Orchestrator
+
+#### Probleme identifie
+- La Phase 0 (Skills Discovery) n'etait pas utilisee dans les implementations precedentes
+- Recherche sur skills.sh lente et peu fiable (timeouts)
+- Pas d'analyse contextuelle de la feature demandee
+
+#### Solution implementee : Architecture Hybride
+
+1. **Cache local des skills** :
+   - Fichier `.claude/skills/skills-registry.json` avec 50 skills populaires
+   - Keywords pour matching rapide
+   - Mise a jour automatique si cache > 7 jours
+
+2. **Analyse contextuelle a deux niveaux** :
+   - **Contexte PROJET** : PRD.md, CLAUDE.md, package.json
+   - **Contexte FEATURE** : Analyse semantique de la demande utilisateur
+
+3. **Scoring pondere** :
+   ```python
+   WEIGHTS = {
+       'feature': 2.0,   # Keywords specifiques a la feature
+       'domain': 1.5,    # Keywords du domaine metier
+       'stack': 1.0      # Keywords de la stack technique
+   }
+   ```
+
+4. **Fallback WebFetch** : Uniquement si cache retourne < 2 skills (score > 15)
+
+#### Fichiers crees/modifies
+- `.claude/skills/skills-registry.json` : Cache 50 skills avec keywords
+- `.claude/commands/orchestrator.md` : Phase 0 refaite avec architecture hybride
+
+#### Nouvelles options orchestrator
+| Option | Description |
+|--------|-------------|
+| `-refresh` | Force MAJ du cache skills |
+| `-add-skill owner/repo keywords` | Ajout manuel au cache |
+| `-v` | Mode verbose (details scoring) |
+
+---
+
+## SESSION 24-25/01/2026 - BUDGET INTELLIGENCE v4.1 PRODUCTION
+
+### Dashboard Repartition par Membre
+
+#### Nouvelle fonctionnalite
+- Affichage detaille des provisions par membre (split_member1, split_member2)
+- Affichage detaille des depenses par membre
+- Calculs automatiques selon la configuration
+
+#### Commit
+```
+feat: Dashboard avec repartition detaillee provisions/depenses par membre
+```
+
+### Corrections Tests et Qualite
+
+#### Frontend (Jest)
+- 136 tests passing
+- Configuration Jest corrigee
+- Tests MonthPicker avec accents corriges
+
+#### Backend (pytest)
+- Fixtures isolees (test_db, client, token, authenticated_client)
+- Tests database models avec isolation
+- Exclusion tests legacy sans fixtures
+
+#### Corrections techniques
+- Pydantic v2 deprecation warnings corriges
+- aioredis Python 3.11+ compatibilite
+- TOO_MANY_REQUESTS ajoute aux COMMON_ERRORS
+
+---
 
 ## SESSION 08/12/2025 (Suite) - INTEGRATION TABS ANALYTICS + CORRECTIONS
 
@@ -682,9 +762,47 @@ curl -s http://localhost:8000/api/ml-classification/classify \
 
 ---
 
-**Version** : 4.0.0
-**Derniere mise a jour** : 2025-12-08
-**Statut** : Application 100% fonctionnelle - Budget Intelligence System complet avec IA
-**Note** : Backend Render disponible, developpement local recommande pour tests
-**Nouvelles pages** : /budget-analysis (analyse IA), Settings > Objectifs Budget
-**Prochaine etape** : Migration mobile Android/iOS (React Native ou Capacitor)
+## Outils Claude Code
+
+### Orchestrator avec Skills Discovery
+```bash
+# Lancer un workflow avec recherche de skills
+/orchestrator Ajouter une nouvelle fonctionnalite
+
+# Options disponibles
+/orchestrator -refresh    # Force MAJ cache skills
+/orchestrator -no-skills  # Desactive Phase 0
+/orchestrator -v          # Mode verbose
+/orchestrator -auto       # Sans validation intermediaire
+```
+
+### Agents Specialises (.claude/agents/)
+17 agents disponibles pour des taches specifiques :
+- `backend-api-architect` : Design API et calculs
+- `frontend-excellence-lead` : UI/UX et composants
+- `data-insights-analyst` : Analyse donnees
+- `ml-ops-intelligence` : Auto-tagging et predictions
+- `quality-assurance-lead` : Tests et validation
+- `devops-reliability-engineer` : CI/CD et monitoring
+- Et 11 autres agents specialises...
+
+### Structure Skills
+```
+.claude/
+├── skills/
+│   └── skills-registry.json    # Cache 50 skills populaires
+├── commands/
+│   ├── orchestrator.md         # Workflow manager
+│   └── Summarize_session.md    # Resume session
+└── agents/
+    └── [17 agents specialises]
+```
+
+---
+
+**Version** : 4.1.0
+**Derniere mise a jour** : 2026-01-25
+**Statut** : Application production-ready - Budget Intelligence System v4.1
+**Tests** : 136 tests Jest frontend + pytest backend
+**Deploiement** : Vercel (frontend) + Render (backend)
+**Prochaine etape** : v4.2 - Application mobile (React Native/Expo)

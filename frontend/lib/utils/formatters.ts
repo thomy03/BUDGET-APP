@@ -46,7 +46,9 @@ export function formatCurrency(
     // Fallback formatting
     const formatted = numAmount.toFixed(decimals).replace('.', ',');
     const parts = formatted.split(',');
-    parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+    if (parts[0]) {
+      parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+    }
     return showSymbol ? `${parts.join(',')} €` : parts.join(',');
   }
 }
@@ -143,7 +145,9 @@ export function formatDate(
  */
 export function formatMonthDisplay(monthStr: string): string {
   try {
-    const [year, month] = monthStr.split('-');
+    const parts = monthStr.split('-');
+    const year = parts[0] ?? '2020';
+    const month = parts[1] ?? '01';
     const date = new Date(parseInt(year), parseInt(month) - 1, 1);
     return date.toLocaleDateString('fr-FR', { year: 'numeric', month: 'long' });
   } catch (error) {
@@ -254,22 +258,22 @@ export function formatList(
   limit?: number
 ): string {
   if (!items || items.length === 0) return '';
-  
-  let displayItems = limit ? items.slice(0, limit) : items;
-  
+
+  const displayItems = limit ? items.slice(0, limit) : [...items];
+
   if (displayItems.length === 1) {
-    return displayItems[0];
+    return displayItems[0] ?? '';
   } else if (displayItems.length === 2) {
-    return `${displayItems[0]} ${conjunction} ${displayItems[1]}`;
+    return `${displayItems[0] ?? ''} ${conjunction} ${displayItems[1] ?? ''}`;
   } else {
-    const lastItem = displayItems.pop();
+    const lastItem = displayItems.pop() ?? '';
     const result = `${displayItems.join(', ')} ${conjunction} ${lastItem}`;
-    
+
     if (limit && items.length > limit) {
       const remaining = items.length - limit;
       return `${result} ${conjunction} ${remaining} autre${remaining > 1 ? 's' : ''}`;
     }
-    
+
     return result;
   }
 }
@@ -279,11 +283,11 @@ export function formatList(
  */
 export function formatValidationErrors(errors: Array<{ field: string; message: string }>): string {
   if (!errors || errors.length === 0) return '';
-  
+
   if (errors.length === 1) {
-    return errors[0].message;
+    return errors[0]?.message ?? '';
   }
-  
+
   return errors.map(error => `• ${error.message}`).join('\n');
 }
 

@@ -16,8 +16,11 @@ import {
   TagIcon,
   SparklesIcon,
   XMarkIcon,
-  CheckIcon
+  CheckIcon,
+  CameraIcon
 } from '@heroicons/react/24/outline';
+import { ReceiptScanner } from '../../components/receipts';
+import MonthPicker from '../../components/MonthPicker';
 
 export default function ModernTransactionsPage() {
   const { isAuthenticated, loading: authLoading } = useAuth();
@@ -29,6 +32,10 @@ export default function ModernTransactionsPage() {
     loading,
     error,
     calculations,
+    globalStats,
+    pagination,
+    setPage,
+    setLimit,
     refresh,
     toggle,
     saveTags,
@@ -48,6 +55,9 @@ export default function ModernTransactionsPage() {
   const [autoTagError, setAutoTagError] = useState<string | null>(null);
   const [selectedSuggestions, setSelectedSuggestions] = useState<Set<number>>(new Set());
   const [applyingTags, setApplyingTags] = useState(false);
+
+  // État pour le scanner de tickets OCR
+  const [showReceiptScanner, setShowReceiptScanner] = useState(false);
 
   // Lecture du paramètre editTx pour ouvrir l'édition d'une transaction spécifique (depuis Analytics)
   const editTxParam = searchParams.get('editTx');
@@ -124,16 +134,17 @@ export default function ModernTransactionsPage() {
   // Nombre de transactions sans tags (inclut "Non classé" comme non-tagué)
   const untaggedCount = useMemo(() => {
     return rows.filter(r => {
+      const tags = r.tags as string[] | string | null | undefined;
       // Pas de tags du tout
-      if (!r.tags || r.tags.length === 0) return true;
+      if (!tags || (Array.isArray(tags) && tags.length === 0)) return true;
       // Tous les tags sont vides/null
-      if (r.tags.every(t => !t)) return true;
+      if (Array.isArray(tags) && tags.every(t => !t)) return true;
       // Tags est un string "Non classé" (format backend)
-      if (typeof r.tags === 'string') {
-        return r.tags.toLowerCase().trim() === 'non classé' || r.tags.trim() === '';
+      if (typeof tags === 'string') {
+        return tags.toLowerCase().trim() === 'non classé' || tags.trim() === '';
       }
       // Tags est un tableau avec uniquement "Non classé"
-      if (r.tags.length === 1 && r.tags[0]?.toLowerCase().trim() === 'non classé') return true;
+      if (Array.isArray(tags) && tags.length === 1 && tags[0]?.toLowerCase().trim() === 'non classé') return true;
       return false;
     }).length;
   }, [rows]);
@@ -217,11 +228,26 @@ export default function ModernTransactionsPage() {
                 </div>
                 <div>
                   <h1 className="text-2xl font-bold text-gray-900">Transactions</h1>
-                  <p className="text-sm text-gray-500">{month || 'Sélectionnez un mois'}</p>
+                  <div className="mt-1">
+                    <MonthPicker
+                      currentMonth={month}
+                      onMonthChange={setMonth}
+                    />
+                  </div>
                 </div>
               </div>
               
               <div className="flex items-center gap-2">
+                {/* Bouton Scanner Ticket OCR */}
+                <button
+                  onClick={() => setShowReceiptScanner(true)}
+                  className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors"
+                  title="Scanner un ticket de caisse"
+                >
+                  <CameraIcon className="h-5 w-5" />
+                  <span className="hidden sm:inline">Scanner</span>
+                </button>
+
                 {/* Bouton Auto-Tag */}
                 {untaggedCount > 0 && (
                   <button
@@ -333,6 +359,37 @@ export default function ModernTransactionsPage() {
 
       {/* Contenu principal */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Resume global du mois (toutes les pages) */}
+        {globalStats && (
+          <div className="mb-6 bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+            <h3 className="text-sm font-medium text-gray-500 mb-3">Resume du mois (toutes transactions)</h3>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="text-center p-3 bg-green-50 rounded-lg">
+                <p className="text-2xl font-bold text-green-600">
+                  {globalStats.totalIncome.toLocaleString('fr-FR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })} EUR
+                </p>
+                <p className="text-xs text-gray-500 mt-1">Revenus totaux</p>
+              </div>
+              <div className="text-center p-3 bg-red-50 rounded-lg">
+                <p className="text-2xl font-bold text-red-600">
+                  {globalStats.totalExpenses.toLocaleString('fr-FR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })} EUR
+                </p>
+                <p className="text-xs text-gray-500 mt-1">Depenses totales</p>
+              </div>
+              <div className={`text-center p-3 rounded-lg ${globalStats.netBalance >= 0 ? 'bg-blue-50' : 'bg-orange-50'}`}>
+                <p className={`text-2xl font-bold ${globalStats.netBalance >= 0 ? 'text-blue-600' : 'text-orange-600'}`}>
+                  {globalStats.netBalance >= 0 ? '+' : ''}{globalStats.netBalance.toLocaleString('fr-FR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })} EUR
+                </p>
+                <p className="text-xs text-gray-500 mt-1">Solde net</p>
+              </div>
+              <div className="text-center p-3 bg-gray-50 rounded-lg">
+                <p className="text-2xl font-bold text-gray-700">{globalStats.totalCount}</p>
+                <p className="text-xs text-gray-500 mt-1">Transactions totales</p>
+              </div>
+            </div>
+          </div>
+        )}
+
         {error && (
           <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4">
             <div className="flex">
@@ -402,6 +459,118 @@ export default function ModernTransactionsPage() {
               editTransactionId={editTransactionId}
               onEditComplete={handleEditComplete}
             />
+
+            {/* Contrôles de pagination */}
+            {pagination.pages > 1 && (
+              <div className="mt-6 bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                  {/* Info pagination */}
+                  <div className="text-sm text-gray-600">
+                    Page <span className="font-semibold text-gray-900">{pagination.page}</span> sur{' '}
+                    <span className="font-semibold text-gray-900">{pagination.pages}</span>
+                    <span className="text-gray-400 ml-2">
+                      ({pagination.total} transactions au total)
+                    </span>
+                  </div>
+
+                  {/* Contrôles */}
+                  <div className="flex items-center gap-4">
+                    {/* Sélecteur de limite */}
+                    <div className="flex items-center gap-2">
+                      <label htmlFor="limit-select" className="text-sm text-gray-600">
+                        Afficher
+                      </label>
+                      <select
+                        id="limit-select"
+                        value={pagination.limit}
+                        onChange={(e) => setLimit(Number(e.target.value))}
+                        className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                      >
+                        <option value={25}>25</option>
+                        <option value={50}>50</option>
+                        <option value={100}>100</option>
+                        <option value={200}>200</option>
+                      </select>
+                      <span className="text-sm text-gray-600">par page</span>
+                    </div>
+
+                    {/* Boutons navigation */}
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => setPage(1)}
+                        disabled={!pagination.hasPrev}
+                        className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                        title="Première page"
+                      >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+                        </svg>
+                      </button>
+                      <button
+                        onClick={() => setPage(pagination.page - 1)}
+                        disabled={!pagination.hasPrev}
+                        className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                        title="Page précédente"
+                      >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                        </svg>
+                      </button>
+
+                      {/* Numéros de pages */}
+                      <div className="flex items-center gap-1 px-2">
+                        {Array.from({ length: Math.min(5, pagination.pages) }, (_, i) => {
+                          let pageNum: number;
+                          if (pagination.pages <= 5) {
+                            pageNum = i + 1;
+                          } else if (pagination.page <= 3) {
+                            pageNum = i + 1;
+                          } else if (pagination.page >= pagination.pages - 2) {
+                            pageNum = pagination.pages - 4 + i;
+                          } else {
+                            pageNum = pagination.page - 2 + i;
+                          }
+                          return (
+                            <button
+                              key={pageNum}
+                              onClick={() => setPage(pageNum)}
+                              className={`w-8 h-8 text-sm rounded-lg transition-colors ${
+                                pageNum === pagination.page
+                                  ? 'bg-blue-600 text-white font-semibold'
+                                  : 'text-gray-600 hover:bg-gray-100'
+                              }`}
+                            >
+                              {pageNum}
+                            </button>
+                          );
+                        })}
+                      </div>
+
+                      <button
+                        onClick={() => setPage(pagination.page + 1)}
+                        disabled={!pagination.hasNext}
+                        className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                        title="Page suivante"
+                      >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                        </svg>
+                      </button>
+                      <button
+                        onClick={() => setPage(pagination.pages)}
+                        disabled={!pagination.hasNext}
+                        className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                        title="Dernière page"
+                      >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 5l7 7-7 7M5 5l7 7-7 7" />
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
           </>
         )}
       </div>
@@ -571,6 +740,35 @@ export default function ModernTransactionsPage() {
                 </button>
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Modal Scanner de Tickets OCR */}
+      {showReceiptScanner && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
+              <h2 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                <CameraIcon className="h-6 w-6 text-emerald-600" />
+                Scanner un ticket
+              </h2>
+              <button
+                onClick={() => setShowReceiptScanner(false)}
+                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+              >
+                <XMarkIcon className="h-5 w-5 text-gray-500" />
+              </button>
+            </div>
+            <div className="p-4">
+              <ReceiptScanner
+                onTransactionCreated={(txId) => {
+                  // Fermer le modal et rafraîchir les transactions
+                  setShowReceiptScanner(false);
+                  refresh(isAuthenticated, month);
+                }}
+              />
+            </div>
           </div>
         </div>
       )}

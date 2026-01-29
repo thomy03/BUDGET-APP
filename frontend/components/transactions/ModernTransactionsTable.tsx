@@ -83,46 +83,46 @@ export function ModernTransactionsTable({
 
   return (
     <div className="space-y-6">
-      {/* En-tête avec statistiques */}
-      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl p-6">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="bg-white rounded-xl p-4 shadow-sm">
-            <div className="text-xs text-gray-500 font-medium uppercase tracking-wider">Total</div>
-            <div className="text-2xl font-bold text-gray-900">{stats.totalTransactions}</div>
-            <div className="text-xs text-gray-600">transactions</div>
+      {/* En-tête avec statistiques - Mobile optimized */}
+      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl md:rounded-2xl p-3 md:p-6">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-4">
+          <div className="bg-white rounded-lg md:rounded-xl p-2.5 md:p-4 shadow-sm">
+            <div className="text-[10px] md:text-xs text-gray-500 font-medium uppercase tracking-wider">Total</div>
+            <div className="text-lg md:text-2xl font-bold text-gray-900">{stats.totalTransactions}</div>
+            <div className="text-[10px] md:text-xs text-gray-600">transactions</div>
           </div>
-          
-          <div className="bg-white rounded-xl p-4 shadow-sm">
-            <div className="text-xs text-gray-500 font-medium uppercase tracking-wider">Revenus</div>
-            <div className="text-2xl font-bold text-green-600">
+
+          <div className="bg-white rounded-lg md:rounded-xl p-2.5 md:p-4 shadow-sm">
+            <div className="text-[10px] md:text-xs text-gray-500 font-medium uppercase tracking-wider">Revenus</div>
+            <div className="text-lg md:text-2xl font-bold text-green-600">
               +{formatAmount(stats.totalIncome)}
             </div>
-            <div className="text-xs text-gray-600">{stats.includedCount} incluses</div>
+            <div className="text-[10px] md:text-xs text-gray-600">{stats.includedCount} incluses</div>
           </div>
-          
-          <div className="bg-white rounded-xl p-4 shadow-sm">
-            <div className="text-xs text-gray-500 font-medium uppercase tracking-wider">Dépenses</div>
-            <div className="text-2xl font-bold text-red-600">
+
+          <div className="bg-white rounded-lg md:rounded-xl p-2.5 md:p-4 shadow-sm">
+            <div className="text-[10px] md:text-xs text-gray-500 font-medium uppercase tracking-wider">Dépenses</div>
+            <div className="text-lg md:text-2xl font-bold text-red-600">
               -{formatAmount(stats.totalExpenses)}
             </div>
-            <div className="text-xs text-gray-600">{stats.excludedCount} exclues</div>
+            <div className="text-[10px] md:text-xs text-gray-600">{stats.excludedCount} exclues</div>
           </div>
-          
-          <div className="bg-white rounded-xl p-4 shadow-sm">
-            <div className="text-xs text-gray-500 font-medium uppercase tracking-wider">Balance</div>
-            <div className={`text-2xl font-bold ${stats.netBalance >= 0 ? 'text-blue-600' : 'text-orange-600'}`}>
+
+          <div className="bg-white rounded-lg md:rounded-xl p-2.5 md:p-4 shadow-sm">
+            <div className="text-[10px] md:text-xs text-gray-500 font-medium uppercase tracking-wider">Balance</div>
+            <div className={`text-lg md:text-2xl font-bold ${stats.netBalance >= 0 ? 'text-blue-600' : 'text-orange-600'}`}>
               {stats.netBalance >= 0 ? '+' : ''}{formatAmount(stats.netBalance)}
             </div>
-            <div className="text-xs text-gray-600">net</div>
+            <div className="text-[10px] md:text-xs text-gray-600">net</div>
           </div>
         </div>
 
         {/* Bouton réinclure tout */}
         {stats.excludedCount > 0 && (
-          <div className="mt-4 flex justify-end">
+          <div className="mt-3 md:mt-4 flex justify-end">
             <button
               onClick={onBulkUnexcludeAll}
-              className="px-4 py-2 bg-white text-blue-600 font-medium rounded-lg shadow-sm hover:shadow-md transition-all duration-200 text-sm"
+              className="px-3 md:px-4 py-2 bg-white text-blue-600 font-medium rounded-lg shadow-sm hover:shadow-md transition-all duration-200 text-xs md:text-sm min-h-[44px]"
             >
               Réinclure {stats.excludedCount} transaction{stats.excludedCount > 1 ? 's' : ''}
             </button>
@@ -130,40 +130,50 @@ export function ModernTransactionsTable({
         )}
       </div>
 
-      {/* Liste des transactions */}
-      <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
+      {/* Liste des transactions - Mobile optimized */}
+      <div className="bg-white rounded-xl md:rounded-2xl shadow-sm overflow-hidden">
         <div className="divide-y divide-gray-100">
           {rows.map(row => {
             const isExpanded = expandedRows.has(row.id);
             const isEditing = editingTags[row.id] !== undefined;
             const isIncome = row.amount > 0;
-            
+
             return (
-              <div 
+              <div
                 key={row.id}
                 className={`transition-all duration-200 ${row.exclude ? 'opacity-50 bg-gray-50' : 'hover:bg-gray-50'}`}
               >
-                {/* Ligne principale */}
-                <div className="px-6 py-4">
-                  <div className="flex items-center justify-between">
-                    {/* Partie gauche : Date et libellé */}
-                    <div className="flex-1 min-w-0 pr-4">
-                      <div className="flex items-start gap-4">
-                        <div className="flex-shrink-0 text-center">
-                          <div className="text-sm font-semibold text-gray-900">
+                {/* Ligne principale - Stack on mobile */}
+                <div className="px-3 md:px-6 py-3 md:py-4">
+                  <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 md:gap-0">
+                    {/* Partie gauche : Date, libellé, montant sur mobile */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start gap-2 md:gap-4">
+                        {/* Date - More compact on mobile */}
+                        <div className="flex-shrink-0 text-center min-w-[45px] md:min-w-[55px]">
+                          <div className="text-xs md:text-sm font-semibold text-gray-900">
                             {formatDate(row.date)}
                           </div>
                         </div>
-                        
+
+                        {/* Label and tags */}
                         <div className="flex-1 min-w-0">
-                          <div className="text-base font-medium text-gray-900 truncate">
-                            {row.label}
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="text-sm md:text-base font-medium text-gray-900 truncate flex-1">
+                              {row.label}
+                            </div>
+                            {/* Amount on mobile - inline */}
+                            <div className={`md:hidden text-right flex-shrink-0 ${isIncome ? 'text-green-600' : 'text-gray-900'}`}>
+                              <div className="text-sm font-semibold whitespace-nowrap">
+                                {isIncome ? '+' : '-'}{formatAmount(row.amount)}
+                              </div>
+                            </div>
                           </div>
-                          
+
                           {/* Tags */}
                           <div className="mt-1 flex flex-wrap gap-1">
                             {isEditing ? (
-                              <div className="flex items-center gap-2">
+                              <div className="flex items-center gap-2 w-full">
                                 <input
                                   type="text"
                                   value={editingTags[row.id]}
@@ -176,20 +186,20 @@ export function ModernTransactionsTable({
                                       setEditingTags(newEditingTags);
                                     }
                                   }}
-                                  className="px-2 py-1 text-sm border border-blue-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                  className="flex-1 px-2 py-1.5 text-sm border border-blue-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[44px]"
                                   placeholder="tag1, tag2..."
                                   autoFocus
                                 />
                                 <button
                                   onClick={() => handleTagSave(row.id)}
-                                  className="text-xs text-blue-600 hover:text-blue-800"
+                                  className="text-xs text-blue-600 hover:text-blue-800 min-h-[44px] px-2"
                                 >
                                   Sauver
                                 </button>
                               </div>
                             ) : (
-                              <div 
-                                className="flex flex-wrap gap-1 cursor-pointer"
+                              <div
+                                className="flex flex-wrap gap-1 cursor-pointer min-h-[24px]"
                                 onClick={() => {
                                   const currentTags = row.tags?.join(', ') || '';
                                   handleTagEdit(row.id, currentTags);
@@ -197,7 +207,7 @@ export function ModernTransactionsTable({
                               >
                                 {row.tags && row.tags.length > 0 ? (
                                   row.tags.map((tag, idx) => (
-                                    <span 
+                                    <span
                                       key={idx}
                                       className="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs font-medium rounded-full"
                                     >
@@ -206,7 +216,7 @@ export function ModernTransactionsTable({
                                   ))
                                 ) : (
                                   <span className="text-xs text-gray-400 italic hover:text-blue-600">
-                                    + Ajouter des tags
+                                    + Ajouter tags
                                   </span>
                                 )}
                               </div>
@@ -216,10 +226,10 @@ export function ModernTransactionsTable({
                       </div>
                     </div>
 
-                    {/* Partie droite : Montant et actions */}
-                    <div className="flex items-center gap-4">
-                      {/* Montant */}
-                      <div className={`text-right ${isIncome ? 'text-green-600' : 'text-gray-900'}`}>
+                    {/* Partie droite : Montant et actions - Hidden amount on mobile */}
+                    <div className="flex items-center justify-end gap-2 md:gap-4 mt-2 md:mt-0">
+                      {/* Montant - Desktop only */}
+                      <div className={`hidden md:block text-right ${isIncome ? 'text-green-600' : 'text-gray-900'}`}>
                         <div className="text-lg font-semibold">
                           {isIncome ? '+' : '-'}{formatAmount(row.amount)}
                         </div>
@@ -232,21 +242,31 @@ export function ModernTransactionsTable({
 
                       {/* Actions */}
                       <div className="flex items-center gap-2">
+                        {/* Expense type badge on mobile */}
+                        {row.expense_type && (
+                          <span className="md:hidden text-[10px] text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded">
+                            {row.expense_type === 'FIXED' ? 'Fixe' : 'Var'}
+                          </span>
+                        )}
+
                         {/* Checkbox exclure */}
-                        <label className="relative inline-flex items-center cursor-pointer">
+                        <label className="relative inline-flex items-center cursor-pointer min-h-[44px] min-w-[44px] justify-center">
                           <input
                             type="checkbox"
                             checked={row.exclude}
                             onChange={() => onToggle(row.id, !row.exclude)}
                             className="sr-only peer"
+                            aria-label={row.exclude ? 'Réinclure la transaction' : 'Exclure la transaction'}
                           />
-                          <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-red-400"></div>
+                          <div className="w-9 h-5 md:w-11 md:h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 md:after:h-5 md:after:w-5 after:transition-all peer-checked:bg-red-400"></div>
                         </label>
 
                         {/* Bouton expand */}
                         <button
                           onClick={() => toggleExpanded(row.id)}
-                          className="p-1 rounded-lg hover:bg-gray-100 transition-colors"
+                          className="p-2 rounded-lg hover:bg-gray-100 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
+                          aria-label={isExpanded ? 'Masquer les détails' : 'Afficher les détails'}
+                          aria-expanded={isExpanded}
                         >
                           {isExpanded ? (
                             <ChevronUpIcon className="h-5 w-5 text-gray-400" />
@@ -259,36 +279,36 @@ export function ModernTransactionsTable({
                   </div>
                 </div>
 
-                {/* Détails expandus */}
+                {/* Détails expandus - Mobile optimized */}
                 {isExpanded && (
-                  <div className="px-6 pb-4 pt-0">
-                    <div className="bg-gray-50 rounded-lg p-4 space-y-2 text-sm">
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
+                  <div className="px-3 md:px-6 pb-3 md:pb-4 pt-0">
+                    <div className="bg-gray-50 rounded-lg p-3 md:p-4 space-y-2 text-xs md:text-sm">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2 md:gap-4">
+                        <div className="flex justify-between md:block">
                           <span className="text-gray-500">Date d'opération:</span>
-                          <span className="ml-2 text-gray-900">{row.date_op || row.date}</span>
+                          <span className="md:ml-2 text-gray-900 font-medium md:font-normal">{row.date_op || row.date}</span>
                         </div>
-                        <div>
+                        <div className="flex justify-between md:block">
                           <span className="text-gray-500">Compte:</span>
-                          <span className="ml-2 text-gray-900">{row.account || 'Principal'}</span>
+                          <span className="md:ml-2 text-gray-900 font-medium md:font-normal">{row.account || 'Principal'}</span>
                         </div>
                         {row.name && (
-                          <div>
+                          <div className="flex justify-between md:block">
                             <span className="text-gray-500">Nom:</span>
-                            <span className="ml-2 text-gray-900">{row.name}</span>
+                            <span className="md:ml-2 text-gray-900 font-medium md:font-normal truncate">{row.name}</span>
                           </div>
                         )}
                         {row.category && (
-                          <div>
+                          <div className="flex justify-between md:block">
                             <span className="text-gray-500">Catégorie:</span>
-                            <span className="ml-2 text-gray-900">{row.category}</span>
+                            <span className="md:ml-2 text-gray-900 font-medium md:font-normal">{row.category}</span>
                           </div>
                         )}
                       </div>
                       {row.ml_confidence && (
-                        <div className="pt-2 border-t border-gray-200">
+                        <div className="pt-2 border-t border-gray-200 flex justify-between md:block">
                           <span className="text-gray-500">Confiance IA:</span>
-                          <span className="ml-2 text-gray-900">{Math.round(row.ml_confidence * 100)}%</span>
+                          <span className="md:ml-2 text-gray-900 font-medium md:font-normal">{Math.round(row.ml_confidence * 100)}%</span>
                         </div>
                       )}
                     </div>
