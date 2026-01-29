@@ -76,17 +76,18 @@ export default function MonthPicker({ currentMonth, onMonthChange }: MonthPicker
 
   return (
     <div className="relative" ref={dropdownRef}>
-      {/* Container principal ultra-moderne */}
-      <div className="flex items-center gap-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 p-[2px] rounded-2xl shadow-lg">
-        <div className="flex items-center bg-white rounded-[14px] p-1 gap-1">
+      {/* Container principal ultra-moderne - responsive */}
+      <div className="flex items-center gap-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 p-[2px] rounded-xl md:rounded-2xl shadow-lg">
+        <div className="flex items-center bg-white rounded-[10px] md:rounded-[14px] p-0.5 md:p-1 gap-0.5 md:gap-1">
 
           {/* Bouton précédent */}
           <button
             onClick={() => navigateMonth('prev')}
-            className="w-10 h-10 flex items-center justify-center rounded-xl bg-gradient-to-br from-gray-50 to-gray-100 hover:from-indigo-50 hover:to-purple-50 transition-all duration-300 text-gray-600 hover:text-indigo-600 group"
+            className="w-8 h-8 md:w-10 md:h-10 flex items-center justify-center rounded-lg md:rounded-xl bg-gradient-to-br from-gray-50 to-gray-100 hover:from-indigo-50 hover:to-purple-50 transition-all duration-300 text-gray-600 hover:text-indigo-600 group min-h-[44px] min-w-[44px] md:min-h-0 md:min-w-0"
             title="Mois précédent"
+            aria-label="Mois précédent"
           >
-            <svg className="w-5 h-5 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-4 h-4 md:w-5 md:h-5 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
             </svg>
           </button>
@@ -94,20 +95,25 @@ export default function MonthPicker({ currentMonth, onMonthChange }: MonthPicker
           {/* Affichage du mois cliquable */}
           <button
             onClick={() => setIsOpen(!isOpen)}
-            className="flex items-center gap-2 px-4 py-2 min-w-[180px] justify-center rounded-xl bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 hover:from-indigo-100 hover:via-purple-100 hover:to-pink-100 transition-all duration-300 group"
+            className="flex items-center gap-1 md:gap-2 px-2 md:px-4 py-1.5 md:py-2 min-w-[100px] md:min-w-[180px] justify-center rounded-lg md:rounded-xl bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 hover:from-indigo-100 hover:via-purple-100 hover:to-pink-100 transition-all duration-300 group min-h-[44px]"
+            aria-label="Sélectionner le mois"
+            aria-expanded={isOpen}
+            aria-haspopup="listbox"
           >
-            <span className="text-2xl">📅</span>
+            <span className="text-lg md:text-2xl">📅</span>
             <div className="flex flex-col items-start">
-              <span className="text-sm font-bold bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
-                {MONTH_NAMES[currentMonthNum - 1]}
+              <span className="text-xs md:text-sm font-bold bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
+                {MONTH_NAMES_SHORT[currentMonthNum - 1]}
+                <span className="hidden sm:inline"> {currentYear}</span>
               </span>
-              <span className="text-xs text-gray-500 font-medium">{currentYear}</span>
+              <span className="text-[10px] md:text-xs text-gray-500 font-medium sm:hidden">{currentYear}</span>
             </div>
             <svg
-              className={`w-4 h-4 text-gray-400 transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`}
+              className={`w-3 h-3 md:w-4 md:h-4 text-gray-400 transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`}
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
+              aria-hidden="true"
             >
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
             </svg>
@@ -116,20 +122,21 @@ export default function MonthPicker({ currentMonth, onMonthChange }: MonthPicker
           {/* Bouton suivant */}
           <button
             onClick={() => navigateMonth('next')}
-            className="w-10 h-10 flex items-center justify-center rounded-xl bg-gradient-to-br from-gray-50 to-gray-100 hover:from-indigo-50 hover:to-purple-50 transition-all duration-300 text-gray-600 hover:text-indigo-600 group"
+            className="w-8 h-8 md:w-10 md:h-10 flex items-center justify-center rounded-lg md:rounded-xl bg-gradient-to-br from-gray-50 to-gray-100 hover:from-indigo-50 hover:to-purple-50 transition-all duration-300 text-gray-600 hover:text-indigo-600 group min-h-[44px] min-w-[44px] md:min-h-0 md:min-w-0"
             title="Mois suivant"
+            aria-label="Mois suivant"
           >
-            <svg className="w-5 h-5 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-4 h-4 md:w-5 md:h-5 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
             </svg>
           </button>
         </div>
       </div>
 
-      {/* Dropdown moderne */}
+      {/* Dropdown moderne - responsive */}
       {isOpen && (
-        <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 z-50 animate-fadeIn">
-          <div className="bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden min-w-[280px]">
+        <div className="absolute top-full left-0 sm:left-1/2 sm:-translate-x-1/2 mt-2 z-50 animate-fadeIn w-full sm:w-auto">
+          <div className="bg-white rounded-xl md:rounded-2xl shadow-2xl border border-gray-100 overflow-hidden min-w-[250px] sm:min-w-[280px]" role="listbox" aria-label="Sélection du mois">
 
             {/* Header avec sélecteur d'année */}
             <div className="bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 p-4">

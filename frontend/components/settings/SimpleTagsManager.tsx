@@ -4,7 +4,8 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTagsManagement, TagInfo } from '../../hooks/useTagsManagement';
 import { Card, Button, Alert } from '../ui';
-import { api, tagCategoryApi, customCategoriesApi } from '../../lib/api';
+import { api, tagCategoryApi, customCategoriesApi, TagOut } from '../../lib/api';
+import { MergeTagsModal } from './MergeTagsModal';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   LineChart, Line, PieChart, Pie, Cell, Legend, AreaChart, Area
@@ -78,6 +79,7 @@ export function SimpleTagsManager() {
   const [loadingStats, setLoadingStats] = useState(false);
   const [transactions, setTransactions] = useState<any[]>([]);
   const [view, setView] = useState<'categories' | 'tags'>('categories');
+  const [showMergeModal, setShowMergeModal] = useState(false);
 
   // État pour le drill-down par mois
   const [selectedMonthData, setSelectedMonthData] = useState<{
@@ -537,46 +539,55 @@ export function SimpleTagsManager() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 md:space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+      <div className="flex flex-col xs:flex-row xs:items-center xs:justify-between gap-3 xs:gap-4">
+        <div className="min-w-0 flex-1">
+          <h2 className="text-lg xs:text-xl md:text-2xl font-bold text-gray-900 dark:text-white truncate">
             Tags & Catégories
           </h2>
-          <p className="text-gray-500 dark:text-gray-400 mt-1">
+          <p className="text-xs xs:text-sm text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">
             Organisez vos dépenses par catégorie
           </p>
         </div>
-        <Button
-          onClick={() => setShowAddCategory(true)}
-          className="bg-blue-600 hover:bg-blue-700"
-        >
-          + Nouvelle catégorie
-        </Button>
+        <div className="flex flex-col xs:flex-row gap-2">
+          <Button
+            onClick={() => setShowMergeModal(true)}
+            variant="outline"
+            className="w-full xs:w-auto min-h-[44px] text-sm xs:text-base"
+          >
+            Fusionner Tags
+          </Button>
+          <Button
+            onClick={() => setShowAddCategory(true)}
+            className="w-full xs:w-auto bg-blue-600 hover:bg-blue-700 min-h-[44px] text-sm xs:text-base"
+          >
+            + Nouvelle catégorie
+          </Button>
+        </div>
       </div>
 
       {error && (
         <Alert variant="error">
-          <div className="flex justify-between items-center">
-            <span>{error}</span>
-            <button onClick={clearError} className="text-red-600 hover:text-red-800">×</button>
+          <div className="flex justify-between items-center gap-2">
+            <span className="text-sm xs:text-base flex-1 min-w-0">{error}</span>
+            <button onClick={clearError} className="text-red-600 hover:text-red-800 min-h-[44px] min-w-[44px] flex-shrink-0">×</button>
           </div>
         </Alert>
       )}
 
       {/* Résumé avec graphique pie */}
       {computedStats && !selectedCategory && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
           {/* Stats résumé */}
-          <Card className="p-6">
-            <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">
+          <Card className="p-3 xs:p-4 md:p-6">
+            <h3 className="text-base xs:text-lg font-semibold mb-3 xs:mb-4 text-gray-900 dark:text-white">
               📊 Résumé {new Date().getFullYear()}
             </h3>
-            <div className="grid grid-cols-2 gap-4 mb-4">
-              <div className="bg-red-50 dark:bg-red-900/20 rounded-lg p-4">
-                <p className="text-gray-500 text-sm">Total dépenses</p>
-                <p className="text-2xl font-bold text-red-600">
+            <div className="grid grid-cols-2 gap-3 xs:gap-4 mb-3 xs:mb-4">
+              <div className="bg-red-50 dark:bg-red-900/20 rounded-lg p-3 xs:p-4">
+                <p className="text-gray-500 text-xs xs:text-sm">Total dépenses</p>
+                <p className="text-lg xs:text-xl md:text-2xl font-bold text-red-600 truncate">
                   {computedStats.grandTotal.toLocaleString('fr-FR', {
                     style: 'currency',
                     currency: 'EUR',
@@ -584,9 +595,9 @@ export function SimpleTagsManager() {
                   })}
                 </p>
               </div>
-              <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4">
-                <p className="text-gray-500 text-sm">Moyenne/mois</p>
-                <p className="text-2xl font-bold text-blue-600">
+              <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3 xs:p-4">
+                <p className="text-gray-500 text-xs xs:text-sm">Moyenne/mois</p>
+                <p className="text-lg xs:text-xl md:text-2xl font-bold text-blue-600 truncate">
                   {(computedStats.grandTotal / 12).toLocaleString('fr-FR', {
                     style: 'currency',
                     currency: 'EUR',
@@ -595,16 +606,16 @@ export function SimpleTagsManager() {
                 </p>
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-4">
-                <p className="text-gray-500 text-sm">Catégories</p>
-                <p className="text-2xl font-bold text-green-600">
+            <div className="grid grid-cols-2 gap-3 xs:gap-4">
+              <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-3 xs:p-4">
+                <p className="text-gray-500 text-xs xs:text-sm">Catégories</p>
+                <p className="text-lg xs:text-xl md:text-2xl font-bold text-green-600">
                   {Object.keys(computedStats.byCategory).length}
                 </p>
               </div>
-              <div className="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-4">
-                <p className="text-gray-500 text-sm">Tags utilisés</p>
-                <p className="text-2xl font-bold text-purple-600">
+              <div className="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-3 xs:p-4">
+                <p className="text-gray-500 text-xs xs:text-sm">Tags utilisés</p>
+                <p className="text-lg xs:text-xl md:text-2xl font-bold text-purple-600">
                   {Object.keys(computedStats.byTag).length}
                 </p>
               </div>
@@ -612,8 +623,8 @@ export function SimpleTagsManager() {
           </Card>
 
           {/* Pie Chart */}
-          <Card className="p-6">
-            <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">
+          <Card className="p-3 xs:p-4 md:p-6">
+            <h3 className="text-base xs:text-lg font-semibold mb-3 xs:mb-4 text-gray-900 dark:text-white">
               🥧 Répartition par catégorie
             </h3>
             <div className="h-[250px]">
@@ -645,16 +656,16 @@ export function SimpleTagsManager() {
 
       {/* Evolution mensuelle */}
       {computedStats && !selectedCategory && computedStats.monthlyTotals.length > 0 && (
-        <Card className="p-6">
-          <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">
+        <Card className="p-3 xs:p-4 md:p-6">
+          <h3 className="text-base xs:text-lg font-semibold mb-3 xs:mb-4 text-gray-900 dark:text-white">
             📈 Évolution mensuelle des dépenses
           </h3>
-          <div className="h-[300px]">
+          <div className="h-[200px] xs:h-[250px] md:h-[300px]">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={computedStats.monthlyTotals}>
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="monthLabel" />
-                <YAxis tickFormatter={(v) => `${(v/1000).toFixed(0)}k€`} />
+                <XAxis dataKey="monthLabel" tick={{ fontSize: 12 }} />
+                <YAxis tickFormatter={(v) => `${(v/1000).toFixed(0)}k€`} tick={{ fontSize: 12 }} />
                 <Tooltip
                   formatter={(value: number) => value.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 })}
                 />
@@ -673,10 +684,10 @@ export function SimpleTagsManager() {
       )}
 
       {/* Vue navigation */}
-      <div className="flex gap-2 border-b border-gray-200 dark:border-gray-700 pb-2">
+      <div className="flex gap-1 xs:gap-2 border-b border-gray-200 dark:border-gray-700 pb-2 overflow-x-auto scrollbar-hide">
         <button
           onClick={() => { setView('categories'); setSelectedCategory(null); }}
-          className={`px-4 py-2 rounded-t-lg font-medium transition-colors ${
+          className={`flex-shrink-0 px-3 xs:px-4 py-2 rounded-t-lg font-medium transition-colors text-xs xs:text-sm md:text-base min-h-[44px] ${
             view === 'categories'
               ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300'
               : 'text-gray-600 hover:bg-gray-100 dark:text-gray-400'
@@ -686,7 +697,7 @@ export function SimpleTagsManager() {
         </button>
         <button
           onClick={() => { setView('tags'); setSelectedCategory(null); }}
-          className={`px-4 py-2 rounded-t-lg font-medium transition-colors ${
+          className={`flex-shrink-0 px-3 xs:px-4 py-2 rounded-t-lg font-medium transition-colors text-xs xs:text-sm md:text-base min-h-[44px] ${
             view === 'tags'
               ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300'
               : 'text-gray-600 hover:bg-gray-100 dark:text-gray-400'
@@ -698,25 +709,25 @@ export function SimpleTagsManager() {
 
       {/* Vue Catégories - Grille */}
       {view === 'categories' && !selectedCategory && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 xs:gap-4">
           {categories.map(category => {
             const stats = getCategoryStats(category.id);
             const assignedTags = getAssignedTags(category.id);
             return (
               <Card
                 key={category.id}
-                className="p-4 cursor-pointer hover:shadow-md transition-shadow border-l-4"
+                className="p-3 xs:p-4 cursor-pointer hover:shadow-md transition-shadow border-l-4"
                 style={{ borderLeftColor: category.color }}
                 onClick={() => setSelectedCategory(category.id)}
               >
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-3">
-                    <span className="text-2xl">{category.icon}</span>
-                    <div>
-                      <h3 className="font-semibold text-gray-900 dark:text-white">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex items-center gap-2 xs:gap-3 min-w-0 flex-1">
+                    <span className="text-xl xs:text-2xl flex-shrink-0">{category.icon}</span>
+                    <div className="min-w-0 flex-1">
+                      <h3 className="text-sm xs:text-base font-semibold text-gray-900 dark:text-white truncate">
                         {category.name}
                       </h3>
-                      <p className="text-sm text-gray-500">
+                      <p className="text-xs xs:text-sm text-gray-500 truncate">
                         {assignedTags.length} tags • {stats.count} trans.
                       </p>
                     </div>
@@ -724,7 +735,7 @@ export function SimpleTagsManager() {
                   {category.isCustom && (
                     <button
                       onClick={(e) => { e.stopPropagation(); handleDeleteCategory(category.id); }}
-                      className="text-gray-400 hover:text-red-500 p-1"
+                      className="text-gray-400 hover:text-red-500 p-1 min-h-[44px] min-w-[44px] flex-shrink-0"
                     >
                       🗑️
                     </button>
@@ -733,7 +744,7 @@ export function SimpleTagsManager() {
 
                 {/* Tags assignés à cette catégorie */}
                 {assignedTags.length > 0 && (
-                  <div className="mt-3 flex flex-wrap gap-1.5">
+                  <div className="mt-2 xs:mt-3 flex flex-wrap gap-1 xs:gap-1.5">
                     {assignedTags.slice(0, 5).map(tagName => (
                       <span
                         key={tagName}
@@ -754,10 +765,10 @@ export function SimpleTagsManager() {
                   </div>
                 )}
 
-                <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-500 text-sm">Total {new Date().getFullYear()}</span>
-                    <span className="font-bold text-lg" style={{ color: category.color }}>
+                <div className="mt-3 xs:mt-4 pt-3 xs:pt-4 border-t border-gray-100 dark:border-gray-700">
+                  <div className="flex justify-between items-center gap-2">
+                    <span className="text-gray-500 text-xs xs:text-sm">Total {new Date().getFullYear()}</span>
+                    <span className="font-bold text-sm xs:text-base md:text-lg truncate" style={{ color: category.color }}>
                       {stats.total.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 })}
                     </span>
                   </div>
@@ -769,16 +780,16 @@ export function SimpleTagsManager() {
           {/* Catégorie "Non classé" */}
           {uncategorizedCount > 0 && (
             <Card
-              className="p-4 cursor-pointer hover:shadow-md transition-shadow border-l-4 border-gray-400"
+              className="p-3 xs:p-4 cursor-pointer hover:shadow-md transition-shadow border-l-4 border-gray-400"
               onClick={() => setSelectedCategory('uncategorized')}
             >
-              <div className="flex items-center gap-3">
-                <span className="text-2xl">❓</span>
-                <div>
-                  <h3 className="font-semibold text-gray-900 dark:text-white">
+              <div className="flex items-center gap-2 xs:gap-3">
+                <span className="text-xl xs:text-2xl flex-shrink-0">❓</span>
+                <div className="min-w-0 flex-1">
+                  <h3 className="text-sm xs:text-base font-semibold text-gray-900 dark:text-white truncate">
                     Non classés
                   </h3>
-                  <p className="text-sm text-gray-500">
+                  <p className="text-xs xs:text-sm text-gray-500 truncate">
                     {uncategorizedCount} tags à assigner
                   </p>
                 </div>
@@ -790,35 +801,35 @@ export function SimpleTagsManager() {
 
       {/* Vue détail catégorie avec graphique */}
       {view === 'categories' && selectedCategory && (
-        <div className="space-y-4">
+        <div className="space-y-3 xs:space-y-4">
           <button
             onClick={() => setSelectedCategory(null)}
-            className="flex items-center gap-2 text-blue-600 hover:text-blue-700"
+            className="flex items-center gap-2 text-blue-600 hover:text-blue-700 min-h-[44px] text-sm xs:text-base"
           >
             ← Retour aux catégories
           </button>
 
           {/* Header catégorie + stats */}
-          <Card className="p-6">
-            <div className="flex items-center gap-4 mb-6">
+          <Card className="p-3 xs:p-4 md:p-6">
+            <div className="flex items-center gap-3 xs:gap-4 mb-4 xs:mb-6">
               <div
-                className="w-16 h-16 rounded-xl flex items-center justify-center text-3xl"
+                className="w-12 h-12 xs:w-14 xs:h-14 md:w-16 md:h-16 rounded-xl flex items-center justify-center text-2xl xs:text-3xl flex-shrink-0"
                 style={{ backgroundColor: (selectedCategoryData?.color || '#6B7280') + '20' }}
               >
                 {selectedCategory === 'uncategorized' ? '❓' : selectedCategoryData?.icon}
               </div>
-              <div className="flex-1">
-                <h3 className="text-2xl font-bold text-gray-900 dark:text-white">
+              <div className="flex-1 min-w-0">
+                <h3 className="text-lg xs:text-xl md:text-2xl font-bold text-gray-900 dark:text-white truncate">
                   {selectedCategory === 'uncategorized' ? 'Tags non classés' : selectedCategoryData?.name}
                 </h3>
-                <div className="flex gap-4 mt-1">
+                <div className="flex flex-wrap gap-2 xs:gap-4 mt-1 text-xs xs:text-sm">
                   <span className="text-gray-500">
                     {filteredTags.length} tags
                   </span>
                   <span className="text-gray-500">
                     {getCategoryStats(selectedCategory).count} transactions
                   </span>
-                  <span className="font-bold" style={{ color: selectedCategoryData?.color || '#6B7280' }}>
+                  <span className="font-bold truncate" style={{ color: selectedCategoryData?.color || '#6B7280' }}>
                     {getCategoryStats(selectedCategory).total.toLocaleString('fr-FR', {
                       style: 'currency',
                       currency: 'EUR',
@@ -1048,6 +1059,23 @@ export function SimpleTagsManager() {
           </Card>
         </div>
       )}
+
+      {/* Modal fusion de tags */}
+      <MergeTagsModal
+        isOpen={showMergeModal}
+        onClose={() => setShowMergeModal(false)}
+        tags={enrichedTags.map(t => ({
+          name: t.name,
+          transaction_count: t.transaction_count,
+          total_amount: t.total_amount,
+          expense_type: t.expense_type
+        })) as TagOut[]}
+        onMergeComplete={() => {
+          loadTags();
+          // Recharger les transactions pour mettre à jour les stats
+          setTransactions([]);
+        }}
+      />
     </div>
   );
 }

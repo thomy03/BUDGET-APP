@@ -2,6 +2,8 @@ export { KPIDashboard } from './KPIDashboard';
 export { TrendsChart } from './TrendsChart';
 export { CategoryChart } from './CategoryChart';
 export { AnomaliesDetection } from './AnomaliesDetection';
+export { AnomaliesPanel } from './AnomaliesPanel';
 export { SpendingPatterns } from './SpendingPatterns';
 export { ExportManager } from './ExportManager';
 export { BudgetVarianceAnalysis } from './BudgetVarianceAnalysis';
+export { ProphetPredictionsPanel } from './ProphetPredictionsPanel';

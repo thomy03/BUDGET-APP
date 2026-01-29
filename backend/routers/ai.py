@@ -1,16 +1,23 @@
 """
 AI Router for Budget Famille v4.0
 Provides AI-powered budget analysis endpoints using OpenRouter.
+
+v4.1 additions:
+- Streaming chat endpoint via SSE for real-time responses
+- Multi-turn chat memory with sessions
 """
 import logging
+import datetime as dt
 from typing import Optional, Dict, Any, List
 from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 from dependencies.auth import get_current_user
 from dependencies.database import get_db
 from services.ai_analysis import get_ai_service
+from services.chat_memory import get_chat_memory, MessageRole, ChatSession
 from models.database import Transaction, CategoryBudget
 
 logger = logging.getLogger(__name__)
@@ -70,7 +77,7 @@ class AIMonthlySummaryResponse(BaseModel):
 
 class AIQuestionRequest(BaseModel):
     """Request schema for free-form questions."""
-    question: str = Field(..., min_length=5, max_length=500, description="Question about the budget")
+    question: str = Field(..., min_length=3, max_length=5000, description="Question about the budget (can include context)")
     month: Optional[str] = Field(None, pattern=r"^\d{4}-\d{2}$", description="Month context")
 
 
@@ -108,6 +115,33 @@ def get_ai_status(
         language=ai_service.language,
         max_tokens=ai_service.max_tokens
     )
+
+
+@router.post("/reload")
+def reload_ai_service(
+    current_user = Depends(get_current_user)
+):
+    """
+    Force reload of AI service configuration.
+
+    Useful after changing environment variables without restarting the server.
+    """
+    from services.ai_analysis import reset_ai_service, get_ai_service as get_fresh_service
+
+    # Reset singleton
+    reset_ai_service()
+
+    # Get fresh instance
+    ai_service = get_fresh_service()
+
+    logger.info(f"AI service reloaded: configured={ai_service.is_configured}, model={ai_service.model}")
+
+    # SECURITE: Ne JAMAIS exposer d'informations sur les cles API
+    return {
+        "status": "reloaded",
+        "configured": ai_service.is_configured,
+        "model": ai_service.model
+    }
 
 
 @router.post("/explain-variance", response_model=AIExplanationResponse)
@@ -366,10 +400,487 @@ async def ask_question(
     }
 
     # Get AI answer
-    answer = await ai_service.answer_question(request.question, budget_context)
+    try:
+        answer = await ai_service.answer_question(request.question, budget_context)
+        logger.info(f"AI answer received, length: {len(answer)}")
+    except Exception as e:
+        logger.error(f"Error calling AI service: {e}")
+        raise HTTPException(status_code=500, detail=f"AI service error: {str(e)}")
 
-    return AIQuestionResponse(
-        question=request.question,
-        answer=answer,
-        model_used=ai_service.model
+    # Return only the user's original question (not the full context)
+    # Extract the actual question from the context if present
+    original_question = request.question
+    if "QUESTION DE L'UTILISATEUR:" in request.question:
+        parts = request.question.split("QUESTION DE L'UTILISATEUR:")
+        if len(parts) > 1:
+            original_question = parts[1].split("INSTRUCTIONS:")[0].strip()
+
+    try:
+        response = AIQuestionResponse(
+            question=original_question[:500] if len(original_question) > 500 else original_question,
+            answer=answer,
+            model_used=ai_service.model
+        )
+        logger.info(f"Returning AI response successfully")
+        return response
+    except Exception as e:
+        logger.error(f"Error creating response: {e}")
+        raise HTTPException(status_code=500, detail=f"Response error: {str(e)}")
+
+
+# =============================================================================
+# STREAMING ENDPOINT (v4.1)
+# =============================================================================
+
+class AIStreamRequest(BaseModel):
+    """Request schema for streaming chat."""
+    question: str = Field(..., min_length=3, max_length=5000, description="Question about the budget")
+    month: Optional[str] = Field(None, pattern=r"^\d{4}-\d{2}$", description="Month context")
+
+
+@router.post("/chat-stream")
+async def stream_chat(
+    request: AIStreamRequest,
+    current_user = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Stream an AI response to a budget question using Server-Sent Events.
+
+    Returns a streaming response where each chunk is a portion of the AI's answer.
+    The frontend should consume this using EventSource or fetch with readable streams.
+    """
+    logger.info(f"AI streaming chat from {current_user.username}: {request.question[:50]}...")
+
+    ai_service = get_ai_service()
+
+    if not ai_service.is_configured:
+        raise HTTPException(
+            status_code=503,
+            detail="AI service not configured. Set OPENROUTER_API_KEY environment variable."
+        )
+
+    # Determine month context
+    import datetime as dt
+    month = request.month or dt.datetime.now().strftime("%Y-%m")
+
+    # Get transactions for context
+    transactions = db.query(Transaction).filter(
+        Transaction.month == month,
+        Transaction.exclude == False
+    ).all()
+
+    total_income = sum(abs(tx.amount) for tx in transactions if tx.amount > 0)
+    total_expenses = sum(abs(tx.amount) for tx in transactions if tx.amount < 0)
+
+    # Category breakdown
+    categories = {}
+    for tx in transactions:
+        if tx.amount >= 0:
+            continue
+
+        tags = [t.strip().lower() for t in (tx.tags or "").split(",") if t.strip()]
+        if not tags:
+            tags = [tx.category.lower()] if tx.category else ["non-categorise"]
+
+        for tag in tags:
+            if tag not in categories:
+                categories[tag] = 0
+            categories[tag] += abs(tx.amount)
+
+    # Build context
+    budget_context = {
+        "month": month,
+        "total_income": total_income,
+        "total_expenses": total_expenses,
+        "categories": categories
+    }
+
+    async def event_generator():
+        """Generate SSE events from AI stream."""
+        try:
+            async for chunk in ai_service.stream_answer(request.question, budget_context):
+                # Format as SSE event
+                yield f"data: {chunk}\n\n"
+
+            # Send completion marker
+            yield "data: [DONE]\n\n"
+        except Exception as e:
+            logger.error(f"Streaming error: {e}")
+            yield f"data: [ERROR: {str(e)}]\n\n"
+
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no"  # Disable nginx buffering
+        }
+    )
+
+
+# =============================================================================
+# MULTI-TURN CHAT SESSIONS (v4.1)
+# =============================================================================
+
+class ChatSessionCreateRequest(BaseModel):
+    """Request to create a new chat session."""
+    month: Optional[str] = Field(None, pattern=r"^\d{4}-\d{2}$", description="Month context")
+
+
+class ChatSessionResponse(BaseModel):
+    """Response with session details."""
+    session_id: str
+    user_id: str
+    created_at: str
+    updated_at: str
+    message_count: int
+    has_context: bool
+
+
+class SessionChatRequest(BaseModel):
+    """Request to chat within a session."""
+    question: str = Field(..., min_length=3, max_length=5000, description="Question about the budget")
+    month: Optional[str] = Field(None, pattern=r"^\d{4}-\d{2}$", description="Month context")
+
+
+class SessionChatResponse(BaseModel):
+    """Response from session chat."""
+    session_id: str
+    question: str
+    answer: str
+    message_count: int
+    model_used: str
+
+
+class ChatHistoryResponse(BaseModel):
+    """Response with chat history."""
+    session_id: str
+    messages: List[Dict[str, Any]]
+    message_count: int
+
+
+def _build_financial_context(db: Session, month: str) -> Dict[str, Any]:
+    """Build financial context from transactions."""
+    transactions = db.query(Transaction).filter(
+        Transaction.month == month,
+        Transaction.exclude == False
+    ).all()
+
+    total_income = sum(abs(tx.amount) for tx in transactions if tx.amount > 0)
+    total_expenses = sum(abs(tx.amount) for tx in transactions if tx.amount < 0)
+
+    # Category breakdown
+    categories: Dict[str, float] = {}
+    for tx in transactions:
+        if tx.amount >= 0:
+            continue
+        tags = [t.strip().lower() for t in (tx.tags or "").split(",") if t.strip()]
+        if not tags:
+            tags = [tx.category.lower()] if tx.category else ["non-categorise"]
+        for tag in tags:
+            categories[tag] = categories.get(tag, 0) + abs(tx.amount)
+
+    # Top categories
+    top_categories = [
+        {"name": k, "amount": v}
+        for k, v in sorted(categories.items(), key=lambda x: x[1], reverse=True)
+    ][:5]
+
+    # Calculate budget status
+    savings_rate = ((total_income - total_expenses) / total_income * 100) if total_income > 0 else 0
+    if savings_rate < 0:
+        budget_status = "deficitaire"
+    elif savings_rate < 10:
+        budget_status = "serre"
+    elif savings_rate > 30:
+        budget_status = "excellent"
+    elif savings_rate > 20:
+        budget_status = "bon"
+    else:
+        budget_status = "equilibre"
+
+    return {
+        "month": month,
+        "total_income": total_income,
+        "total_expenses": total_expenses,
+        "savings": total_income - total_expenses,
+        "transaction_count": len(transactions),
+        "budget_status": budget_status,
+        "top_categories": top_categories,
+        "categories": categories
+    }
+
+
+@router.post("/sessions", response_model=ChatSessionResponse)
+async def create_chat_session(
+    request: ChatSessionCreateRequest,
+    current_user=Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Create a new chat session with conversation memory.
+
+    Sessions persist for 30 minutes and store up to 10 messages.
+    """
+    memory = get_chat_memory()
+    month = request.month or dt.datetime.now().strftime("%Y-%m")
+
+    # Build financial context
+    financial_context = _build_financial_context(db, month)
+
+    # Create session
+    session = memory.create_session(
+        user_id=current_user.username,
+        financial_context=financial_context,
+        metadata={"created_from": "api", "month": month}
+    )
+
+    logger.info(f"Created chat session {session.session_id} for {current_user.username}")
+
+    return ChatSessionResponse(
+        session_id=session.session_id,
+        user_id=session.user_id,
+        created_at=session.created_at,
+        updated_at=session.updated_at,
+        message_count=len(session.messages),
+        has_context=session.financial_context is not None
+    )
+
+
+@router.get("/sessions", response_model=List[ChatSessionResponse])
+async def list_chat_sessions(
+    current_user=Depends(get_current_user)
+):
+    """
+    List all active chat sessions for the current user.
+    """
+    memory = get_chat_memory()
+    session_ids = memory.list_user_sessions(current_user.username)
+
+    sessions = []
+    for sid in session_ids:
+        session = memory.get_session(current_user.username, sid)
+        if session:
+            sessions.append(ChatSessionResponse(
+                session_id=session.session_id,
+                user_id=session.user_id,
+                created_at=session.created_at,
+                updated_at=session.updated_at,
+                message_count=len(session.messages),
+                has_context=session.financial_context is not None
+            ))
+
+    return sessions
+
+
+@router.get("/sessions/{session_id}", response_model=ChatHistoryResponse)
+async def get_chat_history(
+    session_id: str,
+    current_user=Depends(get_current_user)
+):
+    """
+    Get chat history for a specific session.
+    """
+    memory = get_chat_memory()
+    session = memory.get_session(current_user.username, session_id)
+
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+
+    return ChatHistoryResponse(
+        session_id=session.session_id,
+        messages=[m.to_dict() for m in session.messages],
+        message_count=len(session.messages)
+    )
+
+
+@router.delete("/sessions/{session_id}")
+async def delete_chat_session(
+    session_id: str,
+    current_user=Depends(get_current_user)
+):
+    """
+    Delete a chat session.
+    """
+    memory = get_chat_memory()
+
+    if not memory.get_session(current_user.username, session_id):
+        raise HTTPException(status_code=404, detail="Session not found")
+
+    memory.delete_session(current_user.username, session_id)
+
+    return {"status": "deleted", "session_id": session_id}
+
+
+@router.post("/sessions/{session_id}/chat", response_model=SessionChatResponse)
+async def session_chat(
+    session_id: str,
+    request: SessionChatRequest,
+    current_user=Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Chat within a session with conversation memory.
+
+    The AI will remember previous messages in the session for context.
+    """
+    memory = get_chat_memory()
+    ai_service = get_ai_service()
+
+    if not ai_service.is_configured:
+        raise HTTPException(
+            status_code=503,
+            detail="AI service not configured. Set OPENROUTER_API_KEY environment variable."
+        )
+
+    # Get or create session
+    month = request.month or dt.datetime.now().strftime("%Y-%m")
+    session = memory.get_or_create_session(
+        user_id=current_user.username,
+        session_id=session_id,
+        financial_context=_build_financial_context(db, month)
+    )
+
+    # Add user message to history
+    memory.add_user_message(current_user.username, session.session_id, request.question)
+
+    # Build context with conversation history
+    system_prompt, messages = memory.build_llm_context(
+        user_id=current_user.username,
+        session_id=session.session_id,
+        current_question=request.question,
+        financial_context=session.financial_context
+    )
+
+    # Get AI answer
+    try:
+        # Combine system prompt with question for the existing answer_question method
+        full_prompt = f"{system_prompt}\n\nQUESTION:\n{request.question}"
+        answer = await ai_service.answer_question(full_prompt, session.financial_context or {})
+
+        # Save assistant response to history
+        memory.add_assistant_message(current_user.username, session.session_id, answer)
+
+        # Get updated session
+        updated_session = memory.get_session(current_user.username, session.session_id)
+
+        return SessionChatResponse(
+            session_id=session.session_id,
+            question=request.question,
+            answer=answer,
+            message_count=len(updated_session.messages) if updated_session else 0,
+            model_used=ai_service.model
+        )
+
+    except Exception as e:
+        logger.error(f"Error in session chat: {e}")
+        raise HTTPException(status_code=500, detail=f"AI service error: {str(e)}")
+
+
+@router.post("/sessions/{session_id}/chat-stream")
+async def session_chat_stream(
+    session_id: str,
+    request: SessionChatRequest,
+    current_user=Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Stream chat response within a session with conversation memory.
+
+    Uses Server-Sent Events for real-time streaming.
+    """
+    memory = get_chat_memory()
+    ai_service = get_ai_service()
+
+    if not ai_service.is_configured:
+        raise HTTPException(
+            status_code=503,
+            detail="AI service not configured. Set OPENROUTER_API_KEY environment variable."
+        )
+
+    # Get or create session
+    month = request.month or dt.datetime.now().strftime("%Y-%m")
+    session = memory.get_or_create_session(
+        user_id=current_user.username,
+        session_id=session_id,
+        financial_context=_build_financial_context(db, month)
+    )
+
+    # Add user message to history
+    memory.add_user_message(current_user.username, session.session_id, request.question)
+
+    # Build context with conversation history
+    system_prompt, messages = memory.build_llm_context(
+        user_id=current_user.username,
+        session_id=session.session_id,
+        current_question=request.question,
+        financial_context=session.financial_context
+    )
+
+    async def event_generator():
+        """Generate SSE events from AI stream with session context."""
+        full_response = ""
+        try:
+            # Stream the response
+            full_prompt = f"{system_prompt}\n\nQUESTION:\n{request.question}"
+            async for chunk in ai_service.stream_answer(full_prompt, session.financial_context or {}):
+                full_response += chunk
+                yield f"data: {chunk}\n\n"
+
+            # Save the complete response to session history
+            memory.add_assistant_message(current_user.username, session.session_id, full_response)
+
+            # Send completion marker with session info
+            yield f"data: [DONE]\n\n"
+
+        except Exception as e:
+            logger.error(f"Streaming error in session: {e}")
+            yield f"data: [ERROR: {str(e)}]\n\n"
+
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no"
+        }
+    )
+
+
+@router.delete("/sessions")
+async def clear_all_sessions(
+    current_user=Depends(get_current_user)
+):
+    """
+    Clear all chat sessions for the current user.
+    """
+    memory = get_chat_memory()
+    count = memory.clear_user_sessions(current_user.username)
+
+    return {"status": "cleared", "sessions_deleted": count}
+
+
+@router.get("/sessions/active", response_model=Optional[ChatSessionResponse])
+async def get_active_session(
+    current_user=Depends(get_current_user)
+):
+    """
+    Get the most recent active session, if any.
+    """
+    memory = get_chat_memory()
+    session = memory.get_active_session(current_user.username)
+
+    if not session:
+        return None
+
+    return ChatSessionResponse(
+        session_id=session.session_id,
+        user_id=session.user_id,
+        created_at=session.created_at,
+        updated_at=session.updated_at,
+        message_count=len(session.messages),
+        has_context=session.financial_context is not None
     )

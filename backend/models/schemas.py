@@ -3,9 +3,84 @@ Pydantic schemas for Budget Famille v2.3
 Shared data models for API requests/responses
 """
 import datetime as dt
-from typing import List, Optional, Dict, Union, Any
+from typing import List, Optional, Dict, Union, Any, Generic, TypeVar
 from pydantic import BaseModel, validator, Field, root_validator
+from pydantic.generics import GenericModel
 from email_validator import validate_email, EmailNotValidError
+
+# =============================================================================
+# PAGINATION MODELS - Generic pagination response for all list endpoints
+# =============================================================================
+
+T = TypeVar('T')
+
+
+class PaginatedResponse(GenericModel, Generic[T]):
+    """
+    Generic paginated response model for list endpoints.
+
+    Usage:
+        @router.get("/transactions", response_model=PaginatedResponse[TxOut])
+        def list_transactions(...) -> PaginatedResponse[TxOut]:
+            return PaginatedResponse(
+                items=transactions,
+                total=total_count,
+                page=page,
+                limit=limit
+            )
+    """
+    items: List[T] = Field(description="List of items for the current page")
+    total: int = Field(ge=0, description="Total number of items across all pages")
+    page: int = Field(ge=1, default=1, description="Current page number (1-indexed)")
+    limit: int = Field(ge=1, le=500, default=50, description="Number of items per page")
+    pages: int = Field(ge=0, description="Total number of pages")
+    has_next: bool = Field(description="Whether there are more pages after this one")
+    has_prev: bool = Field(description="Whether there are pages before this one")
+
+    def __init__(self, **data):
+        # Calculate pages, has_next, has_prev if not provided
+        if 'pages' not in data and 'total' in data and 'limit' in data:
+            data['pages'] = (data['total'] + data['limit'] - 1) // data['limit'] if data['limit'] > 0 else 0
+        if 'has_next' not in data and 'page' in data and 'pages' in data:
+            data['has_next'] = data['page'] < data['pages']
+        if 'has_prev' not in data and 'page' in data:
+            data['has_prev'] = data['page'] > 1
+        super().__init__(**data)
+
+    class Config:
+        schema_extra = {
+            "example": {
+                "items": [],
+                "total": 150,
+                "page": 1,
+                "limit": 50,
+                "pages": 3,
+                "has_next": True,
+                "has_prev": False
+            }
+        }
+
+
+class PaginationParams(BaseModel):
+    """
+    Pagination parameters for list endpoints.
+    Use as query parameters: ?page=1&limit=50
+    """
+    page: int = Field(default=1, ge=1, description="Page number (1-indexed)")
+    limit: int = Field(default=50, ge=1, le=500, description="Items per page (max 500)")
+
+    @property
+    def offset(self) -> int:
+        """Calculate SQL offset from page and limit"""
+        return (self.page - 1) * self.limit
+
+    class Config:
+        schema_extra = {
+            "example": {
+                "page": 1,
+                "limit": 50
+            }
+        }
 
 # Configuration Schemas
 class ConfigIn(BaseModel):
@@ -50,7 +125,7 @@ class TxOut(BaseModel):
     subcategory: Optional[str]
     is_expense: Optional[bool]
     exclude: bool
-    expense_type: str = Field(default="VARIABLE", pattern="^(FIXED|VARIABLE|PROVISION)$", description="Type de dépense pour séparation stricte")
+    expense_type: str = Field(default="VARIABLE", pattern="^(FIXED|VARIABLE|PROVISION|CREDIT|INCOME)$", description="Type de dépense pour séparation stricte (CREDIT/INCOME pour revenus)")
     tags: List[str] = []
 
     class Config:
@@ -507,7 +582,7 @@ class TagOut(BaseModel):
     """Schema for tag information with statistics"""
     id: int
     name: str
-    expense_type: str = Field(pattern="^(FIXED|VARIABLE|PROVISION)$", description="Type de dépense")
+    expense_type: str = Field(pattern="^(FIXED|VARIABLE|PROVISION|CREDIT|INCOME)$", description="Type de dépense")
     transaction_count: int = Field(description="Nombre de transactions avec ce tag")
     total_amount: float = Field(description="Montant total des transactions")
     patterns: List[str] = Field(default_factory=list, description="Patterns de reconnaissance automatique")
@@ -883,7 +958,7 @@ class MLFeedbackCreate(BaseModel):
     transaction_id: int = Field(description="ID de la transaction concernée")
     original_tag: Optional[str] = Field(None, max_length=100, description="Tag suggéré par le ML")
     corrected_tag: Optional[str] = Field(None, max_length=100, description="Tag corrigé par l'utilisateur")
-    original_expense_type: Optional[str] = Field(None, pattern="^(FIXED|VARIABLE|PROVISION)$", description="Type suggéré par le ML")
+    original_expense_type: Optional[str] = Field(None, pattern="^(FIXED|VARIABLE|PROVISION|CREDIT|INCOME)$", description="Type suggéré par le ML")
     corrected_expense_type: Optional[str] = Field(None, pattern="^(FIXED|VARIABLE|PROVISION)$", description="Type corrigé par l'utilisateur")
     feedback_type: str = Field(pattern="^(correction|acceptance|manual)$", description="Type de feedback")
     confidence_before: Optional[float] = Field(None, ge=0.0, le=1.0, description="Confiance ML avant correction")
@@ -986,7 +1061,7 @@ class MLTaggingResult(BaseModel):
     """Schema for ML tagging results with enhanced confidence scoring"""
     suggested_tag: str = Field(description="Tag suggéré par le ML")
     confidence: float = Field(ge=0.0, le=1.0, description="Confiance totale (0-1)")
-    expense_type: str = Field(pattern="^(FIXED|VARIABLE|PROVISION)$", description="Type de dépense classifié")
+    expense_type: str = Field(pattern="^(FIXED|VARIABLE|PROVISION|CREDIT|INCOME)$", description="Type de dépense classifié")
     explanation: str = Field(description="Explication du choix du ML")
     
     # Confidence factors breakdown
@@ -1240,18 +1315,20 @@ class CategoryBudgetSuggestion(BaseModel):
     """Schema for budget suggestion based on historical spending"""
     category: str
     suggested_amount: float
-    average_spending: float
-    max_spending: float
-    min_spending: float
-    months_analyzed: int
-    confidence: float = Field(ge=0, le=1, description="Confidence score 0-1")
+    average_3_months: float
+    average_6_months: float
+    min_amount: float
+    max_amount: float
+    months_with_data: int
+    trend: str  # 'increasing', 'decreasing', 'stable'
 
 
 class BudgetSuggestionsResponse(BaseModel):
     """Schema for budget suggestions response"""
     suggestions: List[CategoryBudgetSuggestion]
-    period_analyzed: str
-    total_categories: int
+    total_suggested_budget: float
+    analysis_period_start: str
+    analysis_period_end: str
 
 
 # Variance Analysis schemas for Budget Intelligence System v4.0
@@ -1274,8 +1351,16 @@ class CategoryVariance(BaseModel):
     variance_pct: float
     status: str
     top_transactions: List[Dict[str, Any]] = []
-    vs_last_month: Optional[float] = None
+    vs_last_month: Optional[str] = None  # String like "+5%" or "-10%"
     transaction_count: int = 0
+
+
+class VarianceAlert(BaseModel):
+    """Budget variance alert"""
+    type: str
+    category: str
+    message: str
+    severity: str  # 'info', 'warning', 'critical'
 
 
 class VarianceAnalysisResponse(BaseModel):
@@ -1285,4 +1370,4 @@ class VarianceAnalysisResponse(BaseModel):
     by_category: List[CategoryVariance]
     categories_over_budget: int
     categories_on_track: int
-    alerts: List[str] = []
+    alerts: List[VarianceAlert] = []

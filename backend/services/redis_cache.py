@@ -53,33 +53,45 @@ class RedisCacheService:
     def _create_sync_connection(self) -> redis.Redis:
         """Create synchronous Redis connection with pool"""
         try:
-            pool = redis.ConnectionPool(
-                host=settings.redis.host,
-                port=settings.redis.port,
-                db=settings.redis.db,
-                password=settings.redis.password,
-                username=settings.redis.username,
-                ssl=settings.redis.ssl,
-                max_connections=settings.redis.max_connections,
-                retry_on_timeout=settings.redis.retry_on_timeout,
-                socket_timeout=settings.redis.socket_timeout,
-                socket_connect_timeout=settings.redis.socket_connect_timeout,
-                decode_responses=True,
-                **settings.redis.connection_pool_kwargs
-            )
-            
+            # Build connection kwargs - only include ssl if True (avoids compatibility issues)
+            pool_kwargs = {
+                "host": settings.redis.host,
+                "port": settings.redis.port,
+                "db": settings.redis.db,
+                "max_connections": settings.redis.max_connections,
+                "retry_on_timeout": settings.redis.retry_on_timeout,
+                "socket_timeout": settings.redis.socket_timeout,
+                "socket_connect_timeout": settings.redis.socket_connect_timeout,
+                "decode_responses": True,
+            }
+
+            # Only add credentials if provided
+            if settings.redis.password:
+                pool_kwargs["password"] = settings.redis.password
+            if settings.redis.username:
+                pool_kwargs["username"] = settings.redis.username
+
+            # Only add SSL if explicitly enabled (avoid compatibility issues with redis-py 5.x)
+            if settings.redis.ssl:
+                pool_kwargs["ssl"] = True
+
+            # Add any additional kwargs
+            pool_kwargs.update(settings.redis.connection_pool_kwargs)
+
+            pool = redis.ConnectionPool(**pool_kwargs)
+
             client = redis.Redis(connection_pool=pool)
-            
+
             # Test connection
             client.ping()
-            
+
             self._sync_pool = pool
             self._sync_client = client
-            logger.info("✅ Redis synchronous connection established")
+            logger.info("Redis synchronous connection established")
             return client
-            
+
         except Exception as e:
-            logger.error(f"❌ Failed to create Redis sync connection: {e}")
+            logger.error(f"Failed to create Redis sync connection: {e}")
             self._stats["errors"] += 1
             self._stats["last_error"] = str(e)
             raise

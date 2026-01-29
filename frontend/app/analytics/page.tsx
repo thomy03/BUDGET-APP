@@ -2,14 +2,14 @@
 
 import { useEffect, useState, useMemo, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { api, tagCategoryApi } from "../../lib/api";
+import { api, tagCategoryApi, pdfExportApi } from "../../lib/api";
 import { useGlobalMonth } from "../../lib/month";
 import { useAuth } from "../../lib/auth";
 import { LoadingSpinner, Card } from "../../components/ui";
 import { DEFAULT_CATEGORIES } from "../../components/settings/SimpleTagsManager";
-import { BudgetVarianceAnalysis } from "../../components/analytics";
+import { BudgetVarianceAnalysis, AnomaliesPanel } from "../../components/analytics";
 
-type AnalyticsTab = 'drilldown' | 'budget' | 'ai';
+type AnalyticsTab = 'drilldown' | 'budget' | 'anomalies' | 'ai';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   LineChart, Line, PieChart, Pie, Cell, Legend, AreaChart, Area, ComposedChart
@@ -189,7 +189,11 @@ export default function Analytics() {
       // Charger les transactions pour chaque mois en parallele
       const promises = monthsToLoad.map(m =>
         api.get('/transactions', { params: { month: m } })
-          .then(res => res.data || [])
+          .then(res => {
+            // L'API retourne maintenant un objet paginé { items: [...], total, page, ... }
+            const data = res.data || {};
+            return data.items || data || [];
+          })
           .catch(() => []) // Ignorer les erreurs individuelles
       );
 
@@ -237,6 +241,25 @@ export default function Analytics() {
 
   // État pour le message de confirmation
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
+  // État pour le téléchargement PDF
+  const [downloadingPdf, setDownloadingPdf] = useState(false);
+
+  // Handler pour télécharger le PDF
+  const handleDownloadPdf = useCallback(async () => {
+    setDownloadingPdf(true);
+    try {
+      await pdfExportApi.downloadAndSave(month);
+      setSuccessMessage('PDF téléchargé avec succès !');
+      setTimeout(() => setSuccessMessage(null), 3000);
+    } catch (error: any) {
+      console.error('Erreur téléchargement PDF:', error);
+      setSuccessMessage(null);
+      alert(error.message || 'Erreur lors du téléchargement du PDF');
+    } finally {
+      setDownloadingPdf(false);
+    }
+  }, [month]);
 
   // Handler pour sauvegarder le nouveau tag
   const handleSaveTag = useCallback(async () => {
@@ -851,30 +874,30 @@ export default function Analytics() {
   // ============================================================================
   if (drillLevel === 'transactions' && selectedTag) {
     return (
-      <main className="container mx-auto px-4 py-6 space-y-6">
+      <main className="container mx-auto px-3 md:px-4 py-3 md:py-6 space-y-4 md:space-y-6">
         {/* Breadcrumb */}
-        <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+        <div className="flex flex-wrap items-center gap-2 text-xs md:text-sm text-gray-600 dark:text-gray-400">
           <button onClick={() => { setDrillLevel('categories'); setSelectedCategory(null); setSelectedTag(null); }}
-            className="hover:text-blue-600">Categories</button>
+            className="hover:text-blue-600 min-h-[44px] px-2">Categories</button>
           <span>/</span>
-          <button onClick={handleBack} className="hover:text-blue-600">
+          <button onClick={handleBack} className="hover:text-blue-600 min-h-[44px] px-2 truncate">
             {selectedCategory?.icon} {selectedCategory?.name}
           </button>
           <span>/</span>
-          <span className="font-semibold text-gray-900 dark:text-white">{selectedTag.name}</span>
+          <span className="font-semibold text-gray-900 dark:text-white truncate">{selectedTag.name}</span>
         </div>
 
         {/* Header */}
-        <div className="flex items-center gap-4">
-          <button onClick={handleBack} className="p-2 rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-gray-200">
+        <div className="flex items-center gap-3 md:gap-4">
+          <button onClick={handleBack} className="p-2 rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 min-h-[44px] min-w-[44px] flex-shrink-0">
             <span className="text-xl">&#8592;</span>
           </button>
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+          <div className="min-w-0 flex-1">
+            <h1 className="text-lg md:text-2xl font-bold text-gray-900 dark:text-white truncate">
               {selectedTag.name}
             </h1>
-            <p className="text-gray-500">
-              {selectedTag.count} transactions - {selectedTag.total.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
+            <p className="text-xs md:text-base text-gray-500 truncate">
+              {selectedTag.count} trans. - {selectedTag.total.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
             </p>
           </div>
         </div>
@@ -882,13 +905,13 @@ export default function Analytics() {
         {/* Liste des transactions */}
         <Card className="overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full">
+            <table className="w-full min-w-[500px]">
               <thead className="bg-gray-50 dark:bg-gray-800">
                 <tr>
-                  <th className="text-left p-4 font-medium text-gray-600 dark:text-gray-400">Date</th>
-                  <th className="text-left p-4 font-medium text-gray-600 dark:text-gray-400">Libelle</th>
-                  <th className="text-left p-4 font-medium text-gray-600 dark:text-gray-400">Tag</th>
-                  <th className="text-right p-4 font-medium text-gray-600 dark:text-gray-400">Montant</th>
+                  <th className="text-left p-2 md:p-4 text-xs md:text-sm font-medium text-gray-600 dark:text-gray-400">Date</th>
+                  <th className="text-left p-2 md:p-4 text-xs md:text-sm font-medium text-gray-600 dark:text-gray-400">Libelle</th>
+                  <th className="text-left p-2 md:p-4 text-xs md:text-sm font-medium text-gray-600 dark:text-gray-400">Tag</th>
+                  <th className="text-right p-2 md:p-4 text-xs md:text-sm font-medium text-gray-600 dark:text-gray-400">Montant</th>
                 </tr>
               </thead>
               <tbody>
@@ -896,23 +919,23 @@ export default function Analytics() {
                   .sort((a, b) => b.date_op.localeCompare(a.date_op))
                   .map((tx, idx) => (
                     <tr key={tx.id || idx} className="border-t border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800">
-                      <td className="p-4 text-gray-600 dark:text-gray-400">
+                      <td className="p-2 md:p-4 text-xs md:text-sm text-gray-600 dark:text-gray-400 whitespace-nowrap">
                         {new Date(tx.date_op).toLocaleDateString('fr-FR')}
                       </td>
-                      <td className="p-4 text-gray-900 dark:text-white">{tx.label}</td>
-                      <td className="p-4">
+                      <td className="p-2 md:p-4 text-xs md:text-sm text-gray-900 dark:text-white truncate max-w-[150px] md:max-w-none">{tx.label}</td>
+                      <td className="p-2 md:p-4">
                         <button
                           onClick={() => handleEditTag(tx)}
-                          className="inline-flex items-center gap-1 px-2 py-1 text-sm bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-lg hover:bg-blue-200 dark:hover:bg-blue-800/50 transition-colors"
+                          className="inline-flex items-center gap-1 px-2 py-1.5 text-xs md:text-sm bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-lg hover:bg-blue-200 dark:hover:bg-blue-800/50 transition-colors min-h-[44px]"
                           title="Cliquez pour modifier le tag"
                         >
-                          <span>{tx.tags?.[0] || 'Non tagué'}</span>
-                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <span className="truncate max-w-[80px] md:max-w-none">{tx.tags?.[0] || 'Non tagué'}</span>
+                          <svg className="w-3 h-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
                           </svg>
                         </button>
                       </td>
-                      <td className="p-4 text-right font-mono text-red-600">
+                      <td className="p-2 md:p-4 text-xs md:text-sm text-right font-mono text-red-600 whitespace-nowrap">
                         -{Math.abs(tx.amount).toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
                       </td>
                     </tr>
@@ -1171,33 +1194,33 @@ export default function Analytics() {
   // ============================================================================
   if (drillLevel === 'month-tags' && selectedMonth) {
     return (
-      <main className="container mx-auto px-4 py-6 space-y-6">
+      <main className="container mx-auto px-3 md:px-4 py-3 md:py-6 space-y-4 md:space-y-6">
         {/* Breadcrumb */}
-        <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+        <div className="flex flex-wrap items-center gap-2 text-xs md:text-sm text-gray-600 dark:text-gray-400">
           <button onClick={() => { setDrillLevel('categories'); setSelectedMonth(null); }}
-            className="hover:text-blue-600">Vue globale</button>
+            className="hover:text-blue-600 min-h-[44px] px-2">Vue globale</button>
           <span>/</span>
-          <span className="font-semibold text-gray-900 dark:text-white">{selectedMonth.monthLabel}</span>
+          <span className="font-semibold text-gray-900 dark:text-white truncate">{selectedMonth.monthLabel}</span>
         </div>
 
         {/* Header */}
-        <div className="flex items-center gap-4">
-          <button onClick={handleBack} className="p-2 rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600">
+        <div className="flex items-center gap-3 md:gap-4">
+          <button onClick={handleBack} className="p-2 rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 min-h-[44px] min-w-[44px] flex-shrink-0">
             <span className="text-xl">&#8592;</span>
           </button>
           <div
-            className="w-16 h-16 rounded-xl flex items-center justify-center text-3xl bg-gradient-to-br from-blue-500 to-blue-600 text-white"
+            className="w-12 h-12 md:w-16 md:h-16 rounded-xl flex items-center justify-center text-2xl md:text-3xl bg-gradient-to-br from-blue-500 to-blue-600 text-white flex-shrink-0"
           >
             📅
           </div>
-          <div className="flex-1">
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+          <div className="flex-1 min-w-0">
+            <h1 className="text-lg md:text-2xl font-bold text-gray-900 dark:text-white truncate">
               {selectedMonth.monthLabel}
             </h1>
-            <div className="flex gap-4 text-gray-500">
-              <span>{selectedMonth.tags.length} tags</span>
-              <span>{selectedMonth.count} transactions</span>
-              <span className="font-bold text-red-600">
+            <div className="flex flex-wrap gap-2 md:gap-4 text-xs md:text-base text-gray-500">
+              <span className="whitespace-nowrap">{selectedMonth.tags.length} tags</span>
+              <span className="whitespace-nowrap">{selectedMonth.count} trans.</span>
+              <span className="font-bold text-red-600 whitespace-nowrap">
                 {selectedMonth.total.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
               </span>
             </div>
@@ -1205,34 +1228,34 @@ export default function Analytics() {
         </div>
 
         {/* Stats cartes */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Card className="p-4">
-            <p className="text-sm text-gray-500">Total du mois</p>
-            <p className="text-2xl font-bold text-red-600">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4">
+          <Card className="p-3 md:p-4">
+            <p className="text-xs md:text-sm text-gray-500">Total du mois</p>
+            <p className="text-lg md:text-2xl font-bold text-red-600">
               {selectedMonth.total.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 })}
             </p>
           </Card>
-          <Card className="p-4">
-            <p className="text-sm text-gray-500">Nombre de tags</p>
-            <p className="text-2xl font-bold text-gray-900 dark:text-white">
+          <Card className="p-3 md:p-4">
+            <p className="text-xs md:text-sm text-gray-500">Nombre de tags</p>
+            <p className="text-lg md:text-2xl font-bold text-gray-900 dark:text-white">
               {selectedMonth.tags.length}
             </p>
           </Card>
-          <Card className="p-4">
-            <p className="text-sm text-gray-500">Transactions</p>
-            <p className="text-2xl font-bold text-gray-900 dark:text-white">
+          <Card className="p-3 md:p-4">
+            <p className="text-xs md:text-sm text-gray-500">Transactions</p>
+            <p className="text-lg md:text-2xl font-bold text-gray-900 dark:text-white">
               {selectedMonth.count}
             </p>
           </Card>
         </div>
 
         {/* Pie chart des tags du mois - Cliquable */}
-        <Card className="p-6">
-          <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">
+        <Card className="p-4 md:p-6">
+          <h3 className="text-base md:text-lg font-semibold mb-3 md:mb-4 text-gray-900 dark:text-white">
             Repartition des depenses - {selectedMonth.monthLabel}
-            <span className="text-sm font-normal text-gray-500 ml-2">(cliquez pour voir les transactions)</span>
+            <span className="hidden md:inline text-sm font-normal text-gray-500 ml-2">(cliquez pour voir les transactions)</span>
           </h3>
-          <div className="h-[300px]">
+          <div className="h-[250px] md:h-[300px]">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
@@ -1564,36 +1587,36 @@ export default function Analytics() {
   // ============================================================================
   if (drillLevel === 'tags' && selectedCategory) {
     return (
-      <main className="container mx-auto px-4 py-6 space-y-6">
+      <main className="container mx-auto px-3 md:px-4 py-3 md:py-6 space-y-4 md:space-y-6">
         {/* Breadcrumb */}
-        <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+        <div className="flex flex-wrap items-center gap-2 text-xs md:text-sm text-gray-600 dark:text-gray-400">
           <button onClick={() => { setDrillLevel('categories'); setSelectedCategory(null); }}
-            className="hover:text-blue-600">Categories</button>
+            className="hover:text-blue-600 min-h-[44px] px-2">Categories</button>
           <span>/</span>
-          <span className="font-semibold text-gray-900 dark:text-white">
+          <span className="font-semibold text-gray-900 dark:text-white truncate">
             {selectedCategory.icon} {selectedCategory.name}
           </span>
         </div>
 
         {/* Header */}
-        <div className="flex items-center gap-4">
-          <button onClick={handleBack} className="p-2 rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600">
+        <div className="flex items-center gap-3 md:gap-4">
+          <button onClick={handleBack} className="p-2 rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 min-h-[44px] min-w-[44px] flex-shrink-0">
             <span className="text-xl">&#8592;</span>
           </button>
           <div
-            className="w-16 h-16 rounded-xl flex items-center justify-center text-3xl"
+            className="w-12 h-12 md:w-16 md:h-16 rounded-xl flex items-center justify-center text-2xl md:text-3xl flex-shrink-0"
             style={{ backgroundColor: selectedCategory.color + '20' }}
           >
             {selectedCategory.icon}
           </div>
-          <div className="flex-1">
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+          <div className="flex-1 min-w-0">
+            <h1 className="text-lg md:text-2xl font-bold text-gray-900 dark:text-white truncate">
               {selectedCategory.name}
             </h1>
-            <div className="flex gap-4 text-gray-500">
-              <span>{selectedCategory.tags.length} tags</span>
-              <span>{selectedCategory.count} transactions</span>
-              <span className="font-bold" style={{ color: selectedCategory.color }}>
+            <div className="flex flex-wrap gap-2 md:gap-4 text-xs md:text-base text-gray-500">
+              <span className="whitespace-nowrap">{selectedCategory.tags.length} tags</span>
+              <span className="whitespace-nowrap">{selectedCategory.count} trans.</span>
+              <span className="font-bold whitespace-nowrap" style={{ color: selectedCategory.color }}>
                 {selectedCategory.total.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
               </span>
             </div>
@@ -1601,22 +1624,22 @@ export default function Analytics() {
         </div>
 
         {/* Stats cartes */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Card className="p-4">
-            <p className="text-sm text-gray-500">Total periode</p>
-            <p className="text-2xl font-bold" style={{ color: selectedCategory.color }}>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4">
+          <Card className="p-3 md:p-4">
+            <p className="text-xs md:text-sm text-gray-500">Total periode</p>
+            <p className="text-lg md:text-2xl font-bold" style={{ color: selectedCategory.color }}>
               {selectedCategory.total.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 })}
             </p>
           </Card>
-          <Card className="p-4">
-            <p className="text-sm text-gray-500">Moyenne mensuelle</p>
-            <p className="text-2xl font-bold text-gray-900 dark:text-white">
+          <Card className="p-3 md:p-4">
+            <p className="text-xs md:text-sm text-gray-500">Moyenne<span className="hidden xs:inline"> mensuelle</span></p>
+            <p className="text-lg md:text-2xl font-bold text-gray-900 dark:text-white">
               {selectedCategory.avgMonthly.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 })}
             </p>
           </Card>
-          <Card className="p-4">
-            <p className="text-sm text-gray-500">Variation vs moyenne</p>
-            <p className={`text-2xl font-bold ${selectedCategory.variation > 0 ? 'text-red-600' : 'text-green-600'}`}>
+          <Card className="p-3 md:p-4">
+            <p className="text-xs md:text-sm text-gray-500">Variation<span className="hidden xs:inline"> vs moyenne</span></p>
+            <p className={`text-lg md:text-2xl font-bold ${selectedCategory.variation > 0 ? 'text-red-600' : 'text-green-600'}`}>
               {selectedCategory.variation > 0 ? '+' : ''}{selectedCategory.variation.toFixed(1)}%
             </p>
           </Card>
@@ -1624,12 +1647,12 @@ export default function Analytics() {
 
         {/* Graphique evolution mensuelle - cliquable pour voir les transactions du mois */}
         {selectedCategory.monthlyData.length > 0 && (
-          <Card className="p-6">
-            <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">
+          <Card className="p-4 md:p-6">
+            <h3 className="text-base md:text-lg font-semibold mb-3 md:mb-4 text-gray-900 dark:text-white">
               Evolution mensuelle
-              <span className="text-sm font-normal text-gray-500 ml-2">(cliquez sur un mois pour voir le detail)</span>
+              <span className="hidden md:inline text-sm font-normal text-gray-500 ml-2">(cliquez sur un mois pour voir le detail)</span>
             </h3>
-            <div className="h-[250px]">
+            <div className="h-[200px] md:h-[250px]">
               <ResponsiveContainer width="100%" height="100%">
                 <ComposedChart data={selectedCategory.monthlyData}>
                   <CartesianGrid strokeDasharray="3 3" />
@@ -1831,12 +1854,12 @@ export default function Analytics() {
   // VUE: CATEGORIES (niveau 1 - defaut)
   // ============================================================================
   return (
-    <main className="container mx-auto px-4 py-6 space-y-6">
+    <main className="container mx-auto px-3 md:px-4 py-3 md:py-6 space-y-4 md:space-y-6">
       {/* Toast de confirmation */}
       {successMessage && (
         <div className="fixed top-4 right-4 z-50 animate-in fade-in slide-in-from-top-2 duration-300">
-          <div className="bg-green-500 text-white px-4 py-3 rounded-lg shadow-lg flex items-center gap-2">
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="bg-green-500 text-white px-3 md:px-4 py-2 md:py-3 rounded-lg shadow-lg flex items-center gap-2 text-sm md:text-base">
+            <svg className="w-4 h-4 md:w-5 md:h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
             </svg>
             <span>{successMessage}</span>
@@ -1845,12 +1868,12 @@ export default function Analytics() {
       )}
 
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 md:gap-0">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+          <h1 className="text-xl md:text-2xl font-bold text-gray-900 dark:text-white">
             Analyse des depenses
             {activeTab === 'drilldown' && (
-              <span className="ml-3 text-lg font-normal text-blue-600 dark:text-blue-400">
+              <span className="ml-2 md:ml-3 text-base md:text-lg font-normal text-blue-600 dark:text-blue-400 block xs:inline mt-1 xs:mt-0">
                 {(() => {
                   const monthNames = ['Janvier', 'Fevrier', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Aout', 'Septembre', 'Octobre', 'Novembre', 'Decembre'];
                   const [year, monthNum] = month.split('-').map(Number);
@@ -1865,66 +1888,104 @@ export default function Analytics() {
               </span>
             )}
           </h1>
-          <p className="text-gray-500 dark:text-gray-400">
+          <p className="text-sm md:text-base text-gray-500 dark:text-gray-400 mt-1">
             {activeTab === 'drilldown' && 'Vue hierarchique: Categories → Tags → Transactions'}
             {activeTab === 'budget' && 'Comparez vos depenses reelles avec vos objectifs budgetaires'}
             {activeTab === 'ai' && 'Insights et predictions intelligentes'}
           </p>
         </div>
-        {activeTab === 'drilldown' && (
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-gray-500">Periode:</span>
-            <select
-              value={periodMonths}
-              onChange={(e) => setPeriodMonths(parseInt(e.target.value))}
-              className="px-3 py-2 border border-gray-300 rounded-lg bg-white dark:bg-gray-700 dark:border-gray-600"
-            >
-              <option value={1}>Ce mois</option>
-              <option value={3}>3 mois</option>
-              <option value={6}>6 mois</option>
-              <option value={12}>12 mois</option>
-            </select>
-          </div>
-        )}
+        <div className="flex flex-wrap items-center gap-2 md:gap-4">
+          {activeTab === 'drilldown' && (
+            <div className="flex items-center gap-2">
+              <span className="text-xs md:text-sm text-gray-500 whitespace-nowrap">Periode:</span>
+              <select
+                value={periodMonths}
+                onChange={(e) => setPeriodMonths(parseInt(e.target.value))}
+                className="px-2 md:px-3 py-1.5 md:py-2 text-xs md:text-sm border border-gray-300 rounded-lg bg-white dark:bg-gray-700 dark:border-gray-600 min-h-[44px]"
+              >
+                <option value={1}>Ce mois</option>
+                <option value={3}>3 mois</option>
+                <option value={6}>6 mois</option>
+                <option value={12}>12 mois</option>
+              </select>
+            </div>
+          )}
+          {/* Bouton Export PDF */}
+          <button
+            onClick={handleDownloadPdf}
+            disabled={downloadingPdf}
+            className="flex items-center gap-1.5 md:gap-2 px-3 md:px-4 py-2 md:py-2 min-h-[44px] bg-red-600 hover:bg-red-700 disabled:bg-red-400 text-white rounded-lg text-xs md:text-sm font-medium transition-colors"
+            title="Telecharger le rapport PDF du mois"
+          >
+            {downloadingPdf ? (
+              <>
+                <svg className="animate-spin h-4 w-4 flex-shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <span className="hidden xs:inline">Export...</span>
+              </>
+            ) : (
+              <>
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                <span>PDF</span>
+              </>
+            )}
+          </button>
+        </div>
       </div>
 
       {/* Onglets de navigation */}
-      <div className="flex gap-1 p-1 bg-gray-100 dark:bg-gray-800 rounded-lg w-fit">
-        <button
-          onClick={() => setActiveTab('drilldown')}
-          className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
-            activeTab === 'drilldown'
-              ? 'bg-white dark:bg-gray-700 text-blue-600 dark:text-blue-400 shadow-sm'
-              : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
-          }`}
-        >
-          📊 Drill-down Depenses
-        </button>
-        <button
-          onClick={() => setActiveTab('budget')}
-          className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
-            activeTab === 'budget'
-              ? 'bg-white dark:bg-gray-700 text-blue-600 dark:text-blue-400 shadow-sm'
-              : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
-          }`}
-        >
-          📈 Budget vs Reel
-        </button>
-        <button
-          onClick={() => setActiveTab('ai')}
-          className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
-            activeTab === 'ai'
-              ? 'bg-white dark:bg-gray-700 text-purple-600 dark:text-purple-400 shadow-sm'
-              : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
-          }`}
-        >
-          🤖 IA Insights
-        </button>
+      <div className="overflow-x-auto -mx-3 md:mx-0 px-3 md:px-0">
+        <div className="flex gap-1 p-1 bg-gray-100 dark:bg-gray-800 rounded-lg w-fit min-w-full md:min-w-0">
+          <button
+            onClick={() => setActiveTab('drilldown')}
+            className={`flex-1 md:flex-none px-3 md:px-4 py-2 rounded-md text-xs md:text-sm font-medium transition-all whitespace-nowrap min-h-[44px] ${
+              activeTab === 'drilldown'
+                ? 'bg-white dark:bg-gray-700 text-blue-600 dark:text-blue-400 shadow-sm'
+                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+            }`}
+          >
+            <span className="hidden xs:inline">📊 </span>Drill-down<span className="hidden md:inline"> Depenses</span>
+          </button>
+          <button
+            onClick={() => setActiveTab('budget')}
+            className={`flex-1 md:flex-none px-3 md:px-4 py-2 rounded-md text-xs md:text-sm font-medium transition-all whitespace-nowrap min-h-[44px] ${
+              activeTab === 'budget'
+                ? 'bg-white dark:bg-gray-700 text-blue-600 dark:text-blue-400 shadow-sm'
+                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+            }`}
+          >
+            <span className="hidden xs:inline">📈 </span>Budget<span className="hidden md:inline"> vs Reel</span>
+          </button>
+          <button
+            onClick={() => setActiveTab('anomalies')}
+            className={`flex-1 md:flex-none px-3 md:px-4 py-2 rounded-md text-xs md:text-sm font-medium transition-all whitespace-nowrap min-h-[44px] ${
+              activeTab === 'anomalies'
+                ? 'bg-white dark:bg-gray-700 text-orange-600 dark:text-orange-400 shadow-sm'
+                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+            }`}
+          >
+            <span className="hidden xs:inline">🔍 </span>Anomalies<span className="hidden md:inline"> ML</span>
+          </button>
+          <button
+            onClick={() => setActiveTab('ai')}
+            className={`flex-1 md:flex-none px-3 md:px-4 py-2 rounded-md text-xs md:text-sm font-medium transition-all whitespace-nowrap min-h-[44px] ${
+              activeTab === 'ai'
+                ? 'bg-white dark:bg-gray-700 text-purple-600 dark:text-purple-400 shadow-sm'
+                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+            }`}
+          >
+            <span className="hidden xs:inline">🤖 </span>IA<span className="hidden md:inline"> Insights</span>
+          </button>
+        </div>
       </div>
 
       {error && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-          <p className="text-red-600">{error}</p>
+        <div className="bg-red-50 border border-red-200 rounded-lg p-3 md:p-4">
+          <p className="text-sm md:text-base text-red-600">{error}</p>
         </div>
       )}
 
@@ -1933,19 +1994,29 @@ export default function Analytics() {
         <BudgetVarianceAnalysis month={month} />
       )}
 
+      {/* Contenu de l'onglet Anomalies ML */}
+      {activeTab === 'anomalies' && (
+        <AnomaliesPanel
+          month={month}
+          onTransactionClick={(txId) => {
+            router.push(`/transactions?editTx=${txId}&month=${month}`);
+          }}
+        />
+      )}
+
       {/* Contenu de l'onglet IA Insights */}
       {activeTab === 'ai' && (
-        <Card className="p-6">
-          <div className="text-center py-8">
-            <div className="text-6xl mb-4">🤖</div>
-            <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+        <Card className="p-4 md:p-6">
+          <div className="text-center py-6 md:py-8">
+            <div className="text-5xl md:text-6xl mb-3 md:mb-4">🤖</div>
+            <h3 className="text-lg md:text-xl font-semibold text-gray-900 dark:text-white mb-2">
               IA Insights - Bientot disponible
             </h3>
-            <p className="text-gray-500 dark:text-gray-400 max-w-md mx-auto">
+            <p className="text-sm md:text-base text-gray-500 dark:text-gray-400 max-w-md mx-auto px-4">
               Cette section inclura des predictions ML sur vos depenses,
               des alertes intelligentes et des recommandations personnalisees.
             </p>
-            <p className="text-sm text-gray-400 mt-4">
+            <p className="text-xs md:text-sm text-gray-400 mt-3 md:mt-4 px-4">
               En attendant, utilisez l'onglet "Budget vs Reel" pour obtenir des analyses IA de vos ecarts budgetaires.
             </p>
           </div>
@@ -1958,41 +2029,41 @@ export default function Analytics() {
       ) : activeTab === 'drilldown' && (
         <>
           {/* Resume global */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <Card className="p-6 bg-gradient-to-r from-red-50 to-red-100 dark:from-red-900/20 dark:to-red-800/20 border-red-200">
-              <h3 className="text-sm font-medium text-red-600 mb-1">Total depenses</h3>
-              <p className="text-2xl font-bold text-red-900 dark:text-red-300">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-4">
+            <Card className="p-3 md:p-6 bg-gradient-to-r from-red-50 to-red-100 dark:from-red-900/20 dark:to-red-800/20 border-red-200">
+              <h3 className="text-xs md:text-sm font-medium text-red-600 mb-1">Total depenses</h3>
+              <p className="text-base md:text-2xl font-bold text-red-900 dark:text-red-300">
                 {totals.total.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 })}
               </p>
             </Card>
 
-            <Card className="p-6 bg-gradient-to-r from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 border-blue-200">
-              <h3 className="text-sm font-medium text-blue-600 mb-1">Moyenne mensuelle</h3>
-              <p className="text-2xl font-bold text-blue-900 dark:text-blue-300">
+            <Card className="p-3 md:p-6 bg-gradient-to-r from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 border-blue-200">
+              <h3 className="text-xs md:text-sm font-medium text-blue-600 mb-1">Moyenne<span className="hidden xs:inline"> mensuelle</span></h3>
+              <p className="text-base md:text-2xl font-bold text-blue-900 dark:text-blue-300">
                 {totals.avgMonthly.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 })}
               </p>
             </Card>
 
-            <Card className="p-6 bg-gradient-to-r from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 border-green-200">
-              <h3 className="text-sm font-medium text-green-600 mb-1">Categories</h3>
-              <p className="text-2xl font-bold text-green-900 dark:text-green-300">{categoryStats.length}</p>
+            <Card className="p-3 md:p-6 bg-gradient-to-r from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 border-green-200">
+              <h3 className="text-xs md:text-sm font-medium text-green-600 mb-1">Categories</h3>
+              <p className="text-base md:text-2xl font-bold text-green-900 dark:text-green-300">{categoryStats.length}</p>
             </Card>
 
-            <Card className="p-6 bg-gradient-to-r from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/20 border-purple-200">
-              <h3 className="text-sm font-medium text-purple-600 mb-1">Transactions</h3>
-              <p className="text-2xl font-bold text-purple-900 dark:text-purple-300">{totals.transactionCount}</p>
+            <Card className="p-3 md:p-6 bg-gradient-to-r from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/20 border-purple-200">
+              <h3 className="text-xs md:text-sm font-medium text-purple-600 mb-1">Transactions</h3>
+              <p className="text-base md:text-2xl font-bold text-purple-900 dark:text-purple-300">{totals.transactionCount}</p>
             </Card>
           </div>
 
           {/* Graphiques cote a cote */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 md:gap-6">
             {/* Pie Chart - Cliquable pour drill-down */}
-            <Card className="p-6">
-              <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">
+            <Card className="p-4 md:p-6">
+              <h3 className="text-base md:text-lg font-semibold mb-3 md:mb-4 text-gray-900 dark:text-white">
                 Repartition par categorie
-                <span className="text-sm font-normal text-gray-500 ml-2">(cliquez pour voir le detail)</span>
+                <span className="hidden md:inline text-sm font-normal text-gray-500 ml-2">(cliquez pour voir le detail)</span>
               </h3>
-              <div className="h-[300px]">
+              <div className="h-[250px] md:h-[300px]">
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie
@@ -2064,12 +2135,12 @@ export default function Analytics() {
             </Card>
 
             {/* Evolution mensuelle - Cliquable pour drill-down */}
-            <Card className="p-6">
-              <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">
+            <Card className="p-4 md:p-6">
+              <h3 className="text-base md:text-lg font-semibold mb-3 md:mb-4 text-gray-900 dark:text-white">
                 Evolution mensuelle
-                <span className="text-sm font-normal text-gray-500 ml-2">(cliquez sur un mois pour voir le detail)</span>
+                <span className="hidden md:inline text-sm font-normal text-gray-500 ml-2">(cliquez sur un mois pour voir le detail)</span>
               </h3>
-              <div className="h-[300px]">
+              <div className="h-[250px] md:h-[300px]">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={monthlyChartData}>
                     <CartesianGrid strokeDasharray="3 3" />
@@ -2103,36 +2174,36 @@ export default function Analytics() {
           </div>
 
           {/* Liste des categories avec drill-down */}
-          <Card className="p-6">
-            <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">
-              Categories (cliquez pour voir le detail)
+          <Card className="p-4 md:p-6">
+            <h3 className="text-base md:text-lg font-semibold mb-3 md:mb-4 text-gray-900 dark:text-white">
+              Categories <span className="hidden md:inline">(cliquez pour voir le detail)</span>
             </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
               {categoryStats.map(category => (
                 <div
                   key={category.id}
                   onClick={() => handleCategoryClick(category)}
-                  className="p-4 rounded-lg border border-gray-200 dark:border-gray-700 hover:shadow-md cursor-pointer transition-all"
+                  className="p-3 md:p-4 rounded-lg border border-gray-200 dark:border-gray-700 hover:shadow-md cursor-pointer transition-all min-h-[44px]"
                   style={{ borderLeftWidth: '4px', borderLeftColor: category.color }}
                 >
-                  <div className="flex items-center gap-3 mb-3">
-                    <span className="text-2xl">{category.icon}</span>
-                    <div className="flex-1">
-                      <h4 className="font-semibold text-gray-900 dark:text-white">{category.name}</h4>
-                      <p className="text-sm text-gray-500">{category.tags.length} tags - {category.count} trans.</p>
+                  <div className="flex items-center gap-2 md:gap-3 mb-2 md:mb-3">
+                    <span className="text-xl md:text-2xl flex-shrink-0">{category.icon}</span>
+                    <div className="flex-1 min-w-0">
+                      <h4 className="text-sm md:text-base font-semibold text-gray-900 dark:text-white truncate">{category.name}</h4>
+                      <p className="text-xs md:text-sm text-gray-500">{category.tags.length} tags - {category.count} trans.</p>
                     </div>
-                    <span className="text-gray-400">&#8594;</span>
+                    <span className="text-gray-400 flex-shrink-0">&#8594;</span>
                   </div>
-                  <div className="flex justify-between items-end">
-                    <div>
-                      <p className="text-2xl font-bold" style={{ color: category.color }}>
+                  <div className="flex justify-between items-end gap-2">
+                    <div className="min-w-0 flex-1">
+                      <p className="text-lg md:text-2xl font-bold truncate" style={{ color: category.color }}>
                         {category.total.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 })}
                       </p>
-                      <p className="text-sm text-gray-500">
+                      <p className="text-xs md:text-sm text-gray-500 truncate">
                         Moy: {category.avgMonthly.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 })}/mois
                       </p>
                     </div>
-                    <div className={`text-sm font-medium px-2 py-1 rounded ${
+                    <div className={`text-xs md:text-sm font-medium px-1.5 md:px-2 py-0.5 md:py-1 rounded flex-shrink-0 ${
                       category.variation > 10 ? 'bg-red-100 text-red-700' :
                         category.variation < -10 ? 'bg-green-100 text-green-700' :
                           'bg-gray-100 text-gray-700'
@@ -2147,21 +2218,21 @@ export default function Analytics() {
 
           {/* Tableau detaille */}
           <Card className="overflow-hidden">
-            <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Detail par categorie</h3>
+            <div className="px-3 md:px-6 py-3 md:py-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+              <h3 className="text-base md:text-lg font-semibold text-gray-900 dark:text-white">Detail par categorie</h3>
             </div>
 
             <div className="overflow-x-auto">
-              <table className="w-full">
+              <table className="w-full min-w-[640px]">
                 <thead className="bg-gray-50 dark:bg-gray-800">
                   <tr>
-                    <th className="text-left p-4 font-medium text-gray-600 dark:text-gray-400">Categorie</th>
-                    <th className="text-right p-4 font-medium text-gray-600 dark:text-gray-400">Tags</th>
-                    <th className="text-right p-4 font-medium text-gray-600 dark:text-gray-400">Transactions</th>
-                    <th className="text-right p-4 font-medium text-gray-600 dark:text-gray-400">Total</th>
-                    <th className="text-right p-4 font-medium text-gray-600 dark:text-gray-400">Moy/mois</th>
-                    <th className="text-right p-4 font-medium text-gray-600 dark:text-gray-400">Variation</th>
-                    <th className="w-32 p-4 font-medium text-gray-600 dark:text-gray-400">%</th>
+                    <th className="text-left p-2 md:p-4 text-xs md:text-sm font-medium text-gray-600 dark:text-gray-400">Categorie</th>
+                    <th className="text-right p-2 md:p-4 text-xs md:text-sm font-medium text-gray-600 dark:text-gray-400">Tags</th>
+                    <th className="text-right p-2 md:p-4 text-xs md:text-sm font-medium text-gray-600 dark:text-gray-400">Trans.</th>
+                    <th className="text-right p-2 md:p-4 text-xs md:text-sm font-medium text-gray-600 dark:text-gray-400">Total</th>
+                    <th className="text-right p-2 md:p-4 text-xs md:text-sm font-medium text-gray-600 dark:text-gray-400 hidden md:table-cell">Moy/mois</th>
+                    <th className="text-right p-2 md:p-4 text-xs md:text-sm font-medium text-gray-600 dark:text-gray-400 hidden md:table-cell">Var.</th>
+                    <th className="w-20 md:w-32 p-2 md:p-4 text-xs md:text-sm font-medium text-gray-600 dark:text-gray-400">%</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -2173,29 +2244,29 @@ export default function Analytics() {
                         onClick={() => handleCategoryClick(cat)}
                         className="border-t border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer"
                       >
-                        <td className="p-4">
-                          <div className="flex items-center gap-2">
-                            <span className="text-xl">{cat.icon}</span>
-                            <span className="font-medium text-gray-900 dark:text-white">{cat.name}</span>
+                        <td className="p-2 md:p-4">
+                          <div className="flex items-center gap-1.5 md:gap-2">
+                            <span className="text-base md:text-xl flex-shrink-0">{cat.icon}</span>
+                            <span className="text-xs md:text-sm font-medium text-gray-900 dark:text-white truncate">{cat.name}</span>
                           </div>
                         </td>
-                        <td className="p-4 text-right text-gray-600 dark:text-gray-400">{cat.tags.length}</td>
-                        <td className="p-4 text-right text-gray-600 dark:text-gray-400">{cat.count}</td>
-                        <td className="p-4 text-right font-mono font-semibold" style={{ color: cat.color }}>
+                        <td className="p-2 md:p-4 text-xs md:text-sm text-right text-gray-600 dark:text-gray-400">{cat.tags.length}</td>
+                        <td className="p-2 md:p-4 text-xs md:text-sm text-right text-gray-600 dark:text-gray-400">{cat.count}</td>
+                        <td className="p-2 md:p-4 text-xs md:text-sm text-right font-mono font-semibold" style={{ color: cat.color }}>
                           {cat.total.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 })}
                         </td>
-                        <td className="p-4 text-right text-gray-600 dark:text-gray-400">
+                        <td className="p-2 md:p-4 text-xs md:text-sm text-right text-gray-600 dark:text-gray-400 hidden md:table-cell">
                           {cat.avgMonthly.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 })}
                         </td>
-                        <td className="p-4 text-right">
+                        <td className="p-2 md:p-4 text-xs md:text-sm text-right hidden md:table-cell">
                           <span className={`font-medium ${cat.variation > 0 ? 'text-red-600' : 'text-green-600'}`}>
                             {cat.variation > 0 ? '+' : ''}{cat.variation.toFixed(1)}%
                           </span>
                         </td>
-                        <td className="p-4">
-                          <div className="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2">
+                        <td className="p-2 md:p-4">
+                          <div className="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-1.5 md:h-2">
                             <div
-                              className="h-2 rounded-full"
+                              className="h-1.5 md:h-2 rounded-full"
                               style={{ width: `${Math.min(percentage, 100)}%`, backgroundColor: cat.color }}
                             />
                           </div>
@@ -2206,20 +2277,20 @@ export default function Analytics() {
 
                   {totals.total > 0 && (
                     <tr className="border-t-2 border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 font-semibold">
-                      <td className="p-4 text-gray-900 dark:text-white">Total</td>
-                      <td className="p-4 text-right text-gray-900 dark:text-white">
+                      <td className="p-2 md:p-4 text-xs md:text-sm text-gray-900 dark:text-white">Total</td>
+                      <td className="p-2 md:p-4 text-xs md:text-sm text-right text-gray-900 dark:text-white">
                         {categoryStats.reduce((sum, c) => sum + c.tags.length, 0)}
                       </td>
-                      <td className="p-4 text-right text-gray-900 dark:text-white">{totals.transactionCount}</td>
-                      <td className="p-4 text-right font-mono text-red-600">
+                      <td className="p-2 md:p-4 text-xs md:text-sm text-right text-gray-900 dark:text-white">{totals.transactionCount}</td>
+                      <td className="p-2 md:p-4 text-xs md:text-sm text-right font-mono text-red-600">
                         {totals.total.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 })}
                       </td>
-                      <td className="p-4 text-right text-gray-900 dark:text-white">
+                      <td className="p-2 md:p-4 text-xs md:text-sm text-right text-gray-900 dark:text-white hidden md:table-cell">
                         {totals.avgMonthly.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 })}
                       </td>
-                      <td className="p-4 text-right">-</td>
-                      <td className="p-4">
-                        <div className="w-full bg-gray-400 dark:bg-gray-500 rounded-full h-2" />
+                      <td className="p-2 md:p-4 text-xs md:text-sm text-right hidden md:table-cell">-</td>
+                      <td className="p-2 md:p-4">
+                        <div className="w-full bg-gray-400 dark:bg-gray-500 rounded-full h-1.5 md:h-2" />
                       </td>
                     </tr>
                   )}

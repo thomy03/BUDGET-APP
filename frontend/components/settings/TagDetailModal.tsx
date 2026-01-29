@@ -116,9 +116,12 @@ export function TagDetailModal({
           tags: string[];
         }>>('/transactions');
 
-        tagTransactions = (transactionsResponse.data || [])
-          .filter(tx => tx.tags?.includes(tagName))
-          .sort((a, b) => new Date(b.date_op).getTime() - new Date(a.date_op).getTime());
+        // L'API retourne maintenant un objet paginé { items: [...], total, page, ... }
+        const transactionsData = transactionsResponse.data || {};
+        const transactionsArray = (transactionsData as any).items || transactionsData || [];
+        tagTransactions = transactionsArray
+          .filter((tx: any) => tx.tags?.includes(tagName))
+          .sort((a: any, b: any) => new Date(b.date_op).getTime() - new Date(a.date_op).getTime());
       } catch (txErr) {
         console.warn('Could not load transactions:', txErr);
       }

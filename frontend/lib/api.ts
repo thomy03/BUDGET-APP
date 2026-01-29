@@ -143,6 +143,109 @@ export type ImportResponse = {
   message: string; // Message de réponse
 };
 
+// =============================================================================
+// PAGINATION - Types pour les réponses paginées (Phase 3 Performance)
+// =============================================================================
+
+export type PaginatedResponse<T> = {
+  items: T[];
+  total: number;
+  page: number;
+  limit: number;
+  pages: number;
+  has_next: boolean;
+  has_prev: boolean;
+};
+
+export type PaginationParams = {
+  page?: number;
+  limit?: number;
+};
+
+// =============================================================================
+// IMPORT PREVIEW - Prévisualisation avant import (Phase 4 Fonctionnel)
+// =============================================================================
+
+export type ImportPreviewTransaction = {
+  row_number: number;
+  date: string | null;
+  label: string | null;
+  amount: number | null;
+  month: string | null;
+  is_valid: boolean;
+  validation_errors: string[];
+};
+
+export type ImportPreviewResponse = {
+  success: boolean;
+  filename: string;
+  file_type: string;
+  total_rows: number;
+  valid_rows: number;
+  invalid_rows: number;
+  months_detected: string[];
+  months_summary: Record<string, number>;
+  sample_transactions: ImportPreviewTransaction[];
+  potential_duplicates: Array<{
+    month: string;
+    existing_transactions: number;
+    new_transactions: number;
+    warning: string;
+  }>;
+  validation_warnings: string[];
+  columns_detected: string[];
+  ready_to_import: boolean;
+};
+
+// =============================================================================
+// MERGE TAGS - Fusion de tags (Phase 4 Fonctionnel)
+// =============================================================================
+
+export type MergeTagsRequest = {
+  source_tags: string[];
+  target_tag: string;
+  delete_source_tags?: boolean;
+};
+
+export type MergeTagsResponse = {
+  success: boolean;
+  message: string;
+  source_tags: string[];
+  target_tag: string;
+  transactions_updated: number;
+  patterns_merged: number;
+  fixed_line_mappings_updated: number;
+  stats: {
+    source_tags_stats: Record<string, { transaction_count: number; updated: number }>;
+    target_tag_final_stats: {
+      transaction_count: number;
+      total_amount: number;
+    };
+  };
+};
+
+// =============================================================================
+// ML TRAINING - Entraînement ML asynchrone (Phase 3 Performance)
+// =============================================================================
+
+export type MLTrainingJobStatus = {
+  job_id: string;
+  status: 'pending' | 'running' | 'completed' | 'failed' | 'cancelled';
+  started_at: string | null;
+  completed_at: string | null;
+  result: Record<string, unknown> | null;
+  error: string | null;
+  progress: number;
+  duration_seconds: number | null;
+};
+
+export type MLTrainingSubmitResponse = {
+  status: 'submitted';
+  message: string;
+  job_id: string;
+  check_status_url: string;
+};
+
 // Types pour les provisions personnalisables
 export type CustomProvision = {
   id: number;
@@ -283,6 +386,38 @@ export interface ApiError {
   code?: string;
   details?: Record<string, unknown>;
 }
+
+// Types pour le scanner de tickets (OCR)
+export type ReceiptScanResult = {
+  success: boolean;
+  merchant: string | null;
+  amount: number | null;
+  date: string | null;
+  suggested_tag: string | null;
+  confidence: number;
+  all_amounts: number[];
+  raw_text: string;
+  message: string;
+};
+
+export type ReceiptCreateRequest = {
+  merchant: string;
+  amount: number;
+  date: string;
+  tag?: string | null;
+  notes?: string | null;
+};
+
+export type ReceiptCreateResponse = {
+  success: boolean;
+  transaction_id: number | null;
+  message: string;
+};
+
+export type OCRStatusResponse = {
+  available: boolean;
+  message: string;
+};
 
 // Déclaration pour étendre le type de config axios
 declare module "axios" {
@@ -1271,7 +1406,9 @@ export const aiApi = {
 
   // Obtenir une explication IA des écarts budgétaires
   async explainVariance(month: string): Promise<AIExplanationResponse> {
-    const response = await api.post<AIExplanationResponse>('/ai/explain-variance', { month });
+    const response = await api.post<AIExplanationResponse>('/ai/explain-variance', { month }, {
+      timeout: 60000, // 60 seconds for LLM processing
+    });
     return response.data;
   },
 
@@ -1280,13 +1417,17 @@ export const aiApi = {
     const response = await api.post<AISavingsResponse>('/ai/suggest-savings', {
       category,
       months_history: monthsHistory
+    }, {
+      timeout: 60000, // 60 seconds for LLM processing
     });
     return response.data;
   },
 
   // Générer un résumé mensuel intelligent
   async getMonthlySummary(month: string): Promise<AIMonthlySummaryResponse> {
-    const response = await api.post<AIMonthlySummaryResponse>('/ai/monthly-summary', { month });
+    const response = await api.post<AIMonthlySummaryResponse>('/ai/monthly-summary', { month }, {
+      timeout: 60000, // 60 seconds for LLM processing
+    });
     return response.data;
   },
 
@@ -1295,6 +1436,8 @@ export const aiApi = {
     const response = await api.post<AIQuestionResponse>('/ai/chat', {
       question,
       month
+    }, {
+      timeout: 60000, // 60 seconds for LLM processing
     });
     return response.data;
   },
@@ -1307,7 +1450,219 @@ export const aiApi = {
   // Alias pour chat
   async chat(question: string, month?: string): Promise<AIQuestionResponse> {
     return this.askQuestion(question, month);
+  },
+
+  // Streaming chat (v4.1) - returns an async generator for SSE consumption
+  async *streamChat(
+    question: string,
+    month?: string,
+    onChunk?: (chunk: string) => void
+  ): AsyncGenerator<string, void, unknown> {
+    const token = localStorage.getItem("auth_token");
+    const tokenType = localStorage.getItem("token_type") || "Bearer";
+
+    const response = await fetch(`${API_BASE}/ai/chat-stream`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `${tokenType} ${token}`
+      },
+      body: JSON.stringify({ question, month })
+    });
+
+    if (!response.ok) {
+      throw new Error(`Streaming error: ${response.status}`);
+    }
+
+    const reader = response.body?.getReader();
+    if (!reader) {
+      throw new Error('No readable stream available');
+    }
+
+    const decoder = new TextDecoder();
+    let buffer = '';
+
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+
+        // Process complete SSE messages
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || ''; // Keep incomplete line in buffer
+
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            const data = line.slice(6);
+
+            if (data === '[DONE]') {
+              return;
+            }
+
+            if (data.startsWith('[ERROR:')) {
+              throw new Error(data.slice(7, -1));
+            }
+
+            if (data) {
+              if (onChunk) onChunk(data);
+              yield data;
+            }
+          }
+        }
+      }
+    } finally {
+      reader.releaseLock();
+    }
+  },
+
+  // =============================================================================
+  // SESSION-BASED CHAT (v4.1) - Multi-turn conversation memory
+  // =============================================================================
+
+  // Create a new chat session
+  async createSession(month?: string): Promise<ChatSession> {
+    const response = await api.post<ChatSession>('/ai/sessions', { month });
+    return response.data;
+  },
+
+  // List all user sessions
+  async listSessions(): Promise<ChatSession[]> {
+    const response = await api.get<ChatSession[]>('/ai/sessions');
+    return response.data;
+  },
+
+  // Get active session
+  async getActiveSession(): Promise<ChatSession | null> {
+    const response = await api.get<ChatSession | null>('/ai/sessions/active');
+    return response.data;
+  },
+
+  // Get chat history for a session
+  async getSessionHistory(sessionId: string): Promise<ChatHistoryResponse> {
+    const response = await api.get<ChatHistoryResponse>(`/ai/sessions/${sessionId}`);
+    return response.data;
+  },
+
+  // Delete a session
+  async deleteSession(sessionId: string): Promise<void> {
+    await api.delete(`/ai/sessions/${sessionId}`);
+  },
+
+  // Clear all sessions
+  async clearAllSessions(): Promise<{ sessions_deleted: number }> {
+    const response = await api.delete<{ sessions_deleted: number }>('/ai/sessions');
+    return response.data;
+  },
+
+  // Chat within a session (non-streaming)
+  async sessionChat(sessionId: string, question: string, month?: string): Promise<SessionChatResponse> {
+    const response = await api.post<SessionChatResponse>(`/ai/sessions/${sessionId}/chat`, {
+      question,
+      month
+    });
+    return response.data;
+  },
+
+  // Streaming chat within a session
+  async *sessionStreamChat(
+    sessionId: string,
+    question: string,
+    month?: string,
+    onChunk?: (chunk: string) => void
+  ): AsyncGenerator<string, void, unknown> {
+    const token = localStorage.getItem("auth_token");
+    const tokenType = localStorage.getItem("token_type") || "Bearer";
+
+    const response = await fetch(`${API_BASE}/ai/sessions/${sessionId}/chat-stream`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `${tokenType} ${token}`
+      },
+      body: JSON.stringify({ question, month })
+    });
+
+    if (!response.ok) {
+      throw new Error(`Streaming error: ${response.status}`);
+    }
+
+    const reader = response.body?.getReader();
+    if (!reader) {
+      throw new Error('No readable stream available');
+    }
+
+    const decoder = new TextDecoder();
+    let buffer = '';
+
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+
+        // Process complete SSE messages
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || ''; // Keep incomplete line in buffer
+
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            const data = line.slice(6);
+
+            if (data === '[DONE]') {
+              return;
+            }
+
+            if (data.startsWith('[ERROR:')) {
+              throw new Error(data.slice(7, -1));
+            }
+
+            if (data) {
+              if (onChunk) onChunk(data);
+              yield data;
+            }
+          }
+        }
+      }
+    } finally {
+      reader.releaseLock();
+    }
   }
+};
+
+// Session-based chat types
+export type ChatSession = {
+  session_id: string;
+  user_id: string;
+  created_at: string;
+  updated_at: string;
+  message_count: number;
+  has_context: boolean;
+};
+
+export type ChatHistoryMessage = {
+  role: 'user' | 'assistant' | 'system';
+  content: string;
+  timestamp: string;
+  message_id: string;
+};
+
+export type ChatHistoryResponse = {
+  session_id: string;
+  messages: ChatHistoryMessage[];
+  message_count: number;
+};
+
+export type SessionChatResponse = {
+  session_id: string;
+  question: string;
+  answer: string;
+  message_count: number;
+  model_used: string;
 };
 
 // =============================================================================
@@ -1322,6 +1677,13 @@ export type BudgetPrediction = {
   trend_direction: 'increasing' | 'decreasing' | 'stable' | 'unknown';
   confidence: number;
   recommendation: string;
+  // Prophet confidence intervals (v4.1)
+  confidence_lower: number;  // 5th percentile
+  confidence_upper: number;  // 95th percentile
+  seasonality_detected: boolean;
+  seasonal_component: number;  // Seasonal adjustment factor
+  prediction_method: 'prophet' | 'linear' | 'simple';  // Which predictor was used
+  mae_score: number;  // Mean Absolute Error
 };
 
 export type BudgetAlert = {
@@ -1371,6 +1733,9 @@ export type PredictionsOverview = {
     alerts_count?: number;
     month: string;
     message?: string;
+    // Prophet-specific fields (v4.1)
+    prediction_method?: 'prophet' | 'linear' | 'none';
+    prophet_categories?: number;  // Number of categories using Prophet
   };
 };
 
@@ -1382,14 +1747,31 @@ export type AnomaliesOverview = {
     anomalies_found: number;
     duplicates_found: number;
     high_severity_count?: number;
+    message?: string;  // Added for ML training status messages
   };
 };
 
+// ML Status type
+export type MLStatus = {
+  ready: boolean;
+  training: boolean;
+  message: string;
+};
+
 export const predictionsApi = {
+  // Check ML status (quick endpoint - no timeout needed)
+  async getStatus(): Promise<MLStatus> {
+    const response = await api.get<MLStatus>('/predictions/status', {
+      timeout: 5000, // 5 seconds max for status check
+    });
+    return response.data;
+  },
+
   // Get comprehensive predictions overview
   async getOverview(month: string): Promise<PredictionsOverview> {
     const response = await api.get<PredictionsOverview>('/predictions/overview', {
-      params: { month }
+      params: { month },
+      timeout: 60000, // 60 seconds for ML processing
     });
     return response.data;
   },
@@ -1397,7 +1779,8 @@ export const predictionsApi = {
   // Get budget alerts only
   async getAlerts(month: string, severity?: 'low' | 'medium' | 'high'): Promise<BudgetAlert[]> {
     const response = await api.get<BudgetAlert[]>('/predictions/alerts', {
-      params: { month, severity }
+      params: { month, severity },
+      timeout: 60000, // 60 seconds for ML processing
     });
     return response.data;
   },
@@ -1405,14 +1788,569 @@ export const predictionsApi = {
   // Detect anomalies in transactions
   async detectAnomalies(month: string, limit: number = 20): Promise<AnomaliesOverview> {
     const response = await api.get<AnomaliesOverview>('/predictions/anomalies', {
+      params: { month, limit },
+      timeout: 60000, // 60 seconds for ML processing
+    });
+    return response.data;
+  },
+
+  // Force ML systems retraining (async mode by default)
+  async retrain(asyncMode: boolean = true): Promise<MLTrainingSubmitResponse | { status: string; message: string }> {
+    const response = await api.post('/predictions/retrain', null, {
+      params: { async_mode: asyncMode }
+    });
+    return response.data;
+  },
+
+  // Get ML training job status
+  async getTrainingStatus(jobId: string): Promise<MLTrainingJobStatus> {
+    const response = await api.get<MLTrainingJobStatus>(`/predictions/retrain/status/${jobId}`);
+    return response.data;
+  },
+
+  // List recent ML training jobs
+  async listTrainingJobs(limit: number = 20): Promise<{ jobs: MLTrainingJobStatus[]; total: number }> {
+    const response = await api.get('/predictions/retrain/jobs', {
+      params: { limit }
+    });
+    return response.data;
+  }
+};
+
+// =============================================================================
+// TAGS API (v4.2 - Tag Management with Merge)
+// =============================================================================
+
+export type TagOut = {
+  id: number;
+  name: string;
+  expense_type: 'FIXED' | 'VARIABLE' | 'PROVISION';
+  transaction_count: number;
+  total_amount: number;
+  patterns: string[];
+  category: string | null;
+  created_at: string;
+  last_used: string | null;
+};
+
+export type TagsListResponse = {
+  tags: TagOut[];
+  total_count: number;
+  stats: {
+    most_used_tags: string[];
+    total_transactions_tagged: number;
+    expense_type_distribution: Record<string, number>;
+    average_transactions_per_tag: number;
+    tags_with_patterns: number;
+  };
+};
+
+export const tagsApi = {
+  // List all tags with statistics
+  async list(params?: {
+    expense_type?: string;
+    category?: string;
+    min_usage?: number;
+    sort_by?: 'usage' | 'amount' | 'name' | 'last_used';
+    limit?: number;
+  }): Promise<TagsListResponse> {
+    const response = await api.get<TagsListResponse>('/tags', { params });
+    return response.data;
+  },
+
+  // Search tags by name
+  async search(query: string, limit: number = 10): Promise<{ query: string; results: TagOut[]; total_found: number }> {
+    const response = await api.get('/tags/search', {
+      params: { query, limit }
+    });
+    return response.data;
+  },
+
+  // Get global tags statistics
+  async getStats(): Promise<Record<string, unknown>> {
+    const response = await api.get('/tags/stats');
+    return response.data;
+  },
+
+  // Merge multiple tags into one
+  async merge(request: MergeTagsRequest): Promise<MergeTagsResponse> {
+    const response = await api.post<MergeTagsResponse>('/tags/merge', request);
+    return response.data;
+  },
+
+  // Update a tag
+  async update(tagId: number, data: { name?: string; expense_type?: string; patterns?: string[] }): Promise<Record<string, unknown>> {
+    const response = await api.put(`/tags/${tagId}`, data);
+    return response.data;
+  },
+
+  // Delete a tag
+  async delete(tagId: number, cascade: boolean = false): Promise<Record<string, unknown>> {
+    const response = await api.delete(`/tags/${tagId}`, {
+      params: { cascade }
+    });
+    return response.data;
+  },
+
+  // Toggle expense type (FIXED/VARIABLE)
+  async toggleExpenseType(tagId: number): Promise<Record<string, unknown>> {
+    const response = await api.post(`/tags/${tagId}/toggle-type`);
+    return response.data;
+  },
+
+  // Get transactions for a tag
+  async getTransactions(tagId: number, params?: { limit?: number; offset?: number; month?: string }): Promise<Record<string, unknown>> {
+    const response = await api.get(`/tags/${tagId}/transactions`, { params });
+    return response.data;
+  }
+};
+
+// =============================================================================
+// IMPORT PREVIEW API (v4.2 - Preview before import)
+// =============================================================================
+
+export const importPreviewApi = {
+  // Preview a file before import
+  async preview(file: File, sampleSize: number = 10): Promise<ImportPreviewResponse> {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const response = await api.post<ImportPreviewResponse>('/import/preview', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+      params: { sample_size: sampleSize }
+    });
+    return response.data;
+  },
+
+  // Import a file (existing endpoint)
+  async import(file: File): Promise<ImportResponse> {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const response = await api.post<ImportResponse>('/import', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+    return response.data;
+  }
+};
+
+// =============================================================================
+// TRANSACTIONS API (v4.2 - Paginated)
+// =============================================================================
+
+export const transactionsApi = {
+  // List transactions with pagination
+  async list(month: string, params?: PaginationParams & { tag?: string; expense_type?: string }): Promise<PaginatedResponse<Tx>> {
+    const response = await api.get<PaginatedResponse<Tx>>('/transactions', {
+      params: { month, ...params }
+    });
+    return response.data;
+  },
+
+  // List all transactions without pagination (legacy/backward compatibility)
+  async listAll(month: string, params?: { tag?: string; expense_type?: string }): Promise<Tx[]> {
+    const response = await api.get<Tx[]>('/transactions/all', {
+      params: { month, ...params }
+    });
+    return response.data;
+  },
+
+  // Get single transaction
+  async get(id: number): Promise<Tx> {
+    const response = await api.get<Tx>(`/transactions/${id}`);
+    return response.data;
+  },
+
+  // Update transaction
+  async update(id: number, data: Partial<Tx>): Promise<Tx> {
+    const response = await api.patch<Tx>(`/transactions/${id}`, data);
+    return response.data;
+  },
+
+  // Update transaction tags
+  async updateTags(id: number, tags: string[]): Promise<Tx> {
+    const response = await api.patch<Tx>(`/transactions/${id}/tags`, { tags });
+    return response.data;
+  },
+
+  // Update expense type
+  async updateExpenseType(id: number, expenseType: string): Promise<Tx> {
+    const response = await api.patch<Tx>(`/transactions/${id}/expense-type`, { expense_type: expenseType });
+    return response.data;
+  },
+
+  // Exclude/include transaction
+  async setExclude(id: number, exclude: boolean): Promise<Tx> {
+    const response = await api.patch<Tx>(`/transactions/${id}/exclude`, { exclude });
+    return response.data;
+  }
+};
+
+// =============================================================================
+// IMPORT ADVISOR API (v4.1 - Post-import AI Analysis)
+// =============================================================================
+
+export type ImportAnomalyItem = {
+  type: 'unusual_amount' | 'duplicate_suspect' | 'category_spike';
+  description: string;
+  amount?: number;
+  transaction_id?: number;
+  severity: 'low' | 'medium' | 'high';
+};
+
+export type MonthComparison = {
+  current_month: string;
+  previous_month?: string;
+  current_total: number;
+  previous_total?: number;
+  variance?: number;
+  variance_pct?: number;
+  categories_increased: string[];
+  categories_decreased: string[];
+};
+
+export type ImportInsight = {
+  status: 'ready' | 'processing' | 'error';
+  import_id: string;
+  month: string;
+  narrative?: string;
+  anomalies: ImportAnomalyItem[];
+  recommendations: string[];
+  comparison?: MonthComparison;
+  summary?: {
+    total_expenses: number;
+    total_income: number;
+    transaction_count: number;
+    top_categories: Record<string, number>;
+  };
+};
+
+export const importAdvisorApi = {
+  // Trigger post-import AI analysis
+  async analyze(importId: string, month: string): Promise<{ status: string; import_id: string; cached?: boolean }> {
+    const response = await api.post('/import-advisor/analyze', {
+      import_id: importId,
+      month
+    });
+    return response.data;
+  },
+
+  // Get import insights (poll until ready)
+  async getInsights(importId: string, month?: string): Promise<ImportInsight> {
+    const response = await api.get<ImportInsight>(`/import-advisor/insights/${importId}`, {
+      params: month ? { month } : undefined
+    });
+    return response.data;
+  },
+
+  // Invalidate cached insights
+  async invalidate(importId: string): Promise<{ invalidated: number; import_id: string }> {
+    const response = await api.delete(`/import-advisor/insights/${importId}`);
+    return response.data;
+  }
+};
+
+// =============================================================================
+// COACH API (v4.1 - AI Budget Coaching)
+// =============================================================================
+
+export type CoachTip = {
+  id: string;
+  message: string;
+  category: 'insight' | 'warning' | 'tip' | 'motivation';
+  icon: string;
+  priority: number;
+};
+
+export type QuickAction = {
+  id: string;
+  label: string;
+  action_type: 'navigate' | 'trigger';
+  target: string;
+  icon: string;
+};
+
+export type DailyInsight = {
+  message: string;
+  emoji: string;
+  data_point?: string;
+};
+
+export type DashboardTipsResponse = {
+  tips: CoachTip[];
+  refresh_at: string;
+};
+
+export type DailyInsightResponse = {
+  insight: DailyInsight;
+  valid_until: string;
+};
+
+export type QuickActionsResponse = {
+  actions: QuickAction[];
+};
+
+export const coachApi = {
+  // Get rotating dashboard tips
+  async getDashboardTips(month: string, limit: number = 3): Promise<DashboardTipsResponse> {
+    const response = await api.get<DashboardTipsResponse>('/coach/dashboard-tips', {
       params: { month, limit }
     });
     return response.data;
   },
 
-  // Force ML systems retraining
-  async retrain(): Promise<{ status: string; message: string }> {
-    const response = await api.post('/predictions/retrain');
+  // Get personalized daily insight
+  async getDailyInsight(): Promise<DailyInsightResponse> {
+    const response = await api.get<DailyInsightResponse>('/coach/daily-insight');
     return response.data;
+  },
+
+  // Get contextual quick actions
+  async getQuickActions(month: string): Promise<QuickActionsResponse> {
+    const response = await api.get<QuickActionsResponse>('/coach/quick-actions', {
+      params: { month }
+    });
+    return response.data;
+  },
+
+  // Force refresh tips cache
+  async refreshTips(month: string): Promise<{ invalidated: number; message: string }> {
+    const response = await api.post('/coach/refresh-tips', null, {
+      params: { month }
+    });
+    return response.data;
+  }
+};
+
+// =============================================================================
+// GAMIFICATION API (v4.1)
+// =============================================================================
+
+export type Achievement = {
+  id: number;
+  code: string;
+  name: string;
+  description: string;
+  icon: string;
+  category: 'budget' | 'savings' | 'import' | 'engagement';
+  tier: 'bronze' | 'silver' | 'gold' | 'platinum';
+  points: number;
+  is_hidden: boolean;
+  progress: number;
+  is_earned: boolean;
+  earned_at: string | null;
+};
+
+export type Challenge = {
+  id: number;
+  code: string;
+  name: string;
+  description: string;
+  icon: string;
+  challenge_type: 'weekly' | 'monthly' | 'special';
+  start_date: string;
+  end_date: string;
+  goal_type: string;
+  goal_value: number;
+  goal_category: string | null;
+  reward_points: number;
+  is_joined: boolean;
+  progress: number;
+  progress_percent: number;
+  is_completed: boolean;
+};
+
+export type UserStats = {
+  total_points: number;
+  level: number;
+  level_progress: number;
+  achievements_earned: number;
+  total_achievements: number;
+  challenges_completed: number;
+  current_streak: number;
+  longest_streak: number;
+};
+
+export type UserStreak = {
+  streak_type: string;
+  current_streak: number;
+  longest_streak: number;
+  last_activity: string | null;
+};
+
+export type LeaderboardEntry = {
+  rank: number;
+  username: string;
+  total_points: number;
+  level: number;
+  achievements_count: number;
+};
+
+export const gamificationApi = {
+  // Get user's gamification stats
+  async getStats(): Promise<UserStats> {
+    const response = await api.get<UserStats>('/gamification/stats');
+    return response.data;
+  },
+
+  // Get all achievements with user progress
+  async getAchievements(category?: string): Promise<Achievement[]> {
+    const response = await api.get<Achievement[]>('/gamification/achievements', {
+      params: { category }
+    });
+    return response.data;
+  },
+
+  // Get recently earned achievements
+  async getRecentAchievements(limit: number = 5): Promise<Achievement[]> {
+    const response = await api.get<Achievement[]>('/gamification/achievements/recent', {
+      params: { limit }
+    });
+    return response.data;
+  },
+
+  // Get active challenges
+  async getActiveChallenges(): Promise<Challenge[]> {
+    const response = await api.get<Challenge[]>('/gamification/challenges');
+    return response.data;
+  },
+
+  // Join a challenge
+  async joinChallenge(challengeId: number): Promise<{ status: string; challenge_name?: string }> {
+    const response = await api.post(`/gamification/challenges/${challengeId}/join`);
+    return response.data;
+  },
+
+  // Get user streaks
+  async getStreaks(): Promise<UserStreak[]> {
+    const response = await api.get<UserStreak[]>('/gamification/streaks');
+    return response.data;
+  },
+
+  // Track an activity
+  async trackActivity(activityType: string): Promise<{ current_streak: number; longest_streak: number }> {
+    const response = await api.post('/gamification/track-activity', null, {
+      params: { activity_type: activityType }
+    });
+    return response.data;
+  },
+
+  // Get leaderboard
+  async getLeaderboard(limit: number = 10): Promise<LeaderboardEntry[]> {
+    const response = await api.get<LeaderboardEntry[]>('/gamification/leaderboard', {
+      params: { limit }
+    });
+    return response.data;
+  },
+
+  // Initialize achievements (admin)
+  async initAchievements(): Promise<{ created: number; updated: number }> {
+    const response = await api.post('/gamification/init-achievements');
+    return response.data;
+  },
+
+  // Check and award any earned achievements
+  async checkAchievements(): Promise<{ awarded: string[]; count: number }> {
+    const response = await api.post('/gamification/check-achievements');
+    return response.data;
+  }
+};
+
+// ============================================================
+// RECEIPTS API - OCR Receipt Scanning
+// ============================================================
+export const receiptsApi = {
+  // Check if OCR service is available
+  async getStatus(): Promise<OCRStatusResponse> {
+    const response = await api.get<OCRStatusResponse>('/receipts/status');
+    return response.data;
+  },
+
+  // Scan a receipt image
+  async scan(file: File): Promise<ReceiptScanResult> {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const response = await api.post<ReceiptScanResult>('/receipts/scan', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+      timeout: 60000, // 60 seconds for OCR processing
+    });
+    return response.data;
+  },
+
+  // Create a transaction from scanned receipt data
+  async createTransaction(data: ReceiptCreateRequest): Promise<ReceiptCreateResponse> {
+    const response = await api.post<ReceiptCreateResponse>('/receipts/create', data);
+    return response.data;
+  },
+
+  // Scan and optionally create transaction in one step
+  async scanAndCreate(file: File, tag?: string, autoCreate: boolean = false): Promise<ReceiptCreateResponse> {
+    const formData = new FormData();
+    formData.append('file', file);
+    if (tag) formData.append('tag', tag);
+    formData.append('auto_create', autoCreate.toString());
+
+    const response = await api.post<ReceiptCreateResponse>('/receipts/scan-and-create', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+      timeout: 60000, // 60 seconds for OCR processing
+    });
+    return response.data;
+  }
+};
+
+// ============================================================
+// PDF EXPORT API - Monthly Report Generation
+// ============================================================
+export interface PDFPreviewData {
+  month: string;
+  summary: Record<string, any>;
+  tags_summary: Record<string, any>;
+  top_transactions: Array<{ date: string; label: string; amount: number }>;
+  pdf_ready: boolean;
+}
+
+export const pdfExportApi = {
+  // Get preview data for PDF report
+  async preview(month: string): Promise<PDFPreviewData> {
+    const response = await api.get<PDFPreviewData>(`/export/pdf/preview/${month}`);
+    return response.data;
+  },
+
+  // Download monthly PDF report
+  async downloadMonthly(month: string): Promise<Blob> {
+    const token = localStorage.getItem("auth_token");
+    const tokenType = localStorage.getItem("token_type") || "Bearer";
+
+    const response = await fetch(`${API_BASE}/export/pdf/monthly/${month}`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `${tokenType} ${token}`,
+      },
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ detail: 'Erreur lors du téléchargement' }));
+      throw new Error(error.detail || 'Erreur lors du téléchargement du PDF');
+    }
+
+    return response.blob();
+  },
+
+  // Helper to trigger download in browser
+  async downloadAndSave(month: string): Promise<void> {
+    const blob = await this.downloadMonthly(month);
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `budget_famille_${month}.pdf`;
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(a);
   }
 };

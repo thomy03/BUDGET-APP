@@ -75,8 +75,10 @@ export const ExpensesDrillDown: React.FC<ExpensesDrillDownProps> = ({
       // params.append('expense_type', type.toUpperCase());
       
       const response = await api.get(`/transactions?${params.toString()}`);
-      const transactions = response.data || [];
-      
+      // L'API retourne maintenant un objet paginé { items: [...], total, page, ... }
+      const transactionsData = response.data || {};
+      const transactions = transactionsData.items || transactionsData || [];
+
       // Regrouper les transactions par tag
       const tagGroups: Record<string, { transactions: any[], total: number, count: number }> = {};
       
@@ -151,8 +153,10 @@ export const ExpensesDrillDown: React.FC<ExpensesDrillDownProps> = ({
       }
       
       const response = await api.get(`/transactions?${params.toString()}`);
-      const allTransactions = response.data || [];
-      
+      // L'API retourne maintenant un objet paginé { items: [...], total, page, ... }
+      const transactionsData = response.data || {};
+      const allTransactions = transactionsData.items || transactionsData || [];
+
       // Filtrer les transactions pour ce tag spécifique
       const filteredTransactions = allTransactions.filter((tx: any) => {
         // Exclure les transactions marquées comme exclues OU qui ne sont pas des dépenses

@@ -1,7 +1,25 @@
 'use client';
 
 import { useState, useCallback, useMemo } from 'react';
-import { api, Tx } from '../lib/api';
+import { api, Tx, PaginatedResponse, transactionsApi } from '../lib/api';
+
+// Pagination metadata type
+interface PaginationMeta {
+  total: number;
+  page: number;
+  limit: number;
+  pages: number;
+  hasNext: boolean;
+  hasPrev: boolean;
+}
+
+// Global stats for all transactions in the month (not just current page)
+interface GlobalStats {
+  totalExpenses: number;
+  totalIncome: number;
+  netBalance: number;
+  totalCount: number;
+}
 
 interface UseTransactionsReturn {
   rows: Tx[];
@@ -23,6 +41,13 @@ interface UseTransactionsReturn {
     excludedCount: number;
     totalCount: number;
   };
+  // Global stats for ALL transactions in the month (not just current page)
+  globalStats: GlobalStats | null;
+  // Pagination
+  pagination: PaginationMeta;
+  setPage: (page: number) => void;
+  setLimit: (limit: number) => void;
+  // Actions
   refresh: (isAuthenticated: boolean, month: string | null) => Promise<void>;
   toggle: (id: number, exclude: boolean) => Promise<void>;
   saveTags: (id: number, tagsCSV: string) => Promise<void>;
@@ -41,6 +66,23 @@ export function useTransactions(): UseTransactionsReturn {
     pendingReview: number;
     processingTimeMs: number;
   } | null>(null);
+
+  // Global stats for all transactions in the month
+  const [globalStats, setGlobalStats] = useState<GlobalStats | null>(null);
+
+  // Pagination state
+  const [pagination, setPagination] = useState<PaginationMeta>({
+    total: 0,
+    page: 1,
+    limit: 50,
+    pages: 0,
+    hasNext: false,
+    hasPrev: false
+  });
+
+  // Current month for pagination changes
+  const [currentMonth, setCurrentMonth] = useState<string | null>(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   // Calculs des totaux
   const calculations = useMemo(() => {
@@ -69,27 +111,98 @@ export function useTransactions(): UseTransactionsReturn {
     };
   }, [rows]);
 
-  const refresh = useCallback(async (isAuthenticated: boolean, month: string | null) => {
-    if (!isAuthenticated || !month) {
-      console.log('🚫 Refresh skipped - Auth:', isAuthenticated, 'Month:', month);
+  // Internal refresh function that uses current pagination state
+  const loadTransactions = useCallback(async (auth: boolean, month: string, page: number, limit: number) => {
+    if (!auth || !month) {
+      console.log('🚫 Load skipped - Auth:', auth, 'Month:', month);
       return;
     }
-    
+
+    console.log(`🔄 Loading transactions for ${month} (page ${page}, limit ${limit})`);
+    try {
+      setLoading(true);
+      setError('');
+
+      // Use paginated API
+      const response = await transactionsApi.list(month, { page, limit });
+      console.log(`✅ Loaded ${response.items.length}/${response.total} transactions (page ${response.page}/${response.pages})`);
+
+      setRows(response.items);
+      setPagination({
+        total: response.total,
+        page: response.page,
+        limit: response.limit,
+        pages: response.pages,
+        hasNext: response.has_next,
+        hasPrev: response.has_prev
+      });
+
+      return response;
+    } catch (err) {
+      console.error('❌ Load error:', err);
+      setError('Erreur lors du chargement des transactions');
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const refresh = useCallback(async (authStatus: boolean, month: string | null) => {
+    if (!authStatus || !month) {
+      console.log('🚫 Refresh skipped - Auth:', authStatus, 'Month:', month);
+      return;
+    }
+
+    // Store for pagination changes
+    setCurrentMonth(month);
+    setIsAuthenticated(authStatus);
+
     console.log('🔄 Starting refresh for month:', month);
     try {
       setLoading(true);
       setError(''); // Clear any previous errors
-      
-      // 1. Charger les transactions
-      const response = await api.get<Tx[]>('/transactions', { params: { month } });
-      console.log('✅ Refresh successful - loaded', response.data.length, 'transactions');
-      setRows(response.data);
-      
+
+      // 1. Charger les transactions avec pagination ET les stats globales en parallele
+      const [response, allTransactionsRes] = await Promise.all([
+        transactionsApi.list(month, { page: pagination.page, limit: pagination.limit }),
+        // Charger TOUTES les transactions pour les stats globales (limit=500)
+        api.get(`/transactions?month=${month}&limit=500`).catch(() => ({ data: { items: [] } }))
+      ]);
+
+      console.log(`✅ Refresh successful - loaded ${response.items.length}/${response.total} transactions`);
+      setRows(response.items);
+      setPagination({
+        total: response.total,
+        page: response.page,
+        limit: response.limit,
+        pages: response.pages,
+        hasNext: response.has_next,
+        hasPrev: response.has_prev
+      });
+
+      // 1b. Calculer les stats globales depuis toutes les transactions
+      const allData = allTransactionsRes?.data || {};
+      const allTransactions = allData.items || allData || [];
+      const includedTx = allTransactions.filter((tx: any) => !tx.exclude);
+      const globalExpenses = includedTx
+        .filter((tx: any) => tx.amount < 0)
+        .reduce((sum: number, tx: any) => sum + Math.abs(tx.amount), 0);
+      const globalIncome = includedTx
+        .filter((tx: any) => tx.amount > 0)
+        .reduce((sum: number, tx: any) => sum + tx.amount, 0);
+
+      setGlobalStats({
+        totalExpenses: globalExpenses,
+        totalIncome: globalIncome,
+        netBalance: globalIncome - globalExpenses,
+        totalCount: allTransactions.length
+      });
+
       // 2. Auto-classification automatique en arrière-plan
-      if (response.data.length > 0) {
-        console.log('🤖 Starting auto-classification for', response.data.length, 'transactions');
+      if (response.items.length > 0) {
+        console.log('🤖 Starting auto-classification for', response.items.length, 'transactions');
         setAutoClassifying(true);
-        
+
         try {
           const autoClassifyResponse = await api.post('/expense-classification/transactions/auto-classify-on-load', {
             month: month,
@@ -97,9 +210,9 @@ export function useTransactions(): UseTransactionsReturn {
             limit: 200,
             include_classified: false
           });
-          
+
           console.log('🚀 Auto-classification completed:', autoClassifyResponse.data);
-          
+
           // Stocker les résultats de la classification
           setAutoClassificationResults({
             totalAnalyzed: autoClassifyResponse.data.total_analyzed,
@@ -107,14 +220,14 @@ export function useTransactions(): UseTransactionsReturn {
             pendingReview: autoClassifyResponse.data.pending_review,
             processingTimeMs: autoClassifyResponse.data.processing_time_ms
           });
-          
+
           // 3. Si des classifications ont été appliquées, recharger les transactions
           if (autoClassifyResponse.data.auto_applied > 0) {
             console.log(`✨ ${autoClassifyResponse.data.auto_applied} classifications applied - reloading transactions`);
-            const updatedResponse = await api.get<Tx[]>('/transactions', { params: { month } });
-            setRows(updatedResponse.data);
+            const updatedResponse = await transactionsApi.list(month, { page: pagination.page, limit: pagination.limit });
+            setRows(updatedResponse.items);
           }
-          
+
         } catch (classificationErr) {
           console.warn('⚠️ Auto-classification failed (non-critical):', classificationErr);
           // La classification échoue de manière non critique - les transactions sont quand même chargées
@@ -122,14 +235,30 @@ export function useTransactions(): UseTransactionsReturn {
           setAutoClassifying(false);
         }
       }
-      
+
     } catch (err) {
       console.error('❌ Refresh error:', err);
       setError('Erreur lors du chargement des transactions');
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [pagination.page, pagination.limit]);
+
+  // Pagination controls
+  const setPage = useCallback((newPage: number) => {
+    if (newPage < 1 || newPage > pagination.pages) return;
+    setPagination(prev => ({ ...prev, page: newPage }));
+    if (currentMonth && isAuthenticated) {
+      loadTransactions(isAuthenticated, currentMonth, newPage, pagination.limit);
+    }
+  }, [currentMonth, isAuthenticated, pagination.pages, pagination.limit, loadTransactions]);
+
+  const setLimit = useCallback((newLimit: number) => {
+    setPagination(prev => ({ ...prev, limit: newLimit, page: 1 }));
+    if (currentMonth && isAuthenticated) {
+      loadTransactions(isAuthenticated, currentMonth, 1, newLimit);
+    }
+  }, [currentMonth, isAuthenticated, loadTransactions]);
 
   const toggle = async (id: number, exclude: boolean) => {
     try {
@@ -230,6 +359,13 @@ export function useTransactions(): UseTransactionsReturn {
     autoClassifying,
     autoClassificationResults,
     calculations,
+    // Global stats for ALL transactions in the month
+    globalStats,
+    // Pagination
+    pagination,
+    setPage,
+    setLimit,
+    // Actions
     refresh,
     toggle,
     saveTags,

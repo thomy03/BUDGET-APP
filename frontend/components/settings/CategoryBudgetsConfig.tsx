@@ -193,44 +193,42 @@ export function CategoryBudgetsConfig({ currentMonth }: CategoryBudgetsConfigPro
   const totalBudgeted = budgets.reduce((sum, b) => sum + b.budget_amount, 0);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 md:space-y-6">
       {/* Header avec selection du mois */}
       <Card>
-        <div className="p-6">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+        <div className="p-3 xs:p-4 md:p-6">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 xs:gap-4 mb-4">
+            <div className="min-w-0 flex-1">
+              <h2 className="text-base xs:text-lg md:text-xl font-semibold text-gray-900 dark:text-white">
                 💰 Budgets par Categorie
               </h2>
-              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+              <p className="text-xs xs:text-sm text-gray-600 dark:text-gray-400 mt-1 line-clamp-2">
                 Definissez des objectifs de depenses par tag/categorie
               </p>
             </div>
-            <div className="flex items-center gap-3">
-              <div className="flex items-center gap-2">
-                <label className="text-sm text-gray-600 dark:text-gray-400">Mois:</label>
-                <input
-                  type="month"
-                  value={selectedMonth}
-                  onChange={(e) => setSelectedMonth(e.target.value)}
-                  className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
+            <div className="flex items-center gap-2">
+              <label className="text-xs xs:text-sm text-gray-600 dark:text-gray-400 flex-shrink-0">Mois:</label>
+              <input
+                type="month"
+                value={selectedMonth}
+                onChange={(e) => setSelectedMonth(e.target.value)}
+                className="px-2 xs:px-3 py-2 text-sm md:text-base border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 min-h-[44px]"
+              />
             </div>
           </div>
 
           {/* Resume */}
-          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-lg p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">Budget total planifie</p>
-                <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-lg p-3 xs:p-4">
+            <div className="flex items-center justify-between gap-2">
+              <div className="min-w-0 flex-1">
+                <p className="text-xs xs:text-sm text-gray-600 dark:text-gray-400">Budget total planifie</p>
+                <p className="text-lg xs:text-xl md:text-2xl font-bold text-blue-600 dark:text-blue-400 truncate">
                   {totalBudgeted.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
                 </p>
               </div>
-              <div className="text-right">
-                <p className="text-sm text-gray-600 dark:text-gray-400">{budgets.length} categories</p>
-                <p className="text-lg font-semibold text-gray-700 dark:text-gray-300">budgetees</p>
+              <div className="text-right flex-shrink-0">
+                <p className="text-xs xs:text-sm text-gray-600 dark:text-gray-400">{budgets.length} categories</p>
+                <p className="text-sm xs:text-base md:text-lg font-semibold text-gray-700 dark:text-gray-300">budgetees</p>
               </div>
             </div>
           </div>
@@ -239,23 +237,23 @@ export function CategoryBudgetsConfig({ currentMonth }: CategoryBudgetsConfigPro
 
       {/* Alerts */}
       {error && (
-        <Alert variant="error" className="mb-4">
+        <Alert variant="error" className="mb-3 xs:mb-4">
           {error}
-          <button onClick={() => setError('')} className="ml-2 text-red-800 hover:text-red-900">×</button>
+          <button onClick={() => setError('')} className="ml-2 text-red-800 hover:text-red-900 min-h-[44px] min-w-[44px]">×</button>
         </Alert>
       )}
       {success && (
-        <Alert variant="success" className="mb-4">
+        <Alert variant="success" className="mb-3 xs:mb-4">
           {success}
-          <button onClick={() => setSuccess('')} className="ml-2 text-green-800 hover:text-green-900">×</button>
+          <button onClick={() => setSuccess('')} className="ml-2 text-green-800 hover:text-green-900 min-h-[44px] min-w-[44px]">×</button>
         </Alert>
       )}
 
       {/* Actions */}
-      <div className="flex gap-3">
+      <div className="flex flex-col xs:flex-row gap-2 xs:gap-3">
         <Button
           onClick={() => setShowNewForm(!showNewForm)}
-          className="bg-blue-600 hover:bg-blue-700 text-white"
+          className="w-full xs:w-auto bg-blue-600 hover:bg-blue-700 text-white min-h-[44px] text-sm xs:text-base"
         >
           + Nouveau budget
         </Button>
@@ -263,7 +261,7 @@ export function CategoryBudgetsConfig({ currentMonth }: CategoryBudgetsConfigPro
           onClick={loadSuggestions}
           variant="outline"
           disabled={loadingSuggestions}
-          className="flex items-center gap-2"
+          className="w-full xs:w-auto flex items-center justify-center gap-2 min-h-[44px] text-sm xs:text-base"
         >
           {loadingSuggestions ? <LoadingSpinner size="sm" /> : '🤖'}
           Suggestions IA
@@ -273,21 +271,22 @@ export function CategoryBudgetsConfig({ currentMonth }: CategoryBudgetsConfigPro
       {/* Formulaire nouveau budget */}
       {showNewForm && (
         <Card>
-          <div className="p-6">
-            <h3 className="text-lg font-semibold mb-4">Nouveau budget</h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="p-3 xs:p-4 md:p-6">
+            <h3 className="text-base xs:text-lg font-semibold mb-3 xs:mb-4">Nouveau budget</h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 xs:gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                <label className="block text-xs xs:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Categorie / Tag
                 </label>
                 <Input
                   value={newBudget.category || ''}
                   onChange={(e) => setNewBudget({ ...newBudget, category: e.target.value })}
                   placeholder="ex: courses, transport..."
+                  className="min-h-[44px]"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                <label className="block text-xs xs:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Budget mensuel (EUR)
                 </label>
                 <Input
@@ -297,10 +296,11 @@ export function CategoryBudgetsConfig({ currentMonth }: CategoryBudgetsConfigPro
                   value={newBudget.budget_amount || ''}
                   onChange={(e) => setNewBudget({ ...newBudget, budget_amount: parseFloat(e.target.value) })}
                   placeholder="500"
+                  className="min-h-[44px]"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                <label className="block text-xs xs:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Seuil d'alerte (%)
                 </label>
                 <Input
@@ -310,30 +310,33 @@ export function CategoryBudgetsConfig({ currentMonth }: CategoryBudgetsConfigPro
                   value={(newBudget.alert_threshold || 0.8) * 100}
                   onChange={(e) => setNewBudget({ ...newBudget, alert_threshold: parseFloat(e.target.value) / 100 })}
                   placeholder="80"
+                  className="min-h-[44px]"
                 />
               </div>
             </div>
-            <div className="mt-4">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <div className="mt-3 xs:mt-4">
+              <label className="block text-xs xs:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Notes (optionnel)
               </label>
               <Input
                 value={newBudget.notes || ''}
                 onChange={(e) => setNewBudget({ ...newBudget, notes: e.target.value })}
                 placeholder="Notes sur ce budget..."
+                className="min-h-[44px]"
               />
             </div>
-            <div className="flex gap-3 mt-4">
+            <div className="flex flex-col xs:flex-row gap-2 xs:gap-3 mt-3 xs:mt-4">
               <Button
                 onClick={handleCreateBudget}
                 disabled={saving}
-                className="bg-green-600 hover:bg-green-700 text-white"
+                className="w-full xs:w-auto bg-green-600 hover:bg-green-700 text-white min-h-[44px] text-sm xs:text-base"
               >
                 {saving ? 'Creation...' : 'Creer'}
               </Button>
               <Button
                 onClick={() => { setShowNewForm(false); setNewBudget({}); }}
                 variant="outline"
+                className="w-full xs:w-auto min-h-[44px] text-sm xs:text-base"
               >
                 Annuler
               </Button>
@@ -345,23 +348,23 @@ export function CategoryBudgetsConfig({ currentMonth }: CategoryBudgetsConfigPro
       {/* Suggestions IA */}
       {showSuggestions && suggestions.length > 0 && (
         <Card>
-          <div className="p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+          <div className="p-3 xs:p-4 md:p-6">
+            <div className="flex flex-col xs:flex-row xs:items-center xs:justify-between gap-3 xs:gap-4 mb-4">
+              <h3 className="text-base xs:text-lg font-semibold text-gray-900 dark:text-white">
                 🤖 Suggestions basees sur l'historique
               </h3>
-              <div className="flex gap-2">
+              <div className="flex flex-col xs:flex-row gap-2">
                 <Button
                   onClick={handleApplyAllSuggestions}
                   disabled={saving}
-                  className="bg-purple-600 hover:bg-purple-700 text-white text-sm"
+                  className="w-full xs:w-auto bg-purple-600 hover:bg-purple-700 text-white text-xs xs:text-sm min-h-[44px]"
                 >
                   Appliquer toutes (≥50EUR)
                 </Button>
                 <Button
                   onClick={() => setShowSuggestions(false)}
                   variant="outline"
-                  className="text-sm"
+                  className="w-full xs:w-auto text-xs xs:text-sm min-h-[44px]"
                 >
                   Fermer
                 </Button>
@@ -373,41 +376,41 @@ export function CategoryBudgetsConfig({ currentMonth }: CategoryBudgetsConfigPro
                 return (
                   <div
                     key={idx}
-                    className={`flex items-center justify-between p-3 rounded-lg border ${
+                    className={`flex flex-col xs:flex-row xs:items-center xs:justify-between gap-3 p-3 rounded-lg border ${
                       alreadyExists
                         ? 'bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700 opacity-60'
                         : 'bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700 hover:bg-blue-50 dark:hover:bg-blue-900/20'
                     }`}
                   >
-                    <div className="flex items-center gap-3">
-                      <span className="text-lg">{getTrendIcon(suggestion.trend)}</span>
-                      <div>
-                        <p className="font-medium text-gray-900 dark:text-white capitalize">
+                    <div className="flex items-center gap-2 xs:gap-3 min-w-0 flex-1">
+                      <span className="text-base xs:text-lg flex-shrink-0">{getTrendIcon(suggestion.trend)}</span>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm xs:text-base font-medium text-gray-900 dark:text-white capitalize truncate">
                           {suggestion.category}
                         </p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                        <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-1">
                           Moy. 3 mois: {suggestion.average_3_months.toFixed(0)}EUR |
                           Min: {suggestion.min_amount.toFixed(0)}EUR |
                           Max: {suggestion.max_amount.toFixed(0)}EUR
                         </p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-3">
-                      <div className="text-right">
-                        <p className="font-bold text-blue-600 dark:text-blue-400">
+                    <div className="flex items-center justify-between xs:justify-end gap-2 xs:gap-3">
+                      <div className="text-left xs:text-right">
+                        <p className="text-sm xs:text-base font-bold text-blue-600 dark:text-blue-400">
                           {suggestion.suggested_amount.toFixed(0)}EUR
                         </p>
                         <p className="text-xs text-gray-500">suggere</p>
                       </div>
                       {alreadyExists ? (
-                        <span className="px-3 py-1 bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400 rounded text-sm">
+                        <span className="px-2 xs:px-3 py-1 bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400 rounded text-xs xs:text-sm min-h-[44px] flex items-center">
                           Existe
                         </span>
                       ) : (
                         <Button
                           onClick={() => handleApplySuggestion(suggestion)}
                           disabled={saving}
-                          className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-sm"
+                          className="px-2 xs:px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs xs:text-sm min-h-[44px]"
                         >
                           Ajouter
                         </Button>
@@ -423,27 +426,27 @@ export function CategoryBudgetsConfig({ currentMonth }: CategoryBudgetsConfigPro
 
       {/* Liste des budgets */}
       <Card>
-        <div className="p-6">
-          <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">
+        <div className="p-3 xs:p-4 md:p-6">
+          <h3 className="text-base xs:text-lg font-semibold mb-3 xs:mb-4 text-gray-900 dark:text-white">
             Budgets pour {new Date(selectedMonth + '-01').toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })}
           </h3>
 
           {loading ? (
-            <div className="flex justify-center py-8">
+            <div className="flex justify-center py-6 xs:py-8">
               <LoadingSpinner text="Chargement des budgets..." />
             </div>
           ) : budgets.length === 0 ? (
-            <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-              <p className="text-4xl mb-3">📊</p>
-              <p className="mb-2">Aucun budget defini pour ce mois</p>
-              <p className="text-sm">Utilisez les suggestions IA ou creez un nouveau budget</p>
+            <div className="text-center py-6 xs:py-8 text-gray-500 dark:text-gray-400">
+              <p className="text-3xl xs:text-4xl mb-2 xs:mb-3">📊</p>
+              <p className="mb-2 text-sm xs:text-base">Aucun budget defini pour ce mois</p>
+              <p className="text-xs xs:text-sm">Utilisez les suggestions IA ou creez un nouveau budget</p>
             </div>
           ) : (
             <div className="space-y-3">
               {budgets.map((budget) => (
                 <div
                   key={budget.id}
-                  className={`border rounded-lg p-4 transition-all ${
+                  className={`border rounded-lg p-3 xs:p-4 transition-all ${
                     budget.is_active
                       ? 'bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700 hover:shadow-sm'
                       : 'bg-gray-50 dark:bg-gray-800 border-gray-100 dark:border-gray-700 opacity-60'
@@ -452,9 +455,9 @@ export function CategoryBudgetsConfig({ currentMonth }: CategoryBudgetsConfigPro
                   {editingBudget?.id === budget.id ? (
                     // Mode edition
                     <div className="space-y-3">
-                      <div className="grid grid-cols-2 gap-4">
+                      <div className="grid grid-cols-1 xs:grid-cols-2 gap-3 xs:gap-4">
                         <div>
-                          <label className="block text-sm font-medium mb-1">Budget (EUR)</label>
+                          <label className="block text-xs xs:text-sm font-medium mb-1">Budget (EUR)</label>
                           <Input
                             type="number"
                             value={editingBudget.budget_amount}
@@ -462,10 +465,11 @@ export function CategoryBudgetsConfig({ currentMonth }: CategoryBudgetsConfigPro
                               ...editingBudget,
                               budget_amount: parseFloat(e.target.value)
                             })}
+                            className="min-h-[44px]"
                           />
                         </div>
                         <div>
-                          <label className="block text-sm font-medium mb-1">Seuil alerte (%)</label>
+                          <label className="block text-xs xs:text-sm font-medium mb-1">Seuil alerte (%)</label>
                           <Input
                             type="number"
                             min="0"
@@ -475,21 +479,22 @@ export function CategoryBudgetsConfig({ currentMonth }: CategoryBudgetsConfigPro
                               ...editingBudget,
                               alert_threshold: parseFloat(e.target.value) / 100
                             })}
+                            className="min-h-[44px]"
                           />
                         </div>
                       </div>
-                      <div className="flex gap-2">
+                      <div className="flex flex-col xs:flex-row gap-2">
                         <Button
                           onClick={handleUpdateBudget}
                           disabled={saving}
-                          className="bg-green-600 hover:bg-green-700 text-white text-sm"
+                          className="w-full xs:w-auto bg-green-600 hover:bg-green-700 text-white text-xs xs:text-sm min-h-[44px]"
                         >
                           Sauver
                         </Button>
                         <Button
                           onClick={() => setEditingBudget(null)}
                           variant="outline"
-                          className="text-sm"
+                          className="w-full xs:w-auto text-xs xs:text-sm min-h-[44px]"
                         >
                           Annuler
                         </Button>
@@ -497,26 +502,26 @@ export function CategoryBudgetsConfig({ currentMonth }: CategoryBudgetsConfigPro
                     </div>
                   ) : (
                     // Mode affichage
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
-                          <span className="text-blue-600 dark:text-blue-400 font-bold">
+                    <div className="flex flex-col xs:flex-row xs:items-center xs:justify-between gap-3">
+                      <div className="flex items-center gap-2 xs:gap-3 min-w-0 flex-1">
+                        <div className="w-8 h-8 xs:w-10 xs:h-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center flex-shrink-0">
+                          <span className="text-sm xs:text-base text-blue-600 dark:text-blue-400 font-bold">
                             {budget.category.charAt(0).toUpperCase()}
                           </span>
                         </div>
-                        <div>
-                          <h4 className="font-medium text-gray-900 dark:text-white capitalize">
+                        <div className="min-w-0 flex-1">
+                          <h4 className="text-sm xs:text-base font-medium text-gray-900 dark:text-white capitalize truncate">
                             {budget.category}
                           </h4>
                           {budget.notes && (
-                            <p className="text-xs text-gray-500 dark:text-gray-400">{budget.notes}</p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-1">{budget.notes}</p>
                           )}
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-4">
-                        <div className="text-right">
-                          <p className="font-bold text-gray-900 dark:text-white">
+                      <div className="flex items-center justify-between xs:justify-end gap-2 xs:gap-4">
+                        <div className="text-left xs:text-right">
+                          <p className="text-sm xs:text-base font-bold text-gray-900 dark:text-white">
                             {budget.budget_amount.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
                           </p>
                           <p className="text-xs text-gray-500 dark:text-gray-400">
@@ -524,18 +529,18 @@ export function CategoryBudgetsConfig({ currentMonth }: CategoryBudgetsConfigPro
                           </p>
                         </div>
 
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1 xs:gap-2 flex-shrink-0">
                           <Button
                             onClick={() => setEditingBudget(budget)}
                             variant="outline"
-                            className="px-2 py-1 text-sm"
+                            className="px-2 py-1 text-xs xs:text-sm min-h-[44px] min-w-[44px]"
                           >
                             ✏️
                           </Button>
                           <Button
                             onClick={() => handleDeleteBudget(budget.id)}
                             variant="outline"
-                            className="px-2 py-1 text-sm text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
+                            className="px-2 py-1 text-xs xs:text-sm text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 min-h-[44px] min-w-[44px]"
                           >
                             🗑️
                           </Button>

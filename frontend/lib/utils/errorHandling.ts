@@ -182,10 +182,10 @@ export function isServerError(error: unknown): boolean {
 
 export function shouldRetry(error: unknown): boolean {
   const errorInfo = handleError(error);
-  
+
   // Retry on network errors and 5xx server errors
-  return errorInfo.type === 'network' || 
-         (errorInfo.statusCode && errorInfo.statusCode >= 500);
+  return errorInfo.type === 'network' ||
+         (errorInfo.statusCode !== undefined && errorInfo.statusCode >= 500);
 }
 
 export function getRetryDelay(attemptNumber: number): number {

@@ -24,7 +24,7 @@ router = APIRouter(
 from models.database import Transaction, CategoryBudget
 from models.schemas import (
     KPISummary, MonthlyTrend, CategoryBreakdown, AnomalyDetection,
-    SpendingPattern, VarianceAnalysisResponse, GlobalVariance, CategoryVariance
+    SpendingPattern, VarianceAnalysisResponse, GlobalVariance, CategoryVariance, VarianceAlert
 )
 from services.calculations import (
     calculate_kpi_summary, calculate_monthly_trends, calculate_category_breakdown,
@@ -340,12 +340,12 @@ def get_variance_analysis(
             else:
                 status = "over_budget"
                 categories_over_budget += 1
-                alerts.append({
-                    "type": "budget_exceeded",
-                    "category": category,
-                    "message": f"Budget '{category}' depasse de {variance:.2f}EUR ({variance_pct:.1f}%)",
-                    "severity": "critical" if variance_pct > 50 else "warning"
-                })
+                alerts.append(VarianceAlert(
+                    type="budget_exceeded",
+                    category=category,
+                    message=f"Budget '{category}' depasse de {variance:.2f}EUR ({variance_pct:.1f}%)",
+                    severity="critical" if variance_pct > 50 else "warning"
+                ))
 
             # Get top 3 transactions
             cat_transactions = transactions_by_category.get(category, [])

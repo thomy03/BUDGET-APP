@@ -37,7 +37,7 @@ export interface CleanDashboardData {
         member2: number;
       };
       expenses: {
-        total: number;  // Dépenses nettes (dépenses - avoirs)
+        total: number;  // Dépenses totales (part de chaque membre)
         member1: number;
         member2: number;
       };
@@ -84,17 +84,20 @@ export const useCleanDashboard = (month: string, isAuthenticated: boolean) => {
       setError(null);
 
       // Chargement parallèle des données essentielles + transactions réelles
+      // IMPORTANT: limit=500 pour récupérer TOUTES les transactions du mois (défaut API = 50)
       const [configResponse, provisionsResponse, summaryResponse, transactionsResponse] = await Promise.all([
         api.get('/config'),
         api.get('/custom-provisions'),
         api.get(`/summary?month=${month}`),
-        api.get(`/transactions?month=${month}`)  // Ajout: transactions réelles
+        api.get(`/transactions?month=${month}&limit=500`)  // Récupérer toutes les transactions
       ]);
 
       const config = configResponse.data;
       const provisions = provisionsResponse.data;
       const summary = summaryResponse.data;
-      const transactions = transactionsResponse.data || [];
+      // L'API retourne maintenant un objet paginé { items: [...], total, page, ... }
+      const transactionsData = transactionsResponse.data || {};
+      const transactions = transactionsData.items || transactionsData || [];
       // Pour l'instant, on utilise une valeur par défaut pour le solde
       const balance = { account_balance: 0 };
 
@@ -103,14 +106,11 @@ export const useCleanDashboard = (month: string, isAuthenticated: boolean) => {
       const rev2Gross = config.rev2 || 0;
       const tax1 = (config.tax_rate1 || 0) / 100;
       const tax2 = (config.tax_rate2 || 0) / 100;
-      
+
       const rev1Net = rev1Gross * (1 - tax1);
       const rev2Net = rev2Gross * (1 - tax2);
       const totalGrossRevenue = rev1Gross + rev2Gross;
       const totalNetRevenue = rev1Net + rev2Net;
-
-      // Calculs des provisions avec montants actuels
-      const totalProvisions = summary.provisions_total || 0;
 
       // Calcul du mois actuel pour la progression annuelle
       const currentMonth = new Date(month).getMonth() + 1; // 1-12
@@ -120,7 +120,7 @@ export const useCleanDashboard = (month: string, isAuthenticated: boolean) => {
         const monthlyAmount = p.monthly_amount || p.current_amount || 0;
         const targetAmount = p.target_amount || 0;
         const totalProvisionedSinceJanuary = monthlyAmount * currentMonth; // Total depuis janvier
-        
+
         return {
           id: p.id,
           name: p.name,
@@ -129,10 +129,14 @@ export const useCleanDashboard = (month: string, isAuthenticated: boolean) => {
           percentage: p.percentage,
           progress: targetAmount > 0 ? (totalProvisionedSinceJanuary / targetAmount) * 100 : monthProgress * 100,
           category: p.category || 'Autre',
-          totalProvisionedSinceJanuary: totalProvisionedSinceJanuary, // Nouveau champ
-          monthProgress: monthProgress * 100 // Nouveau champ pour affichage
+          totalProvisionedSinceJanuary: totalProvisionedSinceJanuary,
+          monthProgress: monthProgress * 100
         };
       });
+
+      // CORRECTION: Calculer totalProvisions depuis les items chargés pour garantir la cohérence
+      // Avant: utilisait summary.provisions_total qui pouvait différer de /custom-provisions
+      const totalProvisions = provisionItems.reduce((sum, p) => sum + p.currentAmount, 0);
 
       // ===== CORRECTION: Calcul des dépenses depuis les TRANSACTIONS RÉELLES =====
       // Filtrer les transactions: montant négatif (dépenses) ET non exclues
@@ -173,9 +177,9 @@ export const useCleanDashboard = (month: string, isAuthenticated: boolean) => {
       const currentAccountBalance = balance.account_balance || 0;
 
       // **CALCUL CLEF** : Montant à provisionner par la famille
-      // Formule: Provisions + Dépenses - Avoirs (crédits) - Solde compte = Montant à apporter
-      // Les avoirs réduisent ce que la famille doit provisionner
-      const familyProvisionNeeded = totalProvisions + totalExpenses - totalCredits - currentAccountBalance;
+      // Formule: Provisions + Dépenses = Total que la famille doit financer
+      // Note: Les crédits sur le compte (salaires) sont la FAÇON dont la famille finance, pas une réduction
+      const familyProvisionNeeded = totalProvisions + totalExpenses;
       
       // Répartition du montant selon les revenus nets
       const netRatio1 = totalNetRevenue > 0 ? rev1Net / totalNetRevenue : 0.5;
@@ -189,10 +193,10 @@ export const useCleanDashboard = (month: string, isAuthenticated: boolean) => {
       const provisionsMember1 = totalProvisions * netRatio1;
       const provisionsMember2 = totalProvisions * netRatio2;
 
-      // Dépenses nettes par membre (dépenses - avoirs, réparties selon le ratio)
-      const netExpenses = totalExpenses - totalCredits;  // Dépenses nettes après avoirs
-      const expensesMember1 = netExpenses * netRatio1;
-      const expensesMember2 = netExpenses * netRatio2;
+      // Dépenses par membre (réparties selon le ratio des revenus nets)
+      // On utilise totalExpenses directement (pas netExpenses) car les crédits sont les salaires
+      const expensesMember1 = totalExpenses * netRatio1;
+      const expensesMember2 = totalExpenses * netRatio2;
 
       // Statut de la situation familiale
       const getFamilyStatus = (needed: number, revenue: number): 'surplus' | 'balanced' | 'deficit' => {
@@ -246,7 +250,7 @@ export const useCleanDashboard = (month: string, isAuthenticated: boolean) => {
               member2: provisionsMember2
             },
             expenses: {
-              total: netExpenses,  // Dépenses nettes (dépenses - avoirs)
+              total: totalExpenses,  // Dépenses totales (transactions négatives non exclues)
               member1: expensesMember1,
               member2: expensesMember2
             }

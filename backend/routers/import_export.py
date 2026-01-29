@@ -29,6 +29,274 @@ from utils.core_functions import (
 )
 from export_engine import ExportManager, ExportRequest, ExportFilters
 
+
+# =============================================================================
+# PREVIEW IMPORT - Prévisualisation avant import définitif
+# =============================================================================
+
+from pydantic import BaseModel, Field
+from typing import Dict, Any
+
+
+class ImportPreviewTransaction(BaseModel):
+    """Transaction preview with validation status"""
+    row_number: int
+    date: Optional[str]
+    label: Optional[str]
+    amount: Optional[float]
+    month: Optional[str]
+    is_valid: bool = True
+    validation_errors: List[str] = []
+
+
+class ImportPreviewResponse(BaseModel):
+    """Response for import preview"""
+    success: bool
+    filename: str
+    file_type: str
+    total_rows: int
+    valid_rows: int
+    invalid_rows: int
+    months_detected: List[str]
+    months_summary: Dict[str, int]  # {month: transaction_count}
+    sample_transactions: List[ImportPreviewTransaction]
+    potential_duplicates: List[Dict[str, Any]]
+    validation_warnings: List[str]
+    columns_detected: List[str]
+    ready_to_import: bool
+
+
+@router.post("/import/preview", response_model=ImportPreviewResponse)
+def preview_import_file(
+    file: UploadFile = File(...),
+    sample_size: int = 10,
+    current_user = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Prévisualiser un fichier CSV/XLSX avant import.
+
+    Cette opération analyse le fichier SANS modifier la base de données.
+    Permet de vérifier :
+    - Structure du fichier et colonnes détectées
+    - Mois présents et nombre de transactions par mois
+    - Validation des données (dates, montants)
+    - Détection des doublons potentiels avec les données existantes
+    - Aperçu des premières transactions
+
+    **Paramètres :**
+    - file: Fichier CSV ou XLSX à prévisualiser
+    - sample_size: Nombre de transactions à afficher en aperçu (défaut: 10)
+
+    **Réponse :**
+    - ready_to_import: Indique si le fichier peut être importé
+    - months_summary: Nombre de transactions par mois détecté
+    - potential_duplicates: Transactions qui existent déjà en base
+    - validation_warnings: Avertissements (lignes invalides, etc.)
+    """
+    logger.info(f"Preview import fichier '{file.filename}' par utilisateur: {current_user.username}")
+
+    try:
+        # Validation sécurité
+        if not validate_file_security(file):
+            raise HTTPException(status_code=400, detail="Fichier non autorisé ou dangereux")
+
+        # Detect file type
+        file_ext = file.filename.lower().rsplit('.', 1)[-1] if '.' in file.filename else ''
+
+        if file_ext in ('xlsx', 'xls'):
+            # Use smart parser for Excel files
+            from services.smart_parser import get_smart_parser
+            content = file.file.read()
+            file.file.seek(0)
+            parser = get_smart_parser()
+            result = parser.parse(content, file.filename)
+
+            if not result.success or not result.transactions:
+                return ImportPreviewResponse(
+                    success=False,
+                    filename=file.filename,
+                    file_type="xlsx",
+                    total_rows=0,
+                    valid_rows=0,
+                    invalid_rows=0,
+                    months_detected=[],
+                    months_summary={},
+                    sample_transactions=[],
+                    potential_duplicates=[],
+                    validation_warnings=[f"Erreur parsing XLSX: {result.errors}"],
+                    columns_detected=[],
+                    ready_to_import=False
+                )
+
+            # Convert to DataFrame for unified processing
+            data = []
+            for tx in result.transactions:
+                data.append({
+                    'date': tx.date_op,
+                    'label': tx.label,
+                    'amount': tx.amount,
+                    'month': tx.date_op.strftime("%Y-%m") if tx.date_op else None
+                })
+            df = pd.DataFrame(data)
+            columns_detected = list(df.columns)
+        else:
+            # Lecture robuste du CSV
+            df = robust_read_csv(file)
+            columns_detected = list(df.columns)
+
+        # Détection automatique des colonnes
+        date_col = None
+        label_col = None
+        amount_col = None
+
+        for col in df.columns:
+            col_lower = col.lower()
+            if 'date' in col_lower and date_col is None:
+                date_col = col
+            elif any(x in col_lower for x in ['libel', 'label', 'description', 'libell']) and label_col is None:
+                label_col = col
+            elif any(x in col_lower for x in ['montant', 'amount', 'credit', 'debit']) and amount_col is None:
+                amount_col = col
+
+        # Process rows and detect months
+        months_summary: Dict[str, int] = {}
+        sample_transactions: List[ImportPreviewTransaction] = []
+        validation_warnings: List[str] = []
+        valid_rows = 0
+        invalid_rows = 0
+
+        for idx, row in df.iterrows():
+            try:
+                # Extract values with fallbacks
+                date_val = str(row.get(date_col, '')) if date_col else None
+                label_val = str(row.get(label_col, '')) if label_col else None
+                amount_val = row.get(amount_col) if amount_col else None
+
+                # Try to parse amount
+                if amount_val is not None:
+                    if isinstance(amount_val, str):
+                        amount_val = float(amount_val.replace(',', '.').replace(' ', ''))
+                    else:
+                        amount_val = float(amount_val)
+
+                # Detect month from date
+                month_val = None
+                if date_val:
+                    import re
+                    # Try YYYY-MM-DD format
+                    match = re.search(r'(\d{4})-(\d{2})', date_val)
+                    if match:
+                        month_val = f"{match.group(1)}-{match.group(2)}"
+                    else:
+                        # Try DD/MM/YYYY format
+                        match = re.search(r'(\d{2})/(\d{2})/(\d{4})', date_val)
+                        if match:
+                            month_val = f"{match.group(3)}-{match.group(2)}"
+
+                # Track months
+                if month_val:
+                    months_summary[month_val] = months_summary.get(month_val, 0) + 1
+
+                # Validation
+                errors = []
+                is_valid = True
+
+                if not date_val or date_val == 'nan':
+                    errors.append("Date manquante")
+                    is_valid = False
+                if not label_val or label_val == 'nan':
+                    errors.append("Libellé manquant")
+                    is_valid = False
+                if amount_val is None or pd.isna(amount_val):
+                    errors.append("Montant invalide")
+                    is_valid = False
+
+                if is_valid:
+                    valid_rows += 1
+                else:
+                    invalid_rows += 1
+                    if len(validation_warnings) < 10:
+                        validation_warnings.append(f"Ligne {idx + 2}: {', '.join(errors)}")
+
+                # Add to samples
+                if len(sample_transactions) < sample_size:
+                    sample_transactions.append(ImportPreviewTransaction(
+                        row_number=idx + 2,  # +2 for header + 1-indexed
+                        date=date_val if date_val and date_val != 'nan' else None,
+                        label=label_val if label_val and label_val != 'nan' else None,
+                        amount=amount_val if amount_val and not pd.isna(amount_val) else None,
+                        month=month_val,
+                        is_valid=is_valid,
+                        validation_errors=errors
+                    ))
+
+            except Exception as e:
+                invalid_rows += 1
+                if len(validation_warnings) < 10:
+                    validation_warnings.append(f"Ligne {idx + 2}: Erreur de parsing - {str(e)}")
+
+        # Check for potential duplicates
+        potential_duplicates = []
+        months_detected = sorted(months_summary.keys())
+
+        for month in months_detected[:3]:  # Check first 3 months only for performance
+            existing_count = db.query(Transaction).filter(
+                Transaction.month == month
+            ).count()
+
+            if existing_count > 0:
+                potential_duplicates.append({
+                    "month": month,
+                    "existing_transactions": existing_count,
+                    "new_transactions": months_summary[month],
+                    "warning": f"Le mois {month} contient déjà {existing_count} transactions. L'import les remplacera."
+                })
+
+        # Determine if ready to import
+        ready_to_import = (
+            valid_rows > 0 and
+            len(months_detected) > 0 and
+            invalid_rows / max(1, valid_rows + invalid_rows) < 0.2  # Less than 20% invalid
+        )
+
+        return ImportPreviewResponse(
+            success=True,
+            filename=file.filename,
+            file_type=file_ext or "csv",
+            total_rows=len(df),
+            valid_rows=valid_rows,
+            invalid_rows=invalid_rows,
+            months_detected=months_detected,
+            months_summary=months_summary,
+            sample_transactions=sample_transactions,
+            potential_duplicates=potential_duplicates,
+            validation_warnings=validation_warnings,
+            columns_detected=columns_detected,
+            ready_to_import=ready_to_import
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Erreur preview import: {e}")
+        return ImportPreviewResponse(
+            success=False,
+            filename=file.filename,
+            file_type=file_ext if 'file_ext' in dir() else "unknown",
+            total_rows=0,
+            valid_rows=0,
+            invalid_rows=0,
+            months_detected=[],
+            months_summary={},
+            sample_transactions=[],
+            potential_duplicates=[],
+            validation_warnings=[f"Erreur lors de la prévisualisation: {str(e)}"],
+            columns_detected=[],
+            ready_to_import=False
+        )
+
+
 @router.post("/import", response_model=ImportResponse)
 def import_file(file: UploadFile = File(...), current_user = Depends(get_current_user), db: Session = Depends(get_db)):
     """

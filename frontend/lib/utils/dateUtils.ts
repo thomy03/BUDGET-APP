@@ -7,7 +7,7 @@
  * Get current date in YYYY-MM-DD format
  */
 export function getCurrentDate(): string {
-  return new Date().toISOString().split('T')[0];
+  return new Date().toISOString().split('T')[0] ?? '';
 }
 
 /**
@@ -41,7 +41,9 @@ export function dateToMonth(date: Date | string): string {
  * Convert month string to first day of month
  */
 export function monthToDate(monthStr: string): Date {
-  const [year, month] = monthStr.split('-').map(Number);
+  const parts = monthStr.split('-').map(Number);
+  const year = parts[0] ?? 2020;
+  const month = parts[1] ?? 1;
   return new Date(year, month - 1, 1);
 }
 
@@ -49,7 +51,9 @@ export function monthToDate(monthStr: string): Date {
  * Get month range (first and last day) from month string
  */
 export function getMonthRange(monthStr: string): { startDate: Date; endDate: Date } {
-  const [year, month] = monthStr.split('-').map(Number);
+  const parts = monthStr.split('-').map(Number);
+  const year = parts[0] ?? 2020;
+  const month = parts[1] ?? 1;
   const startDate = new Date(year, month - 1, 1);
   const endDate = new Date(year, month, 0); // Last day of the month
   return { startDate, endDate };
@@ -174,9 +178,13 @@ export function isMonthInPast(monthStr: string): boolean {
  * Get difference in months between two month strings
  */
 export function getMonthDifference(startMonth: string, endMonth: string): number {
-  const [startYear, startMonthNum] = startMonth.split('-').map(Number);
-  const [endYear, endMonthNum] = endMonth.split('-').map(Number);
-  
+  const startParts = startMonth.split('-').map(Number);
+  const endParts = endMonth.split('-').map(Number);
+  const startYear = startParts[0] ?? 0;
+  const startMonthNum = startParts[1] ?? 0;
+  const endYear = endParts[0] ?? 0;
+  const endMonthNum = endParts[1] ?? 0;
+
   return (endYear - startYear) * 12 + (endMonthNum - startMonthNum);
 }
 
@@ -210,8 +218,10 @@ export function isValidMonthString(monthStr: string): boolean {
   if (!/^\d{4}-\d{2}$/.test(monthStr)) {
     return false;
   }
-  
-  const [year, month] = monthStr.split('-').map(Number);
+
+  const parts = monthStr.split('-').map(Number);
+  const year = parts[0] ?? 0;
+  const month = parts[1] ?? 0;
   return year >= 1900 && year <= 2100 && month >= 1 && month <= 12;
 }
 
@@ -221,11 +231,13 @@ export function isValidMonthString(monthStr: string): boolean {
 export function parseFrenchDate(frenchDate: string): string | null {
   const match = frenchDate.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
   if (!match) return null;
-  
-  const [, day, month, year] = match;
+
+  const day = match[1] ?? '';
+  const month = match[2] ?? '';
+  const year = match[3] ?? '';
   const dayPadded = day.padStart(2, '0');
   const monthPadded = month.padStart(2, '0');
-  
+
   const dateStr = `${year}-${monthPadded}-${dayPadded}`;
   return isValidDateString(dateStr) ? dateStr : null;
 }
@@ -331,7 +343,8 @@ export function getBusinessDaysBetween(startDate: Date | string, endDate: Date |
 export function createDateRangeOptions(): Array<{ label: string; value: string; startDate: string; endDate: string }> {
   const today = new Date();
   const currentMonth = getCurrentMonth();
-  
+  const toDateStr = (d: Date): string => d.toISOString().split('T')[0] ?? '';
+
   return [
     {
       label: 'Aujourd\'hui',
@@ -342,26 +355,26 @@ export function createDateRangeOptions(): Array<{ label: string; value: string; 
     {
       label: 'Cette semaine',
       value: 'this_week',
-      startDate: getWeekRange(today).startDate.toISOString().split('T')[0],
-      endDate: getWeekRange(today).endDate.toISOString().split('T')[0]
+      startDate: toDateStr(getWeekRange(today).startDate),
+      endDate: toDateStr(getWeekRange(today).endDate)
     },
     {
       label: 'Ce mois',
       value: 'this_month',
-      startDate: getMonthRange(currentMonth).startDate.toISOString().split('T')[0],
-      endDate: getMonthRange(currentMonth).endDate.toISOString().split('T')[0]
+      startDate: toDateStr(getMonthRange(currentMonth).startDate),
+      endDate: toDateStr(getMonthRange(currentMonth).endDate)
     },
     {
       label: 'Mois dernier',
       value: 'last_month',
-      startDate: getMonthRange(getPreviousMonth()).startDate.toISOString().split('T')[0],
-      endDate: getMonthRange(getPreviousMonth()).endDate.toISOString().split('T')[0]
+      startDate: toDateStr(getMonthRange(getPreviousMonth()).startDate),
+      endDate: toDateStr(getMonthRange(getPreviousMonth()).endDate)
     },
     {
       label: '3 derniers mois',
       value: 'last_3_months',
-      startDate: getMonthRange(addMonthsToMonth(currentMonth, -2)).startDate.toISOString().split('T')[0],
-      endDate: getMonthRange(currentMonth).endDate.toISOString().split('T')[0]
+      startDate: toDateStr(getMonthRange(addMonthsToMonth(currentMonth, -2)).startDate),
+      endDate: toDateStr(getMonthRange(currentMonth).endDate)
     },
     {
       label: 'Cette année',

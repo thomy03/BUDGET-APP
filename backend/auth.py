@@ -22,18 +22,50 @@ load_dotenv()
 logger = logging.getLogger(__name__)
 
 # Configuration sécurisée JWT
-def get_secure_jwt_key():
-    """Génère ou récupère une clé JWT sécurisée"""
+def get_secure_jwt_key() -> str:
+    """
+    Récupère une clé JWT sécurisée - OBLIGATOIRE en production.
+
+    En production, la variable JWT_SECRET_KEY DOIT être définie.
+    En développement, une clé temporaire est générée (avec avertissement).
+    """
     key = os.getenv("JWT_SECRET_KEY")
-    
-    if not key or key == "CHANGEME_IN_PRODUCTION_URGENT" or len(key) < 32:
-        logger.warning("🚨 SÉCURITÉ: Génération d'une nouvelle clé JWT")
+    environment = os.getenv("ENVIRONMENT", "development").lower()
+
+    # Vérifier si la clé est valide
+    # Liste des patterns de clés placeholder à rejeter
+    placeholder_patterns = [
+        "CHANGEME",
+        "GENERATE",
+        "REPLACE",
+        "YOUR_KEY",
+        "YOUR_SECRET",
+        "EXAMPLE",
+        "PLACEHOLDER",
+        "TODO",
+        "FIXME"
+    ]
+    is_placeholder = key and any(pattern in key.upper() for pattern in placeholder_patterns)
+    is_valid_key = key and len(key) >= 32 and not is_placeholder
+
+    if not is_valid_key:
+        if environment == "production":
+            # En production, la clé est OBLIGATOIRE
+            error_msg = (
+                "SECURITE CRITIQUE: JWT_SECRET_KEY doit etre defini en production! "
+                "Generez avec: python -c \"import secrets; print(secrets.token_urlsafe(64))\""
+            )
+            logger.error(f"🚨 {error_msg}")
+            raise ValueError(error_msg)
+
+        # Uniquement en développement: générer une clé temporaire
         import secrets
-        new_key = secrets.token_urlsafe(32)
-        logger.info(f"🔑 Nouvelle clé JWT générée. Ajoutez à .env: JWT_SECRET_KEY={new_key}")
+        new_key = secrets.token_urlsafe(64)
+        logger.warning("🚨 DEV ONLY: Generation cle JWT temporaire - NE PAS UTILISER EN PRODUCTION!")
+        logger.warning(f"🔑 Ajoutez a .env: JWT_SECRET_KEY={new_key}")
         return new_key
-    
-    logger.info(f"✅ SÉCURITÉ: Utilisation clé JWT depuis .env (longueur: {len(key)})")
+
+    logger.info(f"✅ SECURITE: Utilisation cle JWT depuis .env (longueur: {len(key)})")
     return key
 
 def validate_jwt_key_consistency():
@@ -50,7 +82,7 @@ def validate_jwt_key_consistency():
 # Initialize JWT secret key once at module level to prevent changes during runtime
 SECRET_KEY = get_secure_jwt_key()
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 * 7  # 7 jours
+ACCESS_TOKEN_EXPIRE_MINUTES = 30  # 30 minutes - security best practice
 
 # Log initialization for debugging
 logger.info(f"🔐 JWT SECRET_KEY initialisé: {SECRET_KEY[:8]}...{SECRET_KEY[-8:]} (longueur: {len(SECRET_KEY)})")
@@ -72,14 +104,49 @@ class User(BaseModel):
 class UserInDB(User):
     hashed_password: str
 
-# Base de données utilisateur simple (en production: base sécurisée)
-# CHANGEME: Remplacer par base chiffrée
-fake_users_db = {
-    "admin": {
-        "username": "admin",
-        "hashed_password": "$2b$12$4A9H9JK7bYMdk7oYEeO/a.2FqfkGRp2HPvrx4BKEjDpYdM/Zmyf0G"  # "secret" 
+# Base de données utilisateur - chargée depuis variables d'environnement
+def get_users_from_env() -> dict:
+    """
+    Charge les utilisateurs depuis les variables d'environnement.
+
+    En production, ADMIN_PASSWORD_HASH est OBLIGATOIRE.
+    En développement, un hash par défaut est utilisé avec avertissement.
+
+    Variables d'environnement:
+    - ADMIN_USERNAME: Nom d'utilisateur admin (défaut: "admin")
+    - ADMIN_PASSWORD_HASH: Hash bcrypt du mot de passe (OBLIGATOIRE en production)
+
+    Générer un hash avec:
+    python -c "import bcrypt; print(bcrypt.hashpw(b'votre_mot_de_passe', bcrypt.gensalt()).decode())"
+    """
+    admin_username = os.getenv("ADMIN_USERNAME", "admin")
+    admin_password_hash = os.getenv("ADMIN_PASSWORD_HASH")
+    environment = os.getenv("ENVIRONMENT", "development").lower()
+
+    if not admin_password_hash:
+        if environment == "production":
+            error_msg = (
+                "SECURITE CRITIQUE: ADMIN_PASSWORD_HASH non defini en production! "
+                "Generez un hash avec: python -c \"import bcrypt; print(bcrypt.hashpw(b'votre_mot_de_passe', bcrypt.gensalt()).decode())\""
+            )
+            logger.error(f"🚨 {error_msg}")
+            raise ValueError(error_msg)
+
+        # En développement uniquement: utiliser un hash par défaut (INSECURE!)
+        # Hash pour "secret" - A NE JAMAIS UTILISER EN PRODUCTION
+        logger.warning("🚨 DEV ONLY: Utilisation hash par defaut 'secret' - NE PAS UTILISER EN PRODUCTION!")
+        admin_password_hash = "$2b$12$4A9H9JK7bYMdk7oYEeO/a.2FqfkGRp2HPvrx4BKEjDpYdM/Zmyf0G"
+
+    return {
+        admin_username: {
+            "username": admin_username,
+            "hashed_password": admin_password_hash
+        }
     }
-}
+
+
+# Initialiser la base utilisateurs au démarrage
+fake_users_db = get_users_from_env()
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """Vérifie le mot de passe avec bcrypt directement (compatible bcrypt 4.x)"""

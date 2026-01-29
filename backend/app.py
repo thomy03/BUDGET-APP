@@ -403,6 +403,12 @@ from routers.budgets import router as budgets_router  # Category budget manageme
 from routers.ai import router as ai_router  # AI-powered budget analysis with OpenRouter
 from routers.predictions import router as predictions_router  # ML predictions and anomaly detection
 from routers.smart_import import router as smart_import_router  # Smart multi-format file import (CSV, XLSX, PDF)
+from routers.import_advisor import router as import_advisor_router  # AI-powered post-import analysis
+from routers.coach import router as coach_router  # AI budget coaching tips and insights
+from routers.gamification import router as gamification_router  # Gamification system (achievements, challenges)
+from routers.receipts import router as receipts_router  # OCR receipt scanning and transaction creation
+from routers.pdf_export import router as pdf_export_router  # PDF monthly report generation
+from routers.unified_tagging import router as unified_tagging_router  # Consolidated ML tagging (v4.2)
 
 # Include routers with their prefixes
 app.include_router(auth_router, tags=["authentication"])
@@ -430,6 +436,12 @@ app.include_router(budgets_router, tags=["category-budgets"])  # Category budget
 app.include_router(ai_router, tags=["ai-analysis"])  # AI-powered budget analysis with OpenRouter
 app.include_router(predictions_router, tags=["ml-predictions"])  # ML budget predictions and anomaly detection
 app.include_router(smart_import_router, tags=["smart-import"])  # Smart multi-format file import
+app.include_router(import_advisor_router, tags=["import-advisor"])  # AI-powered post-import analysis
+app.include_router(coach_router, tags=["ai-coach"])  # AI budget coaching tips and insights
+app.include_router(gamification_router, tags=["gamification"])  # Gamification system (achievements, challenges)
+app.include_router(receipts_router, tags=["receipts"])  # OCR receipt scanning and transaction creation
+app.include_router(pdf_export_router, tags=["pdf-export"])  # PDF monthly report generation
+app.include_router(unified_tagging_router, tags=["tags-unified"])  # Consolidated ML tagging v4.2
 
 # Configure CORS middleware after all routes are defined
 # This ensures CORS preflight requests are handled correctly for all endpoints
@@ -442,6 +454,59 @@ app.add_middleware(
     max_age=settings.cors.max_age,
     expose_headers=["Content-Type", "Authorization", "X-Total-Count", "X-Pagination", "*"],  # Expose all headers for debugging
 )
+
+# Configure rate limiting middleware for security
+from middleware.security import RateLimitMiddleware, SecurityHeadersMiddleware, set_rate_limiter
+
+rate_limit_middleware = RateLimitMiddleware(
+    app,
+    requests_per_minute=int(os.getenv("RATE_LIMIT_PER_MINUTE", "60")),
+    auth_requests_per_minute=int(os.getenv("RATE_LIMIT_AUTH_PER_MINUTE", "10")),
+    burst_size=int(os.getenv("RATE_LIMIT_BURST_SIZE", "10")),
+)
+app.add_middleware(SecurityHeadersMiddleware)
+set_rate_limiter(rate_limit_middleware)
+logger.info("✅ Rate limiting and security headers middleware enabled")
+
+# ============================================================================
+# STARTUP EVENT: Pre-train ML models in background for instant predictions
+# ============================================================================
+import threading
+
+def pretrain_ml_models_background():
+    """Pre-train ML models at startup to avoid timeout on first request"""
+    import time
+    time.sleep(3)  # Wait for app to fully start
+
+    try:
+        logger.info("🤖 [STARTUP] Starting ML models pre-training in background...")
+
+        from routers.predictions import train_systems_if_needed
+
+        # Get a database session using SessionLocal (already defined in this file)
+        db = SessionLocal()
+
+        try:
+            # Force training of all ML systems
+            train_systems_if_needed(db, force=True)
+            logger.info("✅ [STARTUP] ML models pre-trained successfully!")
+            logger.info("   Predictions will now be instant (no timeout)")
+        finally:
+            db.close()
+
+    except Exception as e:
+        logger.warning(f"⚠️ [STARTUP] ML pre-training skipped: {e}")
+        logger.warning("   ML models will train on first prediction request")
+
+@app.on_event("startup")
+async def startup_event():
+    """Application startup event"""
+    logger.info("🚀 Budget Famille API starting up...")
+
+    # Start ML pre-training in background thread (non-blocking)
+    ml_thread = threading.Thread(target=pretrain_ml_models_background, daemon=True)
+    ml_thread.start()
+    logger.info("🔄 ML pre-training started in background thread")
 
 # Add compatibility routes for existing endpoints that don't have prefixes
 @app.post("/token", response_model=Token)
