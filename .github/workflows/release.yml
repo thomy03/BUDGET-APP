@@ -40,7 +40,7 @@ jobs:
           echo "changelog_file=changelog.txt" >> $GITHUB_OUTPUT
 
       - name: Create Release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           body_path: changelog.txt
           draft: false
@@ -79,7 +79,7 @@ jobs:
           tar -czvf ../frontend-build-${{ github.ref_name }}.tar.gz .next public
 
       - name: Upload to Release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           files: frontend-build-${{ github.ref_name }}.tar.gz
         env:
