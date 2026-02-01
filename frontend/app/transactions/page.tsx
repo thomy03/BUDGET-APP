@@ -17,7 +17,8 @@ import {
   SparklesIcon,
   XMarkIcon,
   CheckIcon,
-  CameraIcon
+  CameraIcon,
+  BarsArrowDownIcon
 } from '@heroicons/react/24/outline';
 import { ReceiptScanner } from '../../components/receipts';
 import MonthPicker from '../../components/MonthPicker';
@@ -40,7 +41,10 @@ export default function ModernTransactionsPage() {
     refresh,
     toggle,
     saveTags,
-    bulkUnexcludeAll
+    bulkUnexcludeAll,
+    sortBy,
+    sortOrder,
+    setSort
   } = useTransactions();
   
   // États pour les filtres
@@ -315,7 +319,7 @@ export default function ModernTransactionsPage() {
             {/* Panneau de filtres */}
             {showFilters && (
               <div className="mt-3 p-4 bg-gray-50 rounded-lg border border-gray-200">
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Type de transaction</label>
                     <select
@@ -339,6 +343,31 @@ export default function ModernTransactionsPage() {
                       <option value="all">Toutes</option>
                       <option value="included">Incluses uniquement</option>
                       <option value="excluded">Exclues uniquement</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Trier par</label>
+                    <select
+                      value={sortBy}
+                      onChange={(e) => setSort(e.target.value as any, sortOrder)}
+                      style={{ backgroundColor: "white" }} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                    >
+                      <option value="date">Date</option>
+                      <option value="amount">Montant</option>
+                      <option value="label">Libellé</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Ordre</label>
+                    <select
+                      value={sortOrder}
+                      onChange={(e) => setSort(sortBy, e.target.value as any)}
+                      style={{ backgroundColor: "white" }} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                    >
+                      <option value="desc">Décroissant</option>
+                      <option value="asc">Croissant</option>
                     </select>
                   </div>
                 </div>

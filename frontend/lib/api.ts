@@ -1940,7 +1940,7 @@ export const importPreviewApi = {
 
 export const transactionsApi = {
   // List transactions with pagination
-  async list(month: string, params?: PaginationParams & { tag?: string; expense_type?: string }): Promise<PaginatedResponse<Tx>> {
+  async list(month: string, params?: PaginationParams & { tag?: string; expense_type?: string; sort_by?: string; sort_order?: string }): Promise<PaginatedResponse<Tx>> {
     const response = await api.get<PaginatedResponse<Tx>>('/transactions', {
       params: { month, ...params }
     });

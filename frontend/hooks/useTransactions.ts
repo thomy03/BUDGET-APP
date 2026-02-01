@@ -13,6 +13,10 @@ interface PaginationMeta {
   hasPrev: boolean;
 }
 
+// Sort options
+type SortBy = 'date' | 'amount' | 'label';
+type SortOrder = 'asc' | 'desc';
+
 // Global stats for all transactions in the month (not just current page)
 interface GlobalStats {
   totalExpenses: number;
@@ -23,6 +27,7 @@ interface GlobalStats {
 
 interface UseTransactionsReturn {
   rows: Tx[];
+  allRows: Tx[];
   loading: boolean;
   error: string;
   autoClassifying: boolean;
@@ -47,6 +52,10 @@ interface UseTransactionsReturn {
   pagination: PaginationMeta;
   setPage: (page: number) => void;
   setLimit: (limit: number) => void;
+  // Sorting
+  sortBy: SortBy;
+  sortOrder: SortOrder;
+  setSort: (sortBy: SortBy, sortOrder: SortOrder) => void;
   // Actions
   refresh: (isAuthenticated: boolean, month: string | null) => Promise<void>;
   toggle: (id: number, exclude: boolean) => Promise<void>;
@@ -81,6 +90,10 @@ export function useTransactions(): UseTransactionsReturn {
     hasPrev: false
   });
 
+  // Sort state
+  const [sortBy, setSortBy] = useState<SortBy>('date');
+  const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
+
   // Current month for pagination changes
   const [currentMonth, setCurrentMonth] = useState<string | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -113,19 +126,19 @@ export function useTransactions(): UseTransactionsReturn {
   }, [rows]);
 
   // Internal refresh function that uses current pagination state
-  const loadTransactions = useCallback(async (auth: boolean, month: string, page: number, limit: number) => {
+  const loadTransactions = useCallback(async (auth: boolean, month: string, page: number, limit: number, sort_by: SortBy, sort_order: SortOrder) => {
     if (!auth || !month) {
       console.log('🚫 Load skipped - Auth:', auth, 'Month:', month);
       return;
     }
 
-    console.log(`🔄 Loading transactions for ${month} (page ${page}, limit ${limit})`);
+    console.log(`🔄 Loading transactions for ${month} (page ${page}, limit ${limit}, sort: ${sort_by} ${sort_order})`);
     try {
       setLoading(true);
       setError('');
 
-      // Use paginated API
-      const response = await transactionsApi.list(month, { page, limit });
+      // Use paginated API with sort
+      const response = await transactionsApi.list(month, { page, limit, sort_by, sort_order });
       console.log(`✅ Loaded ${response.items.length}/${response.total} transactions (page ${response.page}/${response.pages})`);
 
       setRows(response.items);
@@ -163,9 +176,9 @@ export function useTransactions(): UseTransactionsReturn {
       setLoading(true);
       setError(''); // Clear any previous errors
 
-      // 1. Charger les transactions avec pagination ET les stats globales en parallele
+      // 1. Charger les transactions avec pagination, tri ET les stats globales en parallele
       const [response, allTransactionsRes] = await Promise.all([
-        transactionsApi.list(month, { page: pagination.page, limit: pagination.limit }),
+        transactionsApi.list(month, { page: pagination.page, limit: pagination.limit, sort_by: sortBy, sort_order: sortOrder }),
         // Charger TOUTES les transactions pour les stats globales (limit=500)
         api.get(`/transactions?month=${month}&limit=500`).catch(() => ({ data: { items: [] } }))
       ]);
@@ -228,13 +241,12 @@ export function useTransactions(): UseTransactionsReturn {
           // 3. Si des classifications ont été appliquées, recharger les transactions
           if (autoClassifyResponse.data.auto_applied > 0) {
             console.log(`✨ ${autoClassifyResponse.data.auto_applied} classifications applied - reloading transactions`);
-            const updatedResponse = await transactionsApi.list(month, { page: pagination.page, limit: pagination.limit });
+            const updatedResponse = await transactionsApi.list(month, { page: pagination.page, limit: pagination.limit, sort_by: sortBy, sort_order: sortOrder });
             setRows(updatedResponse.items);
           }
 
         } catch (classificationErr) {
           console.warn('⚠️ Auto-classification failed (non-critical):', classificationErr);
-          // La classification échoue de manière non critique - les transactions sont quand même chargées
         } finally {
           setAutoClassifying(false);
         }
@@ -246,23 +258,33 @@ export function useTransactions(): UseTransactionsReturn {
     } finally {
       setLoading(false);
     }
-  }, [pagination.page, pagination.limit]);
+  }, [pagination.page, pagination.limit, sortBy, sortOrder]);
 
   // Pagination controls
   const setPage = useCallback((newPage: number) => {
     if (newPage < 1 || newPage > pagination.pages) return;
     setPagination(prev => ({ ...prev, page: newPage }));
     if (currentMonth && isAuthenticated) {
-      loadTransactions(isAuthenticated, currentMonth, newPage, pagination.limit);
+      loadTransactions(isAuthenticated, currentMonth, newPage, pagination.limit, sortBy, sortOrder);
     }
-  }, [currentMonth, isAuthenticated, pagination.pages, pagination.limit, loadTransactions]);
+  }, [currentMonth, isAuthenticated, pagination.pages, pagination.limit, sortBy, sortOrder, loadTransactions]);
 
   const setLimit = useCallback((newLimit: number) => {
     setPagination(prev => ({ ...prev, limit: newLimit, page: 1 }));
     if (currentMonth && isAuthenticated) {
-      loadTransactions(isAuthenticated, currentMonth, 1, newLimit);
+      loadTransactions(isAuthenticated, currentMonth, 1, newLimit, sortBy, sortOrder);
     }
-  }, [currentMonth, isAuthenticated, loadTransactions]);
+  }, [currentMonth, isAuthenticated, sortBy, sortOrder, loadTransactions]);
+
+  // Sort control
+  const setSort = useCallback((newSortBy: SortBy, newSortOrder: SortOrder) => {
+    setSortBy(newSortBy);
+    setSortOrder(newSortOrder);
+    setPagination(prev => ({ ...prev, page: 1 })); // Reset to page 1 on sort change
+    if (currentMonth && isAuthenticated) {
+      loadTransactions(isAuthenticated, currentMonth, 1, pagination.limit, newSortBy, newSortOrder);
+    }
+  }, [currentMonth, isAuthenticated, pagination.limit, loadTransactions]);
 
   const toggle = async (id: number, exclude: boolean) => {
     try {
@@ -316,7 +338,6 @@ export function useTransactions(): UseTransactionsReturn {
 
   const bulkUnexcludeAll = async () => {
     try {
-      // Trouver toutes les transactions exclues
       const excludedTransactions = rows.filter(tx => tx.exclude);
       
       if (excludedTransactions.length === 0) {
@@ -324,14 +345,12 @@ export function useTransactions(): UseTransactionsReturn {
         return;
       }
       
-      // Créer les requêtes pour réinclure toutes les transactions exclues
       const updates = excludedTransactions.map(tx => 
         api.patch(`/transactions/${tx.id}`, { exclude: false })
       );
       
       await Promise.all(updates);
       
-      // Mettre à jour l'état local
       setRows(prev => prev.map(tx => 
         tx.exclude ? { ...tx, exclude: false } : tx
       ));
@@ -364,13 +383,13 @@ export function useTransactions(): UseTransactionsReturn {
     autoClassifying,
     autoClassificationResults,
     calculations,
-    // Global stats for ALL transactions in the month
     globalStats,
-    // Pagination
     pagination,
     setPage,
     setLimit,
-    // Actions
+    sortBy,
+    sortOrder,
+    setSort,
     refresh,
     toggle,
     saveTags,
