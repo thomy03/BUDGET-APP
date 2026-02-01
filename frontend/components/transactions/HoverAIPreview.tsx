@@ -126,7 +126,7 @@ export function HoverAIPreview({
       case 'high':
         return 'border-green-400 bg-green-50';
       case 'medium':
-        return 'border-yellow-400 bg-yellow-50';
+        return 'border-amber-400 bg-amber-50';
       case 'low':
         return 'border-red-400 bg-red-50';
       case 'error':
@@ -183,7 +183,7 @@ export function HoverAIPreview({
                 <div 
                   className={`w-3 h-3 rounded-full ${
                     preview.confidence_indicator === 'high' ? 'bg-green-400' :
-                    preview.confidence_indicator === 'medium' ? 'bg-yellow-400' :
+                    preview.confidence_indicator === 'medium' ? 'bg-amber-400' :
                     preview.confidence_indicator === 'low' ? 'bg-red-400' :
                     'bg-gray-400'
                   }`}

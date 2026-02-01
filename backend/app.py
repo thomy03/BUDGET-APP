@@ -47,6 +47,8 @@ from sqlalchemy.orm import sessionmaker, declarative_base, Session, relationship
 from sqlalchemy.sql import func
 from dotenv import load_dotenv
 from datetime import timedelta
+from models.user import authenticate_user as db_authenticate_user
+from models.database import get_db as get_db_session
 
 # Import modules
 from auth import (
@@ -510,10 +512,10 @@ async def startup_event():
 
 # Add compatibility routes for existing endpoints that don't have prefixes
 @app.post("/token", response_model=Token)
-async def legacy_token_endpoint(form_data: OAuth2PasswordRequestForm = Depends()):
+async def legacy_token_endpoint(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db_session)):
     """Legacy token endpoint for backward compatibility"""
     # Direct authentication logic matching the original
-    user = authenticate_user(fake_users_db, form_data.username, form_data.password)
+    user = db_authenticate_user(db, form_data.username, form_data.password)
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

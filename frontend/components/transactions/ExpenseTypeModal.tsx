@@ -39,7 +39,7 @@ export function ExpenseTypeModal({
     onClose();
   };
 
-  const confidenceColor = confidence > 0.8 ? 'text-green-600' : confidence > 0.6 ? 'text-yellow-600' : 'text-gray-600';
+  const confidenceColor = confidence > 0.8 ? 'text-green-600' : confidence > 0.6 ? 'text-amber-700' : 'text-gray-600';
   const confidenceText = confidence > 0.8 ? 'Très confiant' : confidence > 0.6 ? 'Confiant' : 'Incertain';
 
   return (

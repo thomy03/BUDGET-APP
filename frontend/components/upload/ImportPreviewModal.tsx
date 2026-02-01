@@ -131,7 +131,7 @@ export function ImportPreviewModal({ isOpen, onClose, file, onConfirmImport }: I
               <div className={`rounded-lg p-4 flex items-center gap-3 ${
                 preview.ready_to_import
                   ? 'bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800'
-                  : 'bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800'
+                  : 'bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800'
               }`}>
                 {preview.ready_to_import ? (
                   <>
@@ -142,8 +142,8 @@ export function ImportPreviewModal({ isOpen, onClose, file, onConfirmImport }: I
                   </>
                 ) : (
                   <>
-                    <ExclamationTriangleIcon className="w-6 h-6 text-yellow-600" />
-                    <span className="text-yellow-800 dark:text-yellow-200 font-medium">
+                    <ExclamationTriangleIcon className="w-6 h-6 text-amber-700" />
+                    <span className="text-amber-800 dark:text-amber-200 font-medium">
                       Attention : vérifiez les avertissements avant d'importer
                     </span>
                   </>
@@ -172,14 +172,14 @@ export function ImportPreviewModal({ isOpen, onClose, file, onConfirmImport }: I
 
               {/* Avertissements */}
               {preview.validation_warnings && preview.validation_warnings.length > 0 && (
-                <div className="bg-yellow-50 dark:bg-yellow-900/20 rounded-lg p-4 border border-yellow-200 dark:border-yellow-800">
-                  <h3 className="text-sm font-semibold text-yellow-800 dark:text-yellow-200 mb-2 flex items-center gap-2">
+                <div className="bg-amber-50 dark:bg-amber-900/20 rounded-lg p-4 border border-amber-200 dark:border-amber-800">
+                  <h3 className="text-sm font-semibold text-amber-800 dark:text-amber-200 mb-2 flex items-center gap-2">
                     <ExclamationTriangleIcon className="w-4 h-4" />
                     Avertissements ({preview.validation_warnings.length})
                   </h3>
                   <ul className="space-y-1">
                     {preview.validation_warnings.map((warning, idx) => (
-                      <li key={idx} className="text-sm text-yellow-700 dark:text-yellow-300">
+                      <li key={idx} className="text-sm text-amber-700 dark:text-amber-300">
                         {warning}
                       </li>
                     ))}
@@ -250,7 +250,7 @@ export function ImportPreviewModal({ isOpen, onClose, file, onConfirmImport }: I
                                 {tx.is_valid ? (
                                   <CheckCircleIcon className="w-5 h-5 text-green-500 mx-auto" />
                                 ) : (
-                                  <ExclamationTriangleIcon className="w-5 h-5 text-yellow-500 mx-auto" />
+                                  <ExclamationTriangleIcon className="w-5 h-5 text-amber-600 mx-auto" />
                                 )}
                               </td>
                             </tr>

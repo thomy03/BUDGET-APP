@@ -254,8 +254,8 @@ export function AutoAIProcessor({
               <span className="font-medium text-green-700">{results.auto_applied}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-yellow-600">À réviser:</span>
-              <span className="font-medium text-yellow-700">{results.pending_review}</span>
+              <span className="text-amber-700">À réviser:</span>
+              <span className="font-medium text-amber-700">{results.pending_review}</span>
             </div>
           </div>
           

@@ -83,7 +83,7 @@ export function ClassificationModal({
           rounded-lg border p-4 
           ${isHighConfidence 
             ? 'bg-green-50 border-green-200' 
-            : 'bg-yellow-50 border-yellow-200'
+            : 'bg-amber-50 border-amber-200'
           }
         `}>
           <div className="flex items-center gap-2 mb-2">
@@ -95,7 +95,7 @@ export function ClassificationModal({
               text-sm font-medium px-2 py-1 rounded-full
               ${isHighConfidence 
                 ? 'bg-green-100 text-green-700' 
-                : 'bg-yellow-100 text-yellow-700'
+                : 'bg-amber-100 text-amber-700'
               }
             `}>
               {confidencePercentage}% sûr

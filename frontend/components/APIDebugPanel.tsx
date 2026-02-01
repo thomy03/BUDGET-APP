@@ -86,7 +86,7 @@ export default function APIDebugPanel() {
     switch (status) {
       case 'success': return 'text-green-700 bg-green-50';
       case 'error': return 'text-red-700 bg-red-50';
-      default: return 'text-yellow-700 bg-yellow-50';
+      default: return 'text-amber-700 bg-amber-50';
     }
   };
 

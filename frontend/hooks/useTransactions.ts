@@ -57,6 +57,7 @@ interface UseTransactionsReturn {
 
 export function useTransactions(): UseTransactionsReturn {
   const [rows, setRows] = useState<Tx[]>([]);
+  const [allRows, setAllRows] = useState<Tx[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [autoClassifying, setAutoClassifying] = useState(false);
@@ -197,6 +198,9 @@ export function useTransactions(): UseTransactionsReturn {
         netBalance: globalIncome - globalExpenses,
         totalCount: allTransactions.length
       });
+
+      // Store all transactions for auto-tagging
+      setAllRows(allTransactions);
 
       // 2. Auto-classification automatique en arrière-plan
       if (response.items.length > 0) {
@@ -354,6 +358,7 @@ export function useTransactions(): UseTransactionsReturn {
 
   return {
     rows,
+    allRows,
     loading,
     error,
     autoClassifying,

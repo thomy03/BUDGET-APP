@@ -217,7 +217,7 @@ export function TagsStatsDashboard({ className = '' }: TagsStatsDashboardProps) 
         {/* Average Confidence */}
         <Card className="p-4">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-yellow-100 rounded-lg flex items-center justify-center">
+            <div className="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center">
               <span className="text-lg">📊</span>
             </div>
             <div>

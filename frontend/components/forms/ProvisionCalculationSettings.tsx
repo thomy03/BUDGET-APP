@@ -93,7 +93,7 @@ const ProvisionCalculationSettings = React.memo<ProvisionCalculationSettingsProp
       {/* Base Calculation */}
       <div>
         <label className="block text-sm font-medium mb-2">Base de calcul</label>
-        <select
+        <select style={{ backgroundColor: "white", color: "black" }}
           value={formData.base_calculation}
           onChange={(e) => onChange('base_calculation', e.target.value)}
           className="w-full p-3 border border-zinc-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -110,7 +110,7 @@ const ProvisionCalculationSettings = React.memo<ProvisionCalculationSettingsProp
         <div className="space-y-3">
           <div className="flex items-center gap-2">
             <label className="block text-sm font-medium">Montant fixe</label>
-            <select
+            <select style={{ backgroundColor: "white", color: "black" }}
               value={currentAmountMode}
               onChange={(e) => {
                 const newMode = e.target.value as 'monthly' | 'annual';
@@ -153,7 +153,7 @@ const ProvisionCalculationSettings = React.memo<ProvisionCalculationSettingsProp
       {/* Split Mode */}
       <div>
         <label className="block text-sm font-medium mb-2">Répartition</label>
-        <select
+        <select style={{ backgroundColor: "white", color: "black" }}
           value={formData.split_mode}
           onChange={(e) => onChange('split_mode', e.target.value)}
           className="w-full p-3 border border-zinc-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"

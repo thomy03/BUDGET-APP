@@ -271,9 +271,9 @@ export function SpendingPatterns({ period = "last3", className = "" }: SpendingP
       </div>
 
       {/* Insights et conseils */}
-      <div className="mt-6 p-4 bg-yellow-50 rounded-lg border border-yellow-200">
-        <h4 className="font-semibold text-yellow-800 mb-2">💡 Insights</h4>
-        <div className="text-sm text-yellow-700 space-y-1">
+      <div className="mt-6 p-4 bg-amber-50 rounded-lg border border-amber-200">
+        <h4 className="font-semibold text-amber-800 mb-2">💡 Insights</h4>
+        <div className="text-sm text-amber-700 space-y-1">
           <p>
             • Vos dépenses sont {worstDay && bestDay && worstDay.avg_amount > bestDay.avg_amount * 1.5 ? 'très variables' : 'assez stables'} selon les jours de la semaine
           </p>

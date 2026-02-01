@@ -80,9 +80,9 @@ export function AlertsBanner({
         };
       default:
         return {
-          bg: 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800',
-          icon: 'text-yellow-500',
-          text: 'text-yellow-800 dark:text-yellow-200'
+          bg: 'bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800',
+          icon: 'text-amber-600',
+          text: 'text-amber-800 dark:text-amber-200'
         };
     }
   };
@@ -145,7 +145,7 @@ export function AlertsBanner({
                 <span className={`text-xs px-2 py-0.5 rounded-full ${
                   alert.severity === 'high' ? 'bg-red-200 text-red-800' :
                   alert.severity === 'medium' ? 'bg-orange-200 text-orange-800' :
-                  'bg-yellow-200 text-yellow-800'
+                  'bg-amber-200 text-amber-800'
                 }`}>
                   {alert.severity === 'high' ? 'Urgent' :
                    alert.severity === 'medium' ? 'Attention' : 'Info'}

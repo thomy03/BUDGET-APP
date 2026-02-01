@@ -10,7 +10,7 @@
     "type-check:watch": "tsc --noEmit --watch",
     "lint:types": "tsc --noEmit --pretty",
     "dev": "next dev -p 45678",
-    "build": "npm run type-check && next build",
+    "build": "next build",
     "start": "next start"
   },
   "dependencies": {

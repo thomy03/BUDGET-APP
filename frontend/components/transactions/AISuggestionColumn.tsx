@@ -108,7 +108,7 @@ export function AISuggestionColumn({
               ${suggestion.confidence_score >= 0.8
                 ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'
                 : suggestion.confidence_score >= 0.6
-                ? 'bg-yellow-50 text-yellow-700 border-yellow-200 hover:bg-yellow-100'
+                ? 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100'
                 : 'bg-red-50 text-red-700 border-red-200 hover:bg-red-100'
               }
             `}
@@ -126,7 +126,7 @@ export function AISuggestionColumn({
                 ${suggestion.confidence_score >= 0.8
                   ? 'bg-emerald-400'
                   : suggestion.confidence_score >= 0.6
-                  ? 'bg-yellow-400'
+                  ? 'bg-amber-400'
                   : 'bg-red-400'
                 }
               `}

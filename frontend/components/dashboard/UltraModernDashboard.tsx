@@ -301,8 +301,8 @@ export const UltraModernDashboard: React.FC<UltraModernDashboardProps> = ({ mont
                 type="text"
                 value={balanceInput}
                 onChange={(e) => setBalanceInput(e.target.value)}
-                className="text-5xl font-extralight text-center bg-transparent border-b-2 border-gray-300 focus:border-gray-900 outline-none w-64 transition-colors"
-                autoFocus
+                className="text-5xl font-extralight text-center bg-white border-b-2 border-gray-300 focus:border-gray-900 outline-none w-64 transition-colors [&:-webkit-autofill]:bg-white [&:-webkit-autofill]:shadow-[0_0_0_1000px_white_inset]"
+                autoFocus autoComplete="off"
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') handleSaveBalance();
                   if (e.key === 'Escape') {

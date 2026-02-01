@@ -30,10 +30,10 @@ const IconColorPicker = React.memo<IconColorPickerProps>(({
     <div className="space-y-4">
       {/* Icon Selection */}
       <div>
-        <label className="block text-sm font-medium mb-2">
+        <label style={{ color: '#374151' }} className="block text-sm font-medium mb-2">
           Icône : {selectedIcon}
         </label>
-        <div className="grid grid-cols-8 gap-2 p-3 border border-zinc-200 rounded-lg max-h-32 overflow-y-auto">
+        <div className="grid grid-cols-8 gap-2 p-3 border border-zinc-200 rounded-lg max-h-32 overflow-y-auto" style={{ backgroundColor: 'white' }}>
           {ICON_OPTIONS.map((icon) => (
             <button
               key={icon}
@@ -51,7 +51,7 @@ const IconColorPicker = React.memo<IconColorPickerProps>(({
 
       {/* Color Selection */}
       <div>
-        <label className="block text-sm font-medium mb-2">
+        <label style={{ color: '#374151' }} className="block text-sm font-medium mb-2">
           Couleur
         </label>
         <div className="grid grid-cols-9 gap-2">

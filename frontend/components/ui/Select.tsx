@@ -58,12 +58,12 @@ const Select = forwardRef<HTMLSelectElement, SelectProps>(
     };
 
     return (
-      <select
+      <select autoComplete="off"
         ref={ref}
         value={value}
         onChange={handleChange}
         disabled={disabled}
-        style={{ pointerEvents: disabled ? 'none' : 'auto' }}
+        style={{ backgroundColor: 'white', pointerEvents: disabled ? 'none' : 'auto' }}
         className={selectClasses}
         {...props}
       >

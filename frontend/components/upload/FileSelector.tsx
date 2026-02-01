@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useRef } from 'react';
 import { Card, Button } from '../ui';
 
 interface FileSelectorProps {
@@ -16,11 +16,22 @@ const FileSelector = React.memo<FileSelectorProps>(({
   loading, 
   onUpload 
 }) => {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     onFileChange(e.target.files?.[0] || null);
   };
 
-  const clearFile = () => onFileChange(null);
+  const clearFile = () => {
+    onFileChange(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const handleButtonClick = () => {
+    fileInputRef.current?.click();
+  };
 
   return (
     <Card padding="lg">
@@ -34,12 +45,26 @@ const FileSelector = React.memo<FileSelectorProps>(({
 
           <div className="space-y-4">
             <div className="flex items-center gap-4">
+              {/* Input caché */}
               <input
+                ref={fileInputRef}
                 type="file"
                 onChange={handleFileChange}
                 accept=".csv,.xlsx,.xls,.pdf"
-                className="flex-1 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-zinc-50 file:text-zinc-700 hover:file:bg-zinc-100"
+                className="hidden"
               />
+              {/* Bouton personnalisé */}
+              <button
+                type="button"
+                onClick={handleButtonClick}
+                className="py-2 px-4 rounded-full border-0 text-sm font-semibold bg-zinc-50 text-zinc-700 hover:bg-zinc-100 transition-colors"
+              >
+                Choisir un fichier
+              </button>
+              {/* Texte d'état personnalisé */}
+              <span className={"text-sm " + (file ? "text-teal-600 font-medium" : "text-zinc-500")}>
+                {file ? file.name : "Aucun fichier sélectionné"}
+              </span>
             </div>
             
             {file && (

@@ -237,12 +237,12 @@ const FilePreview = React.memo<FilePreviewProps>(({ file }) => {
 
             {/* Avertissements */}
             {previewData.warnings && previewData.warnings.length > 0 && (
-              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+              <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
                 <div className="flex items-start gap-3">
-                  <span className="text-yellow-600">💡</span>
+                  <span className="text-amber-700">💡</span>
                   <div>
-                    <div className="font-medium text-yellow-800">Avertissements</div>
-                    <ul className="text-sm text-yellow-700 mt-1 space-y-1">
+                    <div className="font-medium text-amber-800">Avertissements</div>
+                    <ul className="text-sm text-amber-700 mt-1 space-y-1">
                       {previewData.warnings.map((warning, index) => (
                         <li key={index}>• {warning}</li>
                       ))}

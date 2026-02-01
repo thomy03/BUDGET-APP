@@ -153,13 +153,13 @@ export function KPIDashboard({ period = "last3", className = "" }: KPIDashboardP
       </Card>
 
       {/* Top Catégorie */}
-      <Card className="p-6 bg-gradient-to-r from-yellow-50 to-yellow-100 border-yellow-200">
-        <h3 className="text-sm font-medium text-yellow-600 mb-1">Top Catégorie</h3>
-        <p className="text-lg font-bold text-yellow-900">
+      <Card className="p-6 bg-gradient-to-r from-amber-50 to-amber-100 border-amber-200">
+        <h3 className="text-sm font-medium text-amber-700 mb-1">Top Catégorie</h3>
+        <p className="text-lg font-bold text-amber-900">
           {kpiData.top_expense_category || 'Aucune'}
         </p>
         {kpiData.top_expense_amount > 0 && (
-          <p className="text-sm text-yellow-600 mt-1">
+          <p className="text-sm text-amber-700 mt-1">
             {formatCurrency(kpiData.top_expense_amount)}
           </p>
         )}

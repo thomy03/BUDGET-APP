@@ -40,6 +40,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
           )}
           
           <input
+            style={{ color: "#000000", WebkitTextFillColor: "#000000", backgroundColor: "#ffffff" }}
             ref={ref}
             id={inputId}
             className={`

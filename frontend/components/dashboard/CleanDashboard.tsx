@@ -348,7 +348,7 @@ const MetricCard: React.FC<MetricCardProps> = ({
       case 'positive':
         return 'border-green-200 bg-green-50 text-green-700';
       case 'warning':
-        return 'border-yellow-200 bg-yellow-50 text-yellow-700';
+        return 'border-amber-200 bg-amber-50 text-amber-700';
       case 'negative':
         return 'border-red-200 bg-red-50 text-red-700';
       default:

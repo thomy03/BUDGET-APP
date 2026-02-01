@@ -29,6 +29,7 @@ export default function ModernTransactionsPage() {
   const [month, setMonth] = useGlobalMonthWithUrl();
   const {
     rows,
+    allRows,
     loading,
     error,
     calculations,
@@ -133,7 +134,9 @@ export default function ModernTransactionsPage() {
 
   // Nombre de transactions sans tags (inclut "Non classé" comme non-tagué)
   const untaggedCount = useMemo(() => {
-    return rows.filter(r => {
+    // Use allRows for accurate count of ALL untagged transactions
+    const source = allRows.length > 0 ? allRows : rows;
+    return source.filter(r => {
       const tags = r.tags as string[] | string | null | undefined;
       // Pas de tags du tout
       if (!tags || (Array.isArray(tags) && tags.length === 0)) return true;
@@ -147,7 +150,7 @@ export default function ModernTransactionsPage() {
       if (Array.isArray(tags) && tags.length === 1 && tags[0]?.toLowerCase().trim() === 'non classé') return true;
       return false;
     }).length;
-  }, [rows]);
+  }, [allRows, rows]);
   
   // Appliquer les filtres
   const filteredRows = useMemo(() => {
@@ -318,7 +321,7 @@ export default function ModernTransactionsPage() {
                     <select
                       value={filterType}
                       onChange={(e) => setFilterType(e.target.value as any)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      style={{ backgroundColor: "white" }} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                     >
                       <option value="all">Toutes</option>
                       <option value="income">Revenus uniquement</option>
@@ -331,7 +334,7 @@ export default function ModernTransactionsPage() {
                     <select
                       value={filterExclude}
                       onChange={(e) => setFilterExclude(e.target.value as any)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      style={{ backgroundColor: "white" }} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                     >
                       <option value="all">Toutes</option>
                       <option value="included">Incluses uniquement</option>

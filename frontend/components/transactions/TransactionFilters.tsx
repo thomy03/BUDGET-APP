@@ -235,22 +235,22 @@ export function TransactionFilters({ onFiltersChange }: TransactionFiltersProps)
                 </span>
               )}
               {filters.amountMin && (
-                <span className="px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full text-xs flex items-center gap-1">
+                <span className="px-2 py-1 bg-amber-100 text-amber-800 rounded-full text-xs flex items-center gap-1">
                   <span>Min: {filters.amountMin}€</span>
                   <button
                     onClick={() => handleFilterChange('amountMin', '')}
-                    className="ml-1 hover:text-yellow-900"
+                    className="ml-1 hover:text-amber-900"
                   >
                     ×
                   </button>
                 </span>
               )}
               {filters.amountMax && (
-                <span className="px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full text-xs flex items-center gap-1">
+                <span className="px-2 py-1 bg-amber-100 text-amber-800 rounded-full text-xs flex items-center gap-1">
                   <span>Max: {filters.amountMax}€</span>
                   <button
                     onClick={() => handleFilterChange('amountMax', '')}
-                    className="ml-1 hover:text-yellow-900"
+                    className="ml-1 hover:text-amber-900"
                   >
                     ×
                   </button>

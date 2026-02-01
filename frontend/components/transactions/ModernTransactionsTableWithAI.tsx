@@ -167,7 +167,7 @@ export function ModernTransactionsTable({
     return date.toLocaleDateString('fr-FR', {
       day: '2-digit',
       month: '2-digit',
-      year: 'numeric'
+      
     });
   };
 
@@ -193,53 +193,6 @@ export function ModernTransactionsTable({
 
   return (
     <div className="space-y-6">
-      {/* En-tête avec statistiques */}
-      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl p-6">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="bg-white rounded-xl p-4 shadow-sm">
-            <div className="text-xs text-gray-500 font-medium uppercase tracking-wider">Total</div>
-            <div className="text-2xl font-bold text-gray-900">{stats.totalTransactions}</div>
-            <div className="text-xs text-gray-600">transactions</div>
-          </div>
-          
-          <div className="bg-white rounded-xl p-4 shadow-sm">
-            <div className="text-xs text-gray-500 font-medium uppercase tracking-wider">Revenus</div>
-            <div className="text-2xl font-bold text-green-600">
-              +{formatAmount(stats.totalIncome)}
-            </div>
-            <div className="text-xs text-gray-600">{stats.includedCount} incluses</div>
-          </div>
-          
-          <div className="bg-white rounded-xl p-4 shadow-sm">
-            <div className="text-xs text-gray-500 font-medium uppercase tracking-wider">Dépenses</div>
-            <div className="text-2xl font-bold text-red-600">
-              -{formatAmount(stats.totalExpenses)}
-            </div>
-            <div className="text-xs text-gray-600">{stats.excludedCount} exclues</div>
-          </div>
-          
-          <div className="bg-white rounded-xl p-4 shadow-sm">
-            <div className="text-xs text-gray-500 font-medium uppercase tracking-wider">Balance</div>
-            <div className={`text-2xl font-bold ${stats.netBalance >= 0 ? 'text-blue-600' : 'text-orange-600'}`}>
-              {stats.netBalance >= 0 ? '+' : ''}{formatAmount(stats.netBalance)}
-            </div>
-            <div className="text-xs text-gray-600">net</div>
-          </div>
-        </div>
-
-        {/* Bouton réinclure tout */}
-        {stats.excludedCount > 0 && (
-          <div className="mt-4 flex justify-end">
-            <button
-              onClick={onBulkUnexcludeAll}
-              className="px-4 py-2 bg-white text-blue-600 font-medium rounded-lg shadow-sm hover:shadow-md transition-all duration-200 text-sm"
-            >
-              Réinclure {stats.excludedCount} transaction{stats.excludedCount > 1 ? 's' : ''}
-            </button>
-          </div>
-        )}
-      </div>
-
       {/* Liste des transactions */}
       <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
         <div className="divide-y divide-gray-100">
@@ -263,21 +216,21 @@ export function ModernTransactionsTable({
                     <div className="flex-1 min-w-0 pr-4">
                       <div className="flex items-start gap-4">
                         {/* Colonne Date - visible et formatée */}
-                        <div className="flex-shrink-0 w-24 text-center bg-gray-50 rounded-lg px-2 py-1">
-                          <div className="text-sm font-semibold text-gray-900">
+                        <div className="flex-shrink-0 w-14 text-center">
+                          <div className="text-xs text-gray-500">
                             {formatDate(row.date_op || row.date)}
                           </div>
                         </div>
 
                         <div className="flex-1 min-w-0">
-                          <div className="text-base font-medium text-gray-900 truncate" title={row.label}>
+                          <div className="text-base font-medium text-gray-900 break-words">
                             {row.label}
                           </div>
                           
                           {/* Tags avec suggestions IA */}
                           <div className="mt-1">
                             {isEditing ? (
-                              <div className="flex items-center gap-2">
+                              <div className="flex flex-col gap-2 w-full">
                                 <input
                                   type="text"
                                   value={editingTags[row.id]}
@@ -290,19 +243,19 @@ export function ModernTransactionsTable({
                                       setEditingTags(newEditingTags);
                                     }
                                   }}
-                                  className="px-2 py-1 text-sm border border-blue-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                  className="w-full px-3 py-2 text-sm border border-blue-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                                   placeholder="tag1, tag2..."
                                   autoFocus
                                 />
                                 <button
                                   onClick={() => handleTagSave(row.id)}
-                                  className="text-xs text-blue-600 hover:text-blue-800"
+                                  className="px-3 py-1 bg-blue-600 text-white text-xs rounded-lg hover:bg-blue-700"
                                 >
                                   Sauver
                                 </button>
                               </div>
                             ) : (
-                              <div className="flex items-center gap-2">
+                              <div className="flex flex-col gap-2 w-full">
                                 <div 
                                   className="flex flex-wrap gap-1 cursor-pointer"
                                   onClick={() => {
@@ -352,7 +305,7 @@ export function ModernTransactionsTable({
                               <div className="mt-2 p-2 bg-purple-50 rounded-lg">
                                 <div className="flex items-start justify-between">
                                   <div>
-                                    <div className="flex items-center gap-2">
+                                    <div className="flex flex-col gap-2 w-full">
                                       <SparklesIcon className="h-4 w-4 text-purple-600" />
                                       <span className="text-xs font-medium text-purple-700">
                                         Suggestions IA ({Math.round(hasSuggestions.confidence * 100)}% confiance)
@@ -392,7 +345,7 @@ export function ModernTransactionsTable({
                     <div className="flex items-center gap-4">
                       {/* Montant avec indicateur ML */}
                       <div className={`text-right ${isIncome ? 'text-green-600' : 'text-gray-900'}`}>
-                        <div className="text-lg font-semibold">
+                        <div className="text-base font-semibold whitespace-nowrap">
                           {isIncome ? '+' : '-'}{formatAmount(row.amount)}
                         </div>
                         {row.ml_confidence && (
@@ -415,7 +368,7 @@ export function ModernTransactionsTable({
                       </div>
 
                       {/* Actions */}
-                      <div className="flex items-center gap-2">
+                      <div className="flex flex-col gap-2 w-full">
                         {/* Toggle exclure */}
                         <label className="relative inline-flex items-center cursor-pointer">
                           <input

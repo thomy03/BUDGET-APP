@@ -124,7 +124,7 @@ export function AnomaliesPanel({ month, className = '', onTransactionClick }: An
     switch (level) {
       case 'high': return 'bg-red-100 text-red-800 border-red-200';
       case 'medium': return 'bg-orange-100 text-orange-800 border-orange-200';
-      case 'low': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+      case 'low': return 'bg-amber-100 text-amber-800 border-amber-200';
     }
   };
 
@@ -133,7 +133,7 @@ export function AnomaliesPanel({ month, className = '', onTransactionClick }: An
     switch (level) {
       case 'high': return 'bg-red-500 text-white';
       case 'medium': return 'bg-orange-500 text-white';
-      case 'low': return 'bg-yellow-500 text-white';
+      case 'low': return 'bg-amber-500 text-white';
     }
   };
 
@@ -166,7 +166,7 @@ export function AnomaliesPanel({ month, className = '', onTransactionClick }: An
     switch (type) {
       case 'exact': return { label: 'Exact', color: 'bg-red-100 text-red-700' };
       case 'fuzzy': return { label: 'Similaire', color: 'bg-orange-100 text-orange-700' };
-      case 'temporal': return { label: 'Temporel', color: 'bg-yellow-100 text-yellow-700' };
+      case 'temporal': return { label: 'Temporel', color: 'bg-amber-100 text-amber-700' };
       default: return { label: type, color: 'bg-gray-100 text-gray-700' };
     }
   };
@@ -354,7 +354,7 @@ export function AnomaliesPanel({ month, className = '', onTransactionClick }: An
                     ? filter === 'all' ? 'bg-gray-800 text-white'
                       : filter === 'high' ? 'bg-red-500 text-white'
                       : filter === 'medium' ? 'bg-orange-500 text-white'
-                      : 'bg-yellow-500 text-white'
+                      : 'bg-amber-500 text-white'
                     : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                 }`}
               >

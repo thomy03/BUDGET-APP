@@ -2,10 +2,10 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useAuth } from "../../lib/auth";
 import { Button, Input, Card, LoadingSpinner, Alert } from "../../components/ui";
 
-// Import centralized utilities (simplified for demo)
 import { 
   createErrorMessage 
 } from "../../lib/utils/errorHandling";
@@ -25,23 +25,22 @@ export default function LoginPage() {
   });
   const [error, setError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const router = useRouter();
   const { isAuthenticated, loading, login } = useAuth();
 
-  // Load preferences
   useEffect(() => {
-    const showPasswordPref = userPreferences.get('showPasswordOnLogin', false) as boolean;
+    const showPasswordPref = userPreferences.get("showPasswordOnLogin", false) as boolean;
     if (showPasswordPref !== undefined) {
       setShowPassword(showPasswordPref);
     }
   }, []);
 
-  // Rediriger si déjà connecté
   useEffect(() => {
     if (isAuthenticated && !loading) {
-      router.push("/");
+      window.location.href = "/";
     }
-  }, [isAuthenticated, loading, router]);
+  }, [isAuthenticated, loading]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -50,7 +49,6 @@ export default function LoginPage() {
       [name]: value
     }));
     
-    // Clear error when user types
     if (error) {
       setError("");
     }
@@ -59,43 +57,55 @@ export default function LoginPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    setIsSubmitting(true);
 
     try {
-      // Basic validation
       if (!formData.username.trim() || !formData.password.trim()) {
         setError("Veuillez remplir tous les champs");
+        setIsSubmitting(false);
         return;
       }
 
       if (formData.username.trim().length < 2) {
         setError("Le nom d'utilisateur doit contenir au moins 2 caractères");
+        setIsSubmitting(false);
         return;
       }
 
       if (formData.password.length < 3) {
         setError("Le mot de passe doit contenir au moins 3 caractères");
+        setIsSubmitting(false);
         return;
       }
 
-      // Save preference for showing password
-      userPreferences.set('showPasswordOnLogin', showPassword);
+      userPreferences.set("showPasswordOnLogin", showPassword);
 
-      // Attempt login
+      console.log("🔐 Attempting login...");
       const result = await login(formData.username.trim(), formData.password);
+      console.log("🔐 Login result:", result);
       
       if (result.success) {
-        router.push("/");
+        console.log("🔐 Login successful, checking localStorage...");
+        const token = localStorage.getItem("auth_token");
+        console.log("🔐 Token in localStorage:", token ? "YES" : "NO");
+        
+        // Small delay to ensure localStorage is fully written
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+        console.log("🔐 Redirecting to dashboard...");
+        window.location.href = "/";
       } else {
-        const errorMessage = createErrorMessage(new Error(result.error || "Erreur de connexion"));
-        setError(errorMessage);
+        console.log("🔐 Login failed:", result.error);
+        setError(result.error || "Erreur de connexion");
+        setIsSubmitting(false);
       }
-    } catch (error) {
-      const errorMessage = createErrorMessage(error, "Erreur de connexion inattendue");
-      setError(errorMessage);
+    } catch (error: any) {
+      console.error("🔐 Login exception:", error);
+      setError(error?.message || "Erreur de connexion inattendue");
+      setIsSubmitting(false);
     }
   };
 
-  // Affichage du loader pendant l'initialisation
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-zinc-50">
@@ -105,18 +115,18 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-zinc-50 to-zinc-100">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-zinc-50 to-zinc-100 p-4">
       <div className="w-full max-w-md">
         <Card padding="lg" shadow="lg">
           <div className="text-center mb-8">
             <div className="inline-flex items-center justify-center w-16 h-16 bg-zinc-900 text-white rounded-2xl mb-4 text-2xl">
               💶
             </div>
-            <h1 className="h1 text-zinc-900">
+            <h1 className="text-2xl font-bold text-zinc-900">
               Budget Famille
             </h1>
-            <p className="subtle mt-2">
-              Connexion sécurisée requise
+            <p className="text-zinc-500 mt-2">
+              Connexion sécurisée
             </p>
           </div>
         
@@ -130,7 +140,7 @@ export default function LoginPage() {
               placeholder="Entrez votre nom d'utilisateur"
               value={formData.username}
               onChange={handleInputChange}
-              disabled={loading}
+              disabled={isSubmitting}
               leftIcon="👤"
             />
             
@@ -143,12 +153,12 @@ export default function LoginPage() {
               placeholder="Entrez votre mot de passe"
               value={formData.password}
               onChange={handleInputChange}
-              disabled={loading}
+              disabled={isSubmitting}
               leftIcon="🔐"
               rightIcon={showPassword ? "🙈" : "👁️"}
               onRightIconClick={() => {
                 setShowPassword(!showPassword);
-                userPreferences.set('showPasswordOnLogin', !showPassword);
+                userPreferences.set("showPasswordOnLogin", !showPassword);
               }}
             />
 
@@ -162,10 +172,10 @@ export default function LoginPage() {
               type="submit"
               variant="primary"
               size="lg"
-              loading={loading}
+              loading={isSubmitting}
               className="w-full"
             >
-              {!loading && (
+              {!isSubmitting && (
                 <>
                   <span>🔑</span>
                   <span>Se connecter</span>
@@ -174,14 +184,18 @@ export default function LoginPage() {
             </Button>
           </form>
 
-          <div className="mt-6 p-4 bg-zinc-50 rounded-xl text-center">
-            <p className="text-xs text-zinc-500 mb-2">
-              🔒 Authentification JWT sécurisée
+          <div className="mt-6 text-center">
+            <p className="text-sm text-zinc-600">
+              Pas encore de compte ?{" "}
+              <Link href="/register" className="text-emerald-600 hover:text-emerald-700 font-medium">
+                Créer un compte
+              </Link>
             </p>
-            <p className="text-xs text-zinc-600">
-              <strong>Identifiants par défaut:</strong><br/>
-              Utilisateur: <code className="bg-zinc-200 px-1 rounded">admin</code><br/>
-              Mot de passe: <code className="bg-zinc-200 px-1 rounded">secret</code>
+          </div>
+
+          <div className="mt-4 p-3 bg-zinc-50 rounded-xl text-center">
+            <p className="text-xs text-zinc-500">
+              🔒 Connexion sécurisée • Session persistante 30 jours
             </p>
           </div>
         </Card>

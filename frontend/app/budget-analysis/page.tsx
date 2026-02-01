@@ -133,7 +133,7 @@ export default function BudgetAnalysisPage() {
               ✅ IA Active
             </span>
           ) : (
-            <span className="px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-sm">
+            <span className="px-3 py-1 bg-amber-100 text-amber-800 rounded-full text-sm">
               ⚠️ IA Non configuree
             </span>
           )}

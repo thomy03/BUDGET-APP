@@ -47,10 +47,10 @@ export function ConfidenceIndicator({
       label: 'Confiance élevée'
     },
     medium: {
-      bgColor: 'bg-yellow-100',
-      textColor: 'text-yellow-800',
-      borderColor: 'border-yellow-300',
-      fillColor: 'bg-yellow-500',
+      bgColor: 'bg-amber-100',
+      textColor: 'text-amber-800',
+      borderColor: 'border-amber-300',
+      fillColor: 'bg-amber-500',
       icon: '⚠',
       label: 'Confiance moyenne'
     },
@@ -183,7 +183,7 @@ interface ConfidenceLegendProps {
 export function ConfidenceLegend({ className = '' }: ConfidenceLegendProps) {
   const levels = [
     { level: 'high', min: 80, label: 'Confiance élevée', color: 'text-green-600' },
-    { level: 'medium', min: 50, label: 'Confiance moyenne', color: 'text-yellow-600' },
+    { level: 'medium', min: 50, label: 'Confiance moyenne', color: 'text-amber-700' },
     { level: 'low', min: 0, label: 'Confiance faible', color: 'text-red-600' }
   ];
 
@@ -242,7 +242,7 @@ export function ConfidenceStats({ stats, className = '' }: ConfidenceStatsProps)
             style={{ width: `${highPercentage}%` }}
           />
           <div 
-            className="bg-yellow-500 transition-all duration-500"
+            className="bg-amber-500 transition-all duration-500"
             style={{ width: `${mediumPercentage}%` }}
           />
           <div 
@@ -260,8 +260,8 @@ export function ConfidenceStats({ stats, className = '' }: ConfidenceStatsProps)
           <span className="text-gray-500">({high})</span>
         </div>
         <div className="flex items-center gap-1">
-          <div className="w-2 h-2 bg-yellow-500 rounded-full" />
-          <span className="text-yellow-700 font-medium">Moyenne</span>
+          <div className="w-2 h-2 bg-amber-500 rounded-full" />
+          <span className="text-amber-700 font-medium">Moyenne</span>
           <span className="text-gray-500">({medium})</span>
         </div>
         <div className="flex items-center gap-1">

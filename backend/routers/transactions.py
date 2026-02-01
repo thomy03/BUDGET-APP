@@ -54,6 +54,8 @@ def tx_to_response(tx: Transaction) -> TxOut:
 def get_categories(
     month: str,
     expense_type: Optional[str] = Query(None, description="Filter by expense type: FIXED, VARIABLE, or PROVISION"),
+    sort_by: Optional[str] = Query(None, description="Sort by: date, amount, label"),
+    sort_order: Optional[str] = Query("desc", description="Sort order: asc or desc"),
     db: Session = Depends(get_db)
 ):
     """
@@ -95,6 +97,8 @@ def get_subcategories(
     month: str,
     category: str,
     expense_type: Optional[str] = Query(None, description="Filter by expense type: FIXED, VARIABLE, or PROVISION"),
+    sort_by: Optional[str] = Query(None, description="Sort by: date, amount, label"),
+    sort_order: Optional[str] = Query("desc", description="Sort order: asc or desc"),
     db: Session = Depends(get_db)
 ):
     """
@@ -139,6 +143,8 @@ def get_transaction_tags(
     category: Optional[str] = Query(None),
     subcategory: Optional[str] = Query(None),
     expense_type: Optional[str] = Query(None, description="Filter by expense type: FIXED, VARIABLE, or PROVISION"),
+    sort_by: Optional[str] = Query(None, description="Sort by: date, amount, label"),
+    sort_order: Optional[str] = Query("desc", description="Sort order: asc or desc"),
     db: Session = Depends(get_db)
 ):
     """
@@ -189,6 +195,8 @@ def get_transaction_tags(
 def get_hierarchy_data(
     month: str,
     expense_type: Optional[str] = Query(None, description="Filter by expense type: FIXED, VARIABLE, or PROVISION"),
+    sort_by: Optional[str] = Query(None, description="Sort by: date, amount, label"),
+    sort_order: Optional[str] = Query("desc", description="Sort order: asc or desc"),
     category: Optional[str] = Query(None),
     subcategory: Optional[str] = Query(None),
     tag: Optional[str] = Query(None),
@@ -212,6 +220,8 @@ def list_transactions(
     month: str,
     tag: Optional[str] = Query(None, description="Filter by specific tag (supports multiple tags separated by comma)"),
     expense_type: Optional[str] = Query(None, description="Filter by expense type: FIXED, VARIABLE, or PROVISION"),
+    sort_by: Optional[str] = Query(None, description="Sort by: date, amount, label"),
+    sort_order: Optional[str] = Query("desc", description="Sort order: asc or desc"),
     page: int = Query(1, ge=1, description="Page number (1-indexed)"),
     limit: int = Query(50, ge=1, le=500, description="Items per page (max 500)"),
     db: Session = Depends(get_db)
@@ -253,7 +263,14 @@ def list_transactions(
         requested_tags = [t.strip().lower() for t in tag.split(',') if t.strip()]
 
         # Get all transactions matching base criteria
-        all_txs = base_query.order_by(Transaction.date_op.desc()).all()
+        # Apply dynamic sorting for tag filter
+        if sort_by == 'amount':
+            order_col = Transaction.amount.desc() if sort_order == 'desc' else Transaction.amount.asc()
+        elif sort_by == 'label':
+            order_col = Transaction.label.desc() if sort_order == 'desc' else Transaction.label.asc()
+        else:
+            order_col = Transaction.date_op.desc() if sort_order == 'desc' else Transaction.date_op.asc()
+        all_txs = base_query.order_by(order_col).all()
 
         # Filter by tags in Python (SQLite doesn't support array operations well)
         filtered_txs = []
@@ -271,7 +288,14 @@ def list_transactions(
         # No tag filter - use efficient database pagination
         total = base_query.count()
         offset = (page - 1) * limit
-        paginated_txs = base_query.order_by(Transaction.date_op.desc()).offset(offset).limit(limit).all()
+        # Apply dynamic sorting
+        if sort_by == 'amount':
+            order_col = Transaction.amount.desc() if sort_order == 'desc' else Transaction.amount.asc()
+        elif sort_by == 'label':
+            order_col = Transaction.label.desc() if sort_order == 'desc' else Transaction.label.asc()
+        else:
+            order_col = Transaction.date_op.desc() if sort_order == 'desc' else Transaction.date_op.asc()
+        paginated_txs = base_query.order_by(order_col).offset(offset).limit(limit).all()
 
     # Calculate pagination metadata
     pages = (total + limit - 1) // limit if limit > 0 else 0
@@ -298,6 +322,8 @@ def list_all_transactions(
     month: str,
     tag: Optional[str] = Query(None, description="Filter by specific tag"),
     expense_type: Optional[str] = Query(None, description="Filter by expense type"),
+    sort_by: Optional[str] = Query(None, description="Sort by: date, amount, label"),
+    sort_order: Optional[str] = Query("desc", description="Sort order: asc or desc"),
     db: Session = Depends(get_db)
 ):
     """

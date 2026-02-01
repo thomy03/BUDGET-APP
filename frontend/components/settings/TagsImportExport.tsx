@@ -385,8 +385,8 @@ export function TagsImportExport({ tags, isLoading }: TagsImportExportProps) {
                 <div className="text-xl font-bold text-red-600">{importPreview.invalid.length}</div>
                 <div className="text-sm text-gray-600">Erreurs</div>
               </div>
-              <div className="text-center p-3 bg-yellow-50 rounded-lg">
-                <div className="text-xl font-bold text-yellow-600">{importPreview.duplicates.length}</div>
+              <div className="text-center p-3 bg-amber-50 rounded-lg">
+                <div className="text-xl font-bold text-amber-700">{importPreview.duplicates.length}</div>
                 <div className="text-sm text-gray-600">Doublons</div>
               </div>
             </div>
@@ -426,10 +426,10 @@ export function TagsImportExport({ tags, isLoading }: TagsImportExportProps) {
             {/* Doublons */}
             {importPreview.duplicates.length > 0 && (
               <div>
-                <h4 className="font-medium text-yellow-700 mb-2">⚠️ Doublons ignorés :</h4>
+                <h4 className="font-medium text-amber-700 mb-2">⚠️ Doublons ignorés :</h4>
                 <div className="flex flex-wrap gap-1">
                   {importPreview.duplicates.map((name, index) => (
-                    <span key={index} className="px-2 py-1 bg-yellow-100 text-yellow-700 rounded text-sm">
+                    <span key={index} className="px-2 py-1 bg-amber-100 text-amber-700 rounded text-sm">
                       {name}
                     </span>
                   ))}

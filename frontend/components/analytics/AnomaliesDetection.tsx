@@ -82,7 +82,7 @@ export function AnomaliesDetection({ month, className = "" }: AnomaliesDetection
   const getScoreColor = (score: number) => {
     if (score >= 0.8) return 'bg-red-100 text-red-800';
     if (score >= 0.6) return 'bg-orange-100 text-orange-800';
-    if (score >= 0.4) return 'bg-yellow-100 text-yellow-800';
+    if (score >= 0.4) return 'bg-amber-100 text-amber-800';
     return 'bg-blue-100 text-blue-800';
   };
 

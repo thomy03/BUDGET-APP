@@ -24,10 +24,10 @@ const tierColors = {
     glow: 'shadow-gray-200'
   },
   gold: {
-    bg: 'bg-yellow-100',
-    border: 'border-yellow-400',
-    text: 'text-yellow-800',
-    glow: 'shadow-yellow-300'
+    bg: 'bg-amber-100',
+    border: 'border-amber-400',
+    text: 'text-amber-800',
+    glow: 'shadow-amber-300'
   },
   platinum: {
     bg: 'bg-purple-100',

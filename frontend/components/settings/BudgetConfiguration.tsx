@@ -214,7 +214,7 @@ export function BudgetConfiguration({ cfg, saving, onSave, onNavigateToExpenses 
                     }
                     setMember1Mode(newMode);
                   }}
-                  className="px-2 xs:px-3 py-2 text-xs xs:text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 min-h-[44px]"
+                  style={{ backgroundColor: "white" }} className="px-2 xs:px-3 py-2 text-xs xs:text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 min-h-[44px] bg-white"
                 >
                   <option value="monthly">Mensuel</option>
                   <option value="annual">Annuel</option>
@@ -260,7 +260,7 @@ export function BudgetConfiguration({ cfg, saving, onSave, onNavigateToExpenses 
                     }
                     setMember2Mode(newMode);
                   }}
-                  className="px-2 xs:px-3 py-2 text-xs xs:text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 min-h-[44px]"
+                  style={{ backgroundColor: "white" }} className="px-2 xs:px-3 py-2 text-xs xs:text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 min-h-[44px] bg-white"
                 >
                   <option value="monthly">Mensuel</option>
                   <option value="annual">Annuel</option>
@@ -359,7 +359,7 @@ export function BudgetConfiguration({ cfg, saving, onSave, onNavigateToExpenses 
             <select
               name="split_mode"
               defaultValue={cfg.split_mode || 'revenus'}
-              className="w-full px-3 py-2 text-sm md:text-base border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 min-h-[44px]"
+              style={{ backgroundColor: "white" }} className="w-full px-3 py-2 text-sm md:text-base border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 min-h-[44px] bg-white"
               onChange={(e) => {
                 const mode = e.target.value;
                 const manuelSection = document.getElementById('manuel-split-section');
@@ -448,7 +448,7 @@ export function BudgetConfiguration({ cfg, saving, onSave, onNavigateToExpenses 
           </Alert>
         )}
 
-        <div className="flex flex-col xs:flex-row xs:items-center xs:justify-between gap-3 xs:gap-4 mb-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
           <div className="min-w-0 flex-1">
             <h2 className="text-base xs:text-lg md:text-xl font-semibold text-gray-900">
               🎯 Provisions Personnalisées
@@ -457,7 +457,7 @@ export function BudgetConfiguration({ cfg, saving, onSave, onNavigateToExpenses 
               Objectifs d'épargne et provisions pour projets futurs
             </p>
           </div>
-          <div className="flex flex-col xs:flex-row items-start xs:items-center gap-2 xs:gap-4">
+          <div className="flex flex-col gap-3 mt-2">
             <div className="flex items-center gap-2">
               <span className="text-xs xs:text-sm text-gray-500">
                 Total mensuel:

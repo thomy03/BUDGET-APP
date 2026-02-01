@@ -98,7 +98,7 @@ export function AITriggerButton({
           return `${base} bg-emerald-50/50 text-emerald-600 border border-emerald-200 hover:bg-emerald-100`;
         }
         if (buttonState === 'medium') {
-          return `${base} bg-yellow-50/50 text-yellow-600 border border-yellow-200 hover:bg-yellow-100`;
+          return `${base} bg-amber-50/50 text-amber-700 border border-amber-200 hover:bg-amber-100`;
         }
         return `${base} bg-gray-50/50 text-gray-600 border border-gray-200 hover:bg-gray-100 hover:text-gray-700`;
     }
@@ -134,7 +134,7 @@ export function AITriggerButton({
       case 'medium':
         return (
           <>
-            <span className="text-yellow-500 mr-1">🤔</span>
+            <span className="text-amber-600 mr-1">🤔</span>
             IA ({Math.round((confidenceScore || 0) * 100)}%)
           </>
         );
@@ -207,7 +207,7 @@ export function AITriggerButton({
               confidenceScore >= 0.8
                 ? 'bg-green-400'
                 : confidenceScore >= 0.6
-                ? 'bg-yellow-400'
+                ? 'bg-amber-400'
                 : 'bg-red-400'
             }`}
             title={`Confiance: ${Math.round(confidenceScore * 100)}%`}

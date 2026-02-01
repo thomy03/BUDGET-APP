@@ -356,3 +356,214 @@
     display: none !important;
   }
 }
+/* ========================================
+    -webkit-box-shadow: 0 0 0 1000px #1f2937 inset !important;
+    -webkit-text-fill-color: #f9fafb !important;
+  }
+}
+
+/* ========================================
+   AUTOFILL STYLES - Fix fond jaune navigateur
+   Version compatible mobile + desktop
+======================================== */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active,
+textarea:-webkit-autofill,
+textarea:-webkit-autofill:hover,
+textarea:-webkit-autofill:focus,
+textarea:-webkit-autofill:active,
+select:-webkit-autofill,
+select:-webkit-autofill:hover,
+select:-webkit-autofill:focus,
+select:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 1000px white inset !important;
+  -webkit-text-fill-color: #1f2937 !important;
+  box-shadow: 0 0 0 1000px white inset !important;
+  background-color: white !important;
+  background-image: none !important;
+  color: #1f2937 !important;
+  transition: background-color 600000s 0s, color 600000s 0s !important;
+}
+
+/* Force override pour Chrome mobile */
+input:-internal-autofill-selected,
+input:-internal-autofill-previewed {
+  background-color: white !important;
+  -webkit-box-shadow: 0 0 0 1000px white inset !important;
+  -webkit-text-fill-color: #1f2937 !important;
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  input:-webkit-autofill,
+  input:-webkit-autofill:hover,
+  input:-webkit-autofill:focus,
+  input:-webkit-autofill:active {
+    -webkit-box-shadow: 0 0 0 1000px #1f2937 inset !important;
+    -webkit-text-fill-color: #f9fafb !important;
+    box-shadow: 0 0 0 1000px #1f2937 inset !important;
+  }
+}
+
+/* ========================================
+   DESIGN AMÉLIORÉ - Override navigateur
+======================================== */
+
+/* Force les inputs à avoir un fond blanc propre */
+input, textarea, select {
+  background-color: white !important;
+  -webkit-appearance: none !important;
+  appearance: none !important;
+}
+
+/* Override agressif pour Chrome autofill */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active,
+input:-internal-autofill-selected,
+input:-internal-autofill-previewed,
+textarea:-webkit-autofill,
+select:-webkit-autofill {
+  -webkit-box-shadow: 0 0 0 9999px white inset !important;
+  box-shadow: 0 0 0 9999px white inset !important;
+  -webkit-text-fill-color: #18181b !important;
+  background-color: white !important;
+  background-image: none !important;
+  color: #18181b !important;
+  caret-color: #18181b !important;
+  transition: background-color 9999s ease-out !important;
+}
+
+/* Style inputs plus moderne */
+input[type="text"],
+input[type="password"],
+input[type="email"],
+input[type="number"] {
+  background: white !important;
+  border: 2px solid #e4e4e7 !important;
+  border-radius: 12px !important;
+  padding: 12px 16px !important;
+  font-size: 16px !important;
+  transition: all 0.2s ease !important;
+}
+
+input[type="text"]:focus,
+input[type="password"]:focus,
+input[type="email"]:focus,
+input[type="number"]:focus {
+  border-color: #3b82f6 !important;
+  outline: none !important;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1) !important;
+}
+
+/* Remplacer les jaunes par des couleurs plus douces */
+.bg-yellow-50 { background-color: #fef9e7 !important; }
+.bg-yellow-100 { background-color: #fef3c7 !important; }
+.text-yellow-600 { color: #b45309 !important; }
+.text-yellow-700 { color: #a16207 !important; }
+.text-yellow-800 { color: #92400e !important; }
+.border-yellow-200 { border-color: #fde68a !important; }
+
+/* Améliorer les alertes warning avec orange plus doux */
+.warning-alert {
+  background: linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%) !important;
+  border: 1px solid #fed7aa !important;
+  color: #9a3412 !important;
+}
+
+/* Cards plus modernes */
+.card, [class*="Card"] {
+  border-radius: 16px !important;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 
+              0 2px 4px -1px rgba(0, 0, 0, 0.03) !important;
+}
+
+/* Boutons plus jolis */
+button[type="submit"],
+.btn-primary {
+  background: linear-gradient(135deg, #18181b 0%, #27272a 100%) !important;
+  border: none !important;
+  border-radius: 12px !important;
+  font-weight: 600 !important;
+  transition: all 0.2s ease !important;
+}
+
+button[type="submit"]:hover,
+.btn-primary:hover {
+  transform: translateY(-1px) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+}
+
+/* Mobile improvements */
+@media (max-width: 640px) {
+  input, button {
+    font-size: 16px !important; /* Évite le zoom sur iOS */
+    min-height: 48px !important; /* Touch friendly */
+  }
+}
+
+/* ========================================
+   FORCE TEXTE NOIR - Override total
+======================================== */
+
+/* Force TOUS les inputs à avoir du texte noir */
+input,
+input[type="text"],
+input[type="password"],
+input[type="email"],
+input[type="number"],
+input[type="search"],
+input[type="tel"],
+textarea {
+  color: #000000 !important;
+  -webkit-text-fill-color: #000000 !important;
+  caret-color: #000000 !important;
+  background-color: #ffffff !important;
+}
+
+/* Même quand on tape */
+input:focus,
+input:active,
+textarea:focus,
+textarea:active {
+  color: #000000 !important;
+  -webkit-text-fill-color: #000000 !important;
+  caret-color: #000000 !important;
+}
+
+/* Override Chrome autofill - texte noir */
+input:-webkit-autofill {
+  -webkit-text-fill-color: #000000 !important;
+  color: #000000 !important;
+}
+
+/* Placeholder en gris */
+input::placeholder,
+textarea::placeholder {
+  color: #9ca3af !important;
+  -webkit-text-fill-color: #9ca3af !important;
+  opacity: 1 !important;
+}
+
+/* ========================================
+   FIX MONTHPICKER MOBILE
+======================================== */
+/* Assurer que le MonthPicker dropdown est visible */
+.month-picker-container,
+[class*="MonthPicker"] {
+  position: relative;
+  z-index: 9999 !important;
+}
+
+/* Forcer le dropdown à être visible */
+[role="listbox"] {
+  z-index: 9999 !important;
+}
+
+/* Fix overflow pour header */
+header, nav, .header, .navbar {
+  overflow: visible !important;
+}

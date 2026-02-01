@@ -11,10 +11,11 @@ from sqlalchemy.orm import Session
 from pydantic import BaseModel
 
 from models.database import get_db
-from models.user import authenticate_user, create_default_admin_user, User as UserModel
+from models.user import authenticate_user, create_default_admin_user, User as UserModel, hash_password
 from config.settings import settings
 from auth import (
-    authenticate_user, create_access_token, get_current_user,
+    authenticate_user as auth_authenticate_user,
+    create_access_token, get_current_user,
     fake_users_db, Token, ACCESS_TOKEN_EXPIRE_MINUTES, debug_jwt_validation
 )
 from audit_logger import get_audit_logger, AuditEventType
@@ -80,7 +81,8 @@ class DebugJWTRequest(BaseModel):
 @router.post("/token", response_model=Token, summary="Login for access token")
 async def login_for_access_token(
     request: Request,
-    form_data: OAuth2PasswordRequestForm = Depends()
+    form_data: OAuth2PasswordRequestForm = Depends(),
+    db: Session = Depends(get_db)
 ):
     """
     OAuth2 compatible token login - Refactored with centralized error handling
@@ -98,7 +100,7 @@ async def login_for_access_token(
             raise_common_error("TOO_MANY_REQUESTS", "Trop de tentatives de connexion")
         
         # Authenticate user
-        user = authenticate_user(fake_users_db, form_data.username, form_data.password)
+        user = authenticate_user(db, form_data.username, form_data.password)
         if not user:
             log_auth_event("login_failed", form_data.username, False, 
                          {"reason": "invalid_credentials", "client_ip": client_ip}, request)
@@ -156,7 +158,7 @@ async def login(
             client_ip = request.client.host
         
         # Authenticate user
-        user = authenticate_user(db, login_request.username, login_request.password, client_ip)
+        user = authenticate_user(db, login_request.username, login_request.password)
         if not user:
             logger.warning(f"Failed JSON login attempt for user: {login_request.username}")
             raise HTTPException(
@@ -342,3 +344,98 @@ async def auth_health():
             "error": str(e),
             "timestamp": datetime.now(timezone.utc).isoformat()
         }
+
+# Registration Models
+class RegisterRequest(BaseModel):
+    username: str
+    password: str
+    email: Optional[str] = None
+    full_name: Optional[str] = None
+
+
+@router.post("/register", summary="Register a new user")
+async def register_user(
+    request: Request,
+    register_data: RegisterRequest,
+    db: Session = Depends(get_db)
+):
+    """
+    Register a new user account
+    """
+    try:
+        # Validate username
+        if len(register_data.username) < 3:
+            raise HTTPException(status_code=400, detail="Username trop court (min 3 caractères)")
+        if len(register_data.username) > 50:
+            raise HTTPException(status_code=400, detail="Username trop long (max 50 caractères)")
+        
+        # Validate password
+        if len(register_data.password) < 6:
+            raise HTTPException(status_code=400, detail="Mot de passe trop court (min 6 caractères)")
+        
+        # Check if username already exists
+        existing_user = db.query(UserModel).filter(
+            UserModel.username == register_data.username.lower()
+        ).first()
+        
+        if existing_user:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Ce nom d'utilisateur existe déjà"
+            )
+        
+        # Check if email already exists (if provided)
+        if register_data.email:
+            existing_email = db.query(UserModel).filter(
+                UserModel.email == register_data.email.lower()
+            ).first()
+            if existing_email:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Cette adresse email est déjà utilisée"
+                )
+        
+        # Create new user
+        new_user = UserModel(
+            username=register_data.username.lower(),
+            email=register_data.email.lower() if register_data.email else None,
+            full_name=register_data.full_name,
+            hashed_password=hash_password(register_data.password),
+            is_active=True,
+            is_admin=False
+        )
+        
+        db.add(new_user)
+        db.commit()
+        db.refresh(new_user)
+        
+        logger.info(f"New user registered: {new_user.username}")
+        
+        # Auto-login: create token for the new user
+        access_token_expires = timedelta(minutes=settings.security.access_token_expire_minutes)
+        access_token = create_access_token(
+            data={"sub": new_user.username}, 
+            expires_delta=access_token_expires
+        )
+        
+        return {
+            "message": "Inscription réussie!",
+            "user": {
+                "username": new_user.username,
+                "email": new_user.email,
+                "full_name": new_user.full_name
+            },
+            "access_token": access_token,
+            "token_type": "bearer",
+            "expires_in": settings.security.access_token_expire_minutes * 60
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Registration error: {str(e)}")
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Erreur lors de l'inscription"
+        )

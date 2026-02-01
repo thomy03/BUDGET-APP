@@ -46,7 +46,7 @@ const AddProvisionModal = React.memo<AddProvisionModalProps>(({
       <div className="max-w-2xl w-full max-h-[90vh] overflow-y-auto">
         <Card padding="lg" className="relative">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="h2">
+            <h2 style={{ color: "#1f2937" }} className="h2">
               {provision ? '✏️ Modifier' : '➕ Nouvelle'} provision
             </h2>
             <button

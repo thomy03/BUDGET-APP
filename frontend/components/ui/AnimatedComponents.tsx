@@ -131,7 +131,7 @@ export const ProgressBar: React.FC<ProgressBarProps> = ({
   const getVariantClass = () => {
     switch (variant) {
       case 'success': return 'bg-green-500';
-      case 'warning': return 'bg-yellow-500';
+      case 'warning': return 'bg-amber-500';
       case 'danger': return 'bg-red-500';
       default: return 'bg-blue-500';
     }

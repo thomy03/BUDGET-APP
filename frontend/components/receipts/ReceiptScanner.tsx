@@ -252,7 +252,7 @@ export function ReceiptScanner({ onTransactionCreated, className = '' }: Receipt
               <div
                 className={`h-full rounded-full ${
                   scanResult.confidence > 0.7 ? 'bg-green-500' :
-                  scanResult.confidence > 0.4 ? 'bg-yellow-500' : 'bg-red-500'
+                  scanResult.confidence > 0.4 ? 'bg-amber-500' : 'bg-red-500'
                 }`}
                 style={{ width: `${scanResult.confidence * 100}%` }}
               />

@@ -83,7 +83,7 @@ export function AutoTaggingProgress({
                   ✅ {stats.successfullyTagged} transactions taguées avec succès
                 </p>
                 {stats.skippedLowConfidence > 0 && (
-                  <p className="text-sm text-yellow-700">
+                  <p className="text-sm text-amber-700">
                     ⚠️ {stats.skippedLowConfidence} transactions ignorées (confiance faible)
                   </p>
                 )}

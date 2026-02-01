@@ -106,8 +106,8 @@ export function TagClassificationBadge({
       return {
         indicator: '🤖', // IA automatique - 🟡 selon specs
         tooltip: `Classification automatique IA (${Math.round(confidence * 100)}%)`,
-        ringColor: 'ring-yellow-500',
-        specialBg: 'bg-yellow-50 border-yellow-200 text-yellow-700'
+        ringColor: 'ring-amber-500',
+        specialBg: 'bg-amber-50 border-amber-200 text-amber-700'
       };
     }
     return {
