@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
@@ -75,6 +76,12 @@ export const MobileNavDrawer: React.FC<MobileNavDrawerProps> = ({
   const pathname = usePathname();
   const drawerRef = useRef<HTMLDivElement>(null);
   const firstFocusableRef = useRef<HTMLButtonElement>(null);
+  const [mounted, setMounted] = React.useState(false);
+
+  // Only render portal after mounting (client-side)
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Handle escape key
   useEffect(() => {
@@ -134,13 +141,13 @@ export const MobileNavDrawer: React.FC<MobileNavDrawerProps> = ({
     return () => drawer.removeEventListener('keydown', handleTabKey);
   }, [isOpen]);
 
-  if (!isOpen) return null;
+  if (!isOpen || !mounted) return null;
 
-  return (
+  const drawerContent = (
     <>
-      {/* Backdrop overlay */}
+      {/* Backdrop overlay - Using Portal to ensure it covers everything */}
       <div
-        className="fixed inset-0 bg-black/50 z-40 transition-opacity duration-300"
+        className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9998] transition-opacity duration-300"
         onClick={onClose}
         aria-hidden="true"
       />
@@ -151,7 +158,7 @@ export const MobileNavDrawer: React.FC<MobileNavDrawerProps> = ({
         role="dialog"
         aria-modal="true"
         aria-label="Menu de navigation"
-        className="fixed inset-y-0 left-0 w-72 max-w-[85vw] bg-white z-50 shadow-xl transform transition-transform duration-300 ease-out flex flex-col"
+        className="fixed inset-y-0 left-0 w-72 max-w-[85vw] bg-white z-[9999] shadow-xl transform transition-transform duration-300 ease-out flex flex-col"
         style={{
           transform: isOpen ? 'translateX(0)' : 'translateX(-100%)',
         }}
@@ -232,6 +239,9 @@ export const MobileNavDrawer: React.FC<MobileNavDrawerProps> = ({
       </div>
     </>
   );
+
+  // Use Portal to render directly into document.body
+  return createPortal(drawerContent, document.body);
 };
 
 /**
