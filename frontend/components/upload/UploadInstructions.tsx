@@ -7,7 +7,7 @@ const UploadInstructions = React.memo(() => {
   return (
     <Card padding="lg">
       <div className="space-y-4">
-        <h3 className="text-lg font-semibold">Informations importantes</h3>
+        <h3 className="text-lg font-semibold text-zinc-900">Informations importantes</h3>
         <div className="space-y-4">
           <div className="space-y-3 text-sm text-zinc-600">
             <div className="flex items-start gap-3">
@@ -34,9 +34,9 @@ const UploadInstructions = React.memo(() => {
             </div>
           </div>
 
-          <div className="bg-amber-50 rounded-lg p-4 border border-amber-200">
-            <h4 className="text-sm font-semibold text-amber-800 mb-2">💡 Conseils pour un import réussi</h4>
-            <div className="space-y-1 text-xs text-amber-700">
+          <div className="bg-orange-50 rounded-lg p-4 border border-orange-200">
+            <h4 className="text-sm font-semibold text-orange-800 mb-2">💡 Conseils pour un import réussi</h4>
+            <div className="space-y-1 text-xs text-orange-700">
               <div>• Vérifiez que les dates sont au format français DD/MM/YYYY</div>
               <div>• Assurez-vous que les montants sont numériques (positifs ou négatifs)</div>
               <div>• Les descriptions peuvent contenir des caractères spéciaux</div>

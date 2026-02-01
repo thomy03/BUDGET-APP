@@ -26,7 +26,7 @@ const FileSelector = React.memo<FileSelectorProps>(({
     <Card padding="lg">
       <div className="space-y-6">
         <div>
-          <h3 className="text-lg font-semibold mb-2">Sélectionner un fichier</h3>
+          <h3 className="text-lg font-semibold mb-2 text-zinc-900">Sélectionner un fichier</h3>
           <p className="text-sm text-zinc-600 mb-4">
             Importez vos transactions bancaires (CSV, Excel ou PDF de relevé bancaire).
             Le système détecte automatiquement le format et les colonnes.

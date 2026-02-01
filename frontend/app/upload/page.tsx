@@ -79,7 +79,7 @@ export default function UploadPage() {
   return (
     <main className="container py-6 space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="h1">📥 Import de fichier</h1>
+        <h1 className="h1 text-zinc-900">📥 Import de fichier</h1>
         <div className="text-sm text-zinc-500">
           <span className="mr-4">Formats acceptés: CSV, XLSX, XLS, PDF</span>
           <span>Max: 10MB</span>
