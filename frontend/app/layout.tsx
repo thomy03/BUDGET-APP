@@ -41,8 +41,16 @@ export default function RootLayout({
     return (
       <html lang="fr">
         <head>
-          <title>Budget Famille</title>
-          <meta name="description" content="Gestion budgétaire familiale sécurisée" />
+          <title>Budget App</title>
+          <meta name="description" content="Gestion du budget familial" />
+          <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
+          <meta name="theme-color" content="#10b981" />
+          <meta name="apple-mobile-web-app-capable" content="yes" />
+          <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+          <meta name="apple-mobile-web-app-title" content="Budget" />
+          <link rel="manifest" href="/manifest.json" />
+          <link rel="icon" href="/icon-192.png" />
+          <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
         </head>
         <body>
           <div className="min-h-screen bg-zinc-50 flex items-center justify-center">
@@ -56,8 +64,16 @@ export default function RootLayout({
   return (
     <html lang="fr">
       <head>
-        <title>Budget Famille</title>
-        <meta name="description" content="Gestion budgétaire familiale sécurisée" />
+        <title>Budget App</title>
+        <meta name="description" content="Gestion du budget familial" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
+        <meta name="theme-color" content="#10b981" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+        <meta name="apple-mobile-web-app-title" content="Budget" />
+        <link rel="manifest" href="/manifest.json" />
+        <link rel="icon" href="/icon-192.png" />
+        <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
       </head>
       <body>
         {!isLoginPage && (
@@ -116,7 +132,7 @@ export default function RootLayout({
                     </div>
 
                     <div className="ml-auto flex items-center gap-2 md:gap-4">
-                      <MonthPicker />
+                      {pathname !== "/transactions" && <MonthPicker />}
 
                       {/* Desktop user info - hidden on mobile */}
                       <div className="hidden md:flex items-center gap-3 text-sm">

@@ -217,7 +217,7 @@ export default function ModernTransactionsPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header moderne */}
-      <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
+      <div className="bg-white border-b border-gray-200 sticky top-0 z-[100] overflow-visible">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="py-4">
             {/* Ligne supérieure */}
@@ -228,7 +228,7 @@ export default function ModernTransactionsPage() {
                 </div>
                 <div>
                   <h1 className="text-2xl font-bold text-gray-900">Transactions</h1>
-                  <div className="mt-1">
+                  <div className="mt-1 overflow-visible">
                     <MonthPicker
                       currentMonth={month}
                       onMonthChange={setMonth}
@@ -685,7 +685,7 @@ export default function ModernTransactionsPage() {
                                   </span>
                                   <span className={`text-xs ${
                                     suggestion.confidence >= 0.8 ? 'text-green-600' :
-                                    suggestion.confidence >= 0.6 ? 'text-yellow-600' : 'text-gray-500'
+                                    suggestion.confidence >= 0.6 ? 'text-amber-700' : 'text-gray-500'
                                   }`}>
                                     {Math.round(suggestion.confidence * 100)}% confiance
                                   </span>
