@@ -18,6 +18,10 @@ from dotenv import load_dotenv
 # Load environment variables BEFORE using them
 load_dotenv()
 
+# Database imports for user lookup
+from models.database import get_db as get_db_session
+from sqlalchemy.orm import Session
+
 # Logging sécurisé
 logger = logging.getLogger(__name__)
 
@@ -194,7 +198,7 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
 
-async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)) -> User:
+async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security), db: Session = Depends(get_db_session)) -> "User":
     """Dépendance FastAPI pour récupérer l'utilisateur actuel depuis le token JWT"""
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
@@ -220,7 +224,9 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
         logger.error(f"Token JWT invalide: {type(e).__name__} - {e}")
         raise credentials_exception
     
-    user = get_user(fake_users_db, username=token_data.username)
+    # Use database lookup instead of fake_users_db
+    from models.user import get_user_by_username
+    user = get_user_by_username(db, username=token_data.username)
     if user is None:
         raise credentials_exception
     return user
