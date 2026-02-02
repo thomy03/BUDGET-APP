@@ -5,8 +5,8 @@
 # Consolidation de tous les requirements fragmentés
 
 # === CORE API FRAMEWORK ===
-fastapi>=0.100.0,<0.112.0
-uvicorn[standard]>=0.20.0,<0.31.0
+fastapi>=0.100.0,<0.129.0
+uvicorn[standard]>=0.20.0,<0.40.0
 
 # === DATA PROCESSING ===
 # Versions compatibles Python 3.8.10 Ubuntu
@@ -29,7 +29,7 @@ cryptography>=40.0.0
 
 # === HTTP & VALIDATION ===
 python-multipart>=0.0.5
-pydantic>=1.10.0,<2.6.0
+pydantic>=1.10.0,<2.13.0
 email-validator>=1.3.0
 aiohttp>=3.8.0,<4.0.0  # For web research service
 
