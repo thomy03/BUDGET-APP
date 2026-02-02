@@ -16,7 +16,7 @@ python-Levenshtein>=0.20.0           # Optimisation fuzzywuzzy
 scikit-learn[alldeps]                 # Features complètes TF-IDF
 
 # === CACHING & PERFORMANCE ===
-redis>=4.5.0,<5.1.0                  # Cache ML haute performance  
+redis>=4.5.0,<7.1.0                  # Cache ML haute performance  
 hiredis>=2.2.0                        # Client Redis optimisé
 asyncio-redis>=0.16.0                # Async Redis pour FastAPI
 
